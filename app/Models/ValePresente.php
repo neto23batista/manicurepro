@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ValePresente extends Model
+{
+    protected $table = 'vales_presente';
+
+    public const STATUS_ATIVO     = 'ativo';
+    public const STATUS_USADO     = 'usado';
+    public const STATUS_CANCELADO = 'cancelado';
+
+    protected $fillable = [
+        'salao_id', 'codigo', 'valor', 'saldo',
+        'comprador_nome', 'comprador_contato', 'beneficiario_nome',
+        'mensagem', 'validade', 'status',
+    ];
+
+    protected $casts = [
+        'valor'    => 'decimal:2',
+        'saldo'    => 'decimal:2',
+        'validade' => 'date',
+    ];
+
+    public function salao()
+    {
+        return $this->belongsTo(Salao::class);
+    }
+
+    public function getExpiradoAttribute(): bool
+    {
+        return $this->validade !== null && $this->validade->endOfDay()->isPast();
+    }
+
+    public function estaDisponivel(): bool
+    {
+        return $this->status === self::STATUS_ATIVO
+            && (float) $this->saldo > 0
+            && !$this->expirado;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        if ($this->status === self::STATUS_ATIVO && $this->expirado) {
+            return 'Expirado';
+        }
+
+        return match ($this->status) {
+            self::STATUS_ATIVO     => 'Ativo',
+            self::STATUS_USADO     => 'Usado',
+            self::STATUS_CANCELADO => 'Cancelado',
+            default                => ucfirst($this->status),
+        };
+    }
+
+    public function getStatusColorAttribute(): string
+    {
+        if ($this->status === self::STATUS_ATIVO && $this->expirado) {
+            return 'secondary';
+        }
+
+        return match ($this->status) {
+            self::STATUS_ATIVO     => 'success',
+            self::STATUS_USADO     => 'info',
+            self::STATUS_CANCELADO => 'danger',
+            default                => 'secondary',
+        };
+    }
+
+    public function scopeDisponiveis($query)
+    {
+        return $query->where('status', self::STATUS_ATIVO)
+            ->where('saldo', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('validade')->orWhereDate('validade', '>=', today());
+            });
+    }
+}

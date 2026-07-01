@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateProdutoRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return in_array($this->user()?->role, ['dono', 'atendente', 'admin'], true);
+    }
+
+    public function rules(): array
+    {
+        // O estoque não é alterado por aqui — usa-se a movimentação de estoque.
+        return [
+            'nome'           => ['required', 'string', 'max:255'],
+            'codigo'         => ['nullable', 'string', 'max:50'],
+            'marca'          => ['nullable', 'string', 'max:255'],
+            'descricao'      => ['nullable', 'string', 'max:1000'],
+            'preco_custo'    => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
+            'preco_venda'    => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
+            'estoque_minimo' => ['nullable', 'numeric', 'min:0', 'max:999999'],
+            'unidade'        => ['nullable', 'string', 'max:20'],
+            'ativo'          => ['sometimes', 'boolean'],
+        ];
+    }
+}

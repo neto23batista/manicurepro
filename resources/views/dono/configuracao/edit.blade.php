@@ -1,0 +1,293 @@
+@extends('layouts.app')
+
+@section('title', 'Configurações')
+@section('page-title', 'Configurações do salão')
+
+@section('content')
+<ul class="nav nav-pills gap-2 mb-4" style="background:white;padding:6px;border-radius:14px;box-shadow:var(--shadow-sm);display:inline-flex">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#dados">Dados</a></li>
+    <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#horarios">Horários</a></li>
+    <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#agendamento">Agendamento</a></li>
+    <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#fidelidade">Fidelidade</a></li>
+    <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#notificacoes">Notificações</a></li>
+</ul>
+
+<div class="tab-content">
+    {{-- Dados --}}
+    <div class="tab-pane fade show active" id="dados">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-store text-pink me-2"></i>Dados do salão</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.dados') }}" method="POST" enctype="multipart/form-data">
+                    @csrf @method('PUT')
+
+                    {{-- Upload de logo e capa --}}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Logo do salão</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="{{ $salao->logo_url }}" id="logoPreview"
+                                     class="rounded-3 border" style="width:72px;height:72px;object-fit:cover">
+                                <div class="flex-grow-1">
+                                    <input type="file" name="logo" id="logoInput" accept="image/*"
+                                           class="form-control form-control-sm @error('logo') is-invalid @enderror">
+                                    <small class="text-muted">PNG/JPG/WebP · até 3 MB</small>
+                                    @error('logo') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    @if($salao->logo)
+                                        <button type="button" class="btn btn-link btn-sm text-danger p-0 mt-1"
+                                                data-submit-form="formRemoveLogo">
+                                            <i class="fas fa-trash"></i> Remover logo
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Foto de capa</label>
+                            <div class="position-relative" style="aspect-ratio:3/1;background:var(--ink-100);border-radius:var(--radius-sm);overflow:hidden">
+                                @if($salao->foto_capa)
+                                    <img src="{{ asset('storage/' . $salao->foto_capa) }}" id="capaPreview"
+                                         style="width:100%;height:100%;object-fit:cover">
+                                @else
+                                    <div id="capaPreview" class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                        <span><i class="fas fa-image fa-2x mb-2 d-block"></i> Sem capa</span>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <input type="file" name="foto_capa" id="capaInput" accept="image/*"
+                                       class="form-control form-control-sm @error('foto_capa') is-invalid @enderror">
+                                @if($salao->foto_capa)
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            data-submit-form="formRemoveCapa">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                @endif
+                            </div>
+                            <small class="text-muted">PNG/JPG/WebP · proporção 3:1 · até 5 MB</small>
+                            @error('foto_capa') <div class="text-danger small">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-8"><label class="form-label fw-semibold">Nome *</label>
+                            <input type="text" name="nome" required class="form-control" value="{{ old('nome', $salao->nome) }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Telefone</label>
+                            <input type="tel" name="telefone" class="form-control" value="{{ old('telefone', $salao->telefone) }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">E-mail</label>
+                            <input type="email" name="email" class="form-control" value="{{ old('email', $salao->email) }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">WhatsApp</label>
+                            <input type="tel" name="whatsapp" class="form-control" value="{{ old('whatsapp', $salao->whatsapp) }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Endereço</label>
+                            <input type="text" name="endereco" class="form-control" value="{{ old('endereco', $salao->endereco) }}"></div>
+                        <div class="col-md-2"><label class="form-label fw-semibold">Número</label>
+                            <input type="text" name="numero" class="form-control" value="{{ old('numero', $salao->numero) }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Bairro</label>
+                            <input type="text" name="bairro" class="form-control" value="{{ old('bairro', $salao->bairro) }}"></div>
+                        <div class="col-md-5"><label class="form-label fw-semibold">Cidade</label>
+                            <input type="text" name="cidade" class="form-control" value="{{ old('cidade', $salao->cidade) }}"></div>
+                        <div class="col-md-2"><label class="form-label fw-semibold">UF</label>
+                            <input type="text" name="estado" maxlength="2" class="form-control" value="{{ old('estado', $salao->estado) }}"></div>
+                        <div class="col-md-3"><label class="form-label fw-semibold">CEP</label>
+                            <input type="text" name="cep" class="form-control" value="{{ old('cep', $salao->cep) }}"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Instagram</label>
+                            <div class="input-group"><span class="input-group-text">@</span>
+                                <input type="text" name="instagram" class="form-control" value="{{ old('instagram', $salao->instagram) }}"></div></div>
+                        <div class="col-12"><label class="form-label fw-semibold">Descrição</label>
+                            <textarea name="descricao" rows="3" maxlength="1000" class="form-control">{{ old('descricao', $salao->descricao) }}</textarea></div>
+                    </div>
+                    <button type="submit" class="btn btn-pink mt-4"><i class="fas fa-save me-1"></i>Salvar dados</button>
+                </form>
+
+                {{-- Forms ocultos para remoção de logo/capa --}}
+                <form action="{{ route('dono.config.logo.destroy') }}" method="POST" id="formRemoveLogo" class="d-none"
+                      data-confirm="Remover logo?" data-confirm-message="A logo voltará para o padrão.">
+                    @csrf @method('DELETE')
+                </form>
+                <form action="{{ route('dono.config.capa.destroy') }}" method="POST" id="formRemoveCapa" class="d-none"
+                      data-confirm="Remover capa?" data-confirm-message="A imagem de capa será removida.">
+                    @csrf @method('DELETE')
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Horários --}}
+    <div class="tab-pane fade" id="horarios">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-clock text-pink me-2"></i>Horários de funcionamento</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.horarios') }}" method="POST">
+                    @csrf @method('PUT')
+                    @php $dias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']; @endphp
+                    @foreach($dias as $i => $nome)
+                        @php $h = $horarios[$i] ?? null; @endphp
+                        <div class="row g-3 align-items-center mb-3">
+                            <div class="col-md-3">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="horarios[{{ $i }}][ativo]" value="0">
+                                    <input class="form-check-input" type="checkbox" name="horarios[{{ $i }}][ativo]" value="1"
+                                           id="d{{ $i }}" {{ $h?->ativo ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold" for="d{{ $i }}">{{ $nome }}</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="time" name="horarios[{{ $i }}][hora_abertura]" class="form-control"
+                                       value="{{ $h ? substr($h->hora_abertura, 0, 5) : '09:00' }}">
+                            </div>
+                            <div class="col-md-1 text-center text-muted">até</div>
+                            <div class="col-md-4">
+                                <input type="time" name="horarios[{{ $i }}][hora_fechamento]" class="form-control"
+                                       value="{{ $h ? substr($h->hora_fechamento, 0, 5) : '18:00' }}">
+                            </div>
+                        </div>
+                    @endforeach
+                    <button type="submit" class="btn btn-pink mt-3"><i class="fas fa-save me-1"></i>Salvar horários</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Agendamento --}}
+    <div class="tab-pane fade" id="agendamento">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-calendar text-pink me-2"></i>Regras de agendamento</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.config') }}" method="POST">
+                    @csrf @method('PUT')
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="permitir_agendamento_online" value="0">
+                                <input class="form-check-input" type="checkbox" name="permitir_agendamento_online" value="1" id="agOnline"
+                                       {{ $config->permitir_agendamento_online ? 'checked' : '' }}>
+                                <label class="form-check-label fw-semibold" for="agOnline">Permitir agendamento online (público)</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Intervalo entre slots (min)</label>
+                            <input type="number" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}" min="5" max="240" class="form-control" required></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Antecedência mínima (dias)</label>
+                            <input type="number" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}" min="0" max="30" class="form-control" required></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Antecedência máxima (dias)</label>
+                            <input type="number" name="antecedencia_maxima" value="{{ $config->antecedencia_maxima }}" min="1" max="365" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Prazo p/ cancelamento (horas)</label>
+                            <input type="number" name="cancelamento_prazo" value="{{ $config->cancelamento_prazo }}" min="0" max="72" class="form-control" required></div>
+                    </div>
+                    <input type="hidden" name="fidelidade_ativo" value="{{ $config->fidelidade_ativo ? 1 : 0 }}">
+                    <input type="hidden" name="pontos_por_real" value="{{ $config->pontos_por_real }}">
+                    <input type="hidden" name="pontos_para_desconto" value="{{ $config->pontos_para_desconto }}">
+                    <input type="hidden" name="valor_desconto_pontos" value="{{ $config->valor_desconto_pontos }}">
+                    <input type="hidden" name="notificar_email" value="{{ $config->notificar_email ? 1 : 0 }}">
+                    <input type="hidden" name="notificar_whatsapp" value="{{ $config->notificar_whatsapp ? 1 : 0 }}">
+                    <input type="hidden" name="lembrete_horas" value="{{ $config->lembrete_horas }}">
+                    <button type="submit" class="btn btn-pink mt-4"><i class="fas fa-save me-1"></i>Salvar configurações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Fidelidade --}}
+    <div class="tab-pane fade" id="fidelidade">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-star text-pink me-2"></i>Programa de fidelidade</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.config') }}" method="POST">
+                    @csrf @method('PUT')
+                    <div class="form-check form-switch mb-4">
+                        <input type="hidden" name="fidelidade_ativo" value="0">
+                        <input class="form-check-input" type="checkbox" name="fidelidade_ativo" value="1" id="fidAtivo"
+                               {{ $config->fidelidade_ativo ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="fidAtivo">Ativar programa de pontos</label>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label fw-semibold">Pontos por R$ 1,00</label>
+                            <input type="number" name="pontos_por_real" min="0" value="{{ $config->pontos_por_real }}" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Pontos para desconto</label>
+                            <input type="number" name="pontos_para_desconto" min="0" value="{{ $config->pontos_para_desconto }}" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Valor desconto (R$)</label>
+                            <input type="number" step="0.01" name="valor_desconto_pontos" min="0" value="{{ $config->valor_desconto_pontos }}" class="form-control"></div>
+                    </div>
+                    <input type="hidden" name="permitir_agendamento_online" value="{{ $config->permitir_agendamento_online ? 1 : 0 }}">
+                    <input type="hidden" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}">
+                    <input type="hidden" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}">
+                    <input type="hidden" name="antecedencia_maxima" value="{{ $config->antecedencia_maxima }}">
+                    <input type="hidden" name="cancelamento_prazo" value="{{ $config->cancelamento_prazo }}">
+                    <input type="hidden" name="notificar_email" value="{{ $config->notificar_email ? 1 : 0 }}">
+                    <input type="hidden" name="notificar_whatsapp" value="{{ $config->notificar_whatsapp ? 1 : 0 }}">
+                    <input type="hidden" name="lembrete_horas" value="{{ $config->lembrete_horas }}">
+                    <button type="submit" class="btn btn-pink mt-4"><i class="fas fa-save me-1"></i>Salvar fidelidade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Notificações --}}
+    <div class="tab-pane fade" id="notificacoes">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-bell text-pink me-2"></i>Notificações</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.config') }}" method="POST">
+                    @csrf @method('PUT')
+                    <div class="form-check form-switch mb-3">
+                        <input type="hidden" name="notificar_email" value="0">
+                        <input class="form-check-input" type="checkbox" name="notificar_email" value="1" id="notifEmail"
+                               {{ $config->notificar_email ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="notifEmail">Enviar confirmações por e-mail</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input type="hidden" name="notificar_whatsapp" value="0">
+                        <input class="form-check-input" type="checkbox" name="notificar_whatsapp" value="1" id="notifWa"
+                               {{ $config->notificar_whatsapp ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="notifWa">Notificações via WhatsApp (em breve)</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Enviar lembrete X horas antes</label>
+                        <input type="number" name="lembrete_horas" min="1" max="168" value="{{ $config->lembrete_horas }}" class="form-control" style="max-width:200px">
+                    </div>
+                    <input type="hidden" name="permitir_agendamento_online" value="{{ $config->permitir_agendamento_online ? 1 : 0 }}">
+                    <input type="hidden" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}">
+                    <input type="hidden" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}">
+                    <input type="hidden" name="antecedencia_maxima" value="{{ $config->antecedencia_maxima }}">
+                    <input type="hidden" name="cancelamento_prazo" value="{{ $config->cancelamento_prazo }}">
+                    <input type="hidden" name="fidelidade_ativo" value="{{ $config->fidelidade_ativo ? 1 : 0 }}">
+                    <input type="hidden" name="pontos_por_real" value="{{ $config->pontos_por_real }}">
+                    <input type="hidden" name="pontos_para_desconto" value="{{ $config->pontos_para_desconto }}">
+                    <input type="hidden" name="valor_desconto_pontos" value="{{ $config->valor_desconto_pontos }}">
+                    <button type="submit" class="btn btn-pink mt-3"><i class="fas fa-save me-1"></i>Salvar notificações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+// Preview da logo
+document.getElementById('logoInput')?.addEventListener('change', function(e) {
+    const f = e.target.files[0];
+    if (f) {
+        const r = new FileReader();
+        r.onload = ev => document.getElementById('logoPreview').src = ev.target.result;
+        r.readAsDataURL(f);
+    }
+});
+
+// Preview da capa
+document.getElementById('capaInput')?.addEventListener('change', function(e) {
+    const f = e.target.files[0];
+    if (f) {
+        const r = new FileReader();
+        r.onload = ev => {
+            const prev = document.getElementById('capaPreview');
+            if (prev.tagName === 'IMG') {
+                prev.src = ev.target.result;
+            } else {
+                prev.outerHTML = `<img src="${ev.target.result}" id="capaPreview" style="width:100%;height:100%;object-fit:cover">`;
+            }
+        };
+        r.readAsDataURL(f);
+    }
+});
+</script>
+@endpush
+@endsection
