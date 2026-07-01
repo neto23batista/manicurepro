@@ -8,7 +8,7 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 :root {
     /* === Paleta Primária (Pink Velvet) === */
@@ -157,7 +157,7 @@ body {
 }
 
 /* Headings com serif moderna em pesos altos */
-h1, h2, h3 { font-family: 'Fraunces', 'Inter', serif; font-weight: 700; letter-spacing: -0.03em; color: var(--ink-950); line-height: 1.15; font-variation-settings: 'opsz' 144; }
+h1, h2, h3 { font-family: 'Playfair Display', 'Inter', serif; font-weight: 700; letter-spacing: -0.03em; color: var(--ink-950); line-height: 1.15; }
 h4, h5, h6 { font-family: 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.02em; color: var(--ink-900); }
 
 a { color: var(--pink-600); text-decoration: none; transition: color var(--t-fast); }
@@ -399,7 +399,7 @@ a:hover { color: var(--pink-700); }
     flex-shrink: 0;
     box-shadow: 0 8px 28px rgba(244,63,140,0.55), inset 0 1px 0 rgba(255,255,255,0.35);
     position: relative;
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 .brand-logo::after {
     content: '';
@@ -411,7 +411,7 @@ a:hover { color: var(--pink-700); }
     filter: blur(14px);
     opacity: 0.55;
 }
-.brand-name { color: white; font-weight: 700; font-size: 17px; line-height: 1.2; letter-spacing: -0.01em; font-family: 'Fraunces', serif; }
+.brand-name { color: white; font-weight: 700; font-size: 17px; line-height: 1.2; letter-spacing: -0.01em; font-family: 'Playfair Display', serif; }
 .brand-sub  { color: rgba(255,255,255,0.55); font-size: 11.5px; font-weight: 500; }
 
 .sidebar-nav { flex: 1; padding: 16px 14px; overflow-y: auto; position: relative; z-index: 1; }
@@ -493,7 +493,7 @@ a:hover { color: var(--pink-700); }
     top: 0;
     z-index: 100;
 }
-.topbar-title { font-weight: 700; font-size: var(--text-xl); color: var(--ink-900); flex: 1; letter-spacing: -0.02em; font-family: 'Fraunces', serif; }
+.topbar-title { font-weight: 700; font-size: var(--text-xl); color: var(--ink-900); flex: 1; letter-spacing: -0.02em; font-family: 'Playfair Display', serif; }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .sidebar-toggle {
     display: none;
@@ -605,7 +605,7 @@ a:hover { color: var(--pink-700); }
     letter-spacing: -0.035em;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 .stat-label { color: var(--ink-500); font-size: 12.5px; font-weight: 500; margin-top: 5px; letter-spacing: 0.01em; }
 
@@ -821,7 +821,7 @@ a:hover { color: var(--pink-700); }
     margin-bottom: 14px;
     box-shadow: var(--shadow-pink), var(--shadow-inset);
     position: relative;
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 .auth-logo-icon::after {
     content: '';
@@ -839,7 +839,7 @@ a:hover { color: var(--pink-700); }
     background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.025em;
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 .auth-logo-sub { color: var(--ink-500); font-size: 14px; }
 .auth-footer { text-align: center; color: var(--ink-500); margin-top: 24px; font-size: 13px; position: relative; z-index: 1; }
@@ -856,7 +856,7 @@ a:hover { color: var(--pink-700); }
     font-weight: 800; font-size: 18px;
     display: inline-flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 
 .hero-section {
@@ -996,7 +996,7 @@ a:hover { color: var(--pink-700); }
     font-weight: 800;
     font-size: 14px;
     box-shadow: var(--shadow-pink);
-    font-family: 'Fraunces', serif;
+    font-family: 'Playfair Display', serif;
 }
 .list-item { transition: background var(--t-fast); }
 .list-item:hover { background: var(--pink-50); }
@@ -1731,3 +1731,194 @@ kbd {
 /* Z-index helper para conteúdo acima de blobs/backdrop no hero */
 .hero-section > .container.position-relative { z-index: 2; }
 .salao-hero   > .container.position-relative { z-index: 2; }
+
+/* =====================================================
+   ============ PREMIUM v4 — LIQUID GLASS ==============
+   Playfair editorial · vidro líquido · bordas iridescentes
+   scroll-reveal · tilt 3D · aurora hero · micro-interações
+   ===================================================== */
+
+/* --- Keyframes premium --- */
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+@keyframes floatBlob {
+    0%, 100% { transform: translate(0, 0) scale(1); border-radius: 50%; }
+    33%      { transform: translate(34px, -26px) scale(1.08); border-radius: 58% 42% 55% 45% / 45% 58% 42% 55%; }
+    66%      { transform: translate(-22px, 20px) scale(0.94); border-radius: 45% 55% 48% 52% / 55% 45% 55% 45%; }
+}
+@keyframes iconPop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.18) rotate(-8deg); }
+    100% { transform: scale(1); }
+}
+
+/* --- Texto com gradiente vivo (anima devagar) --- */
+.text-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 7s ease-in-out infinite;
+}
+
+/* --- Vidro líquido: cards translúcidos com highlight interno ---
+   (sem backdrop-filter em listas — blur real só no "chrome" p/ manter 60fps) */
+.card, .stat-card {
+    background: linear-gradient(150deg, rgba(255,255,255,0.94), rgba(255,255,255,0.86));
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.9);
+    animation: none; /* entrada agora é via scroll-reveal (abaixo) */
+}
+/* Borda iridescente no hover (gradiente na border via double background) */
+.card:hover, .stat-card:hover {
+    border-color: transparent;
+    background:
+        linear-gradient(150deg, rgba(255,255,255,0.97), rgba(255,255,255,0.92)) padding-box,
+        linear-gradient(135deg, rgba(236,72,153,0.55), rgba(217,70,239,0.35), rgba(168,85,247,0.55)) border-box;
+}
+
+/* Blur real apenas nas superfícies de chrome */
+.topbar, .dropdown-menu {
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+.modal-content {
+    background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid rgba(255,255,255,0.7);
+}
+.modal-backdrop.show {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+/* Modal com entrada "spring" (Bootstrap só anima opacity) */
+.modal.fade .modal-dialog { transform: translateY(26px) scale(0.96); transition: transform 340ms cubic-bezier(0.34, 1.35, 0.64, 1); }
+.modal.show  .modal-dialog { transform: none; }
+
+/* --- Botões: pressão física + glow forte --- */
+.btn:active { transform: scale(0.96) !important; }
+.btn-pink:hover { box-shadow: 0 18px 48px rgba(236,72,153,0.45), var(--shadow-inset); }
+
+/* --- Stat cards: tilt 3D (vars setadas via JS) + ícone vivo --- */
+.stat-card:hover {
+    transform: perspective(700px) translateY(-6px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+}
+.stat-card:hover .stat-icon { animation: iconPop 500ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* --- Scroll-reveal com stagger (classe aplicada via JS; sem JS = visível) --- */
+.reveal {
+    opacity: 0;
+    transform: translateY(26px) scale(0.985);
+    transition: opacity 0.7s cubic-bezier(0.32, 0.72, 0, 1), transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+}
+.reveal.reveal-in { opacity: 1; transform: none; }
+
+/* --- Hero do salão: aurora líquida --- */
+.salao-hero { padding: 76px 0; }
+.salao-hero::before {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(236,72,153,0.30), transparent 65%);
+    filter: blur(14px);
+    animation: floatBlob 16s ease-in-out infinite;
+}
+.salao-hero::after {
+    width: 460px; height: 460px;
+    background: radial-gradient(circle, rgba(139,92,246,0.24), transparent 65%);
+    filter: blur(16px);
+    animation: floatBlob 21s ease-in-out infinite reverse;
+}
+.salao-name {
+    font-size: clamp(36px, 5vw, 54px);
+    background: linear-gradient(120deg, var(--ink-950) 20%, var(--pink-600) 60%, var(--purple-500));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 8s ease-in-out infinite;
+}
+.salao-logo-frame {
+    box-shadow: 0 20px 60px rgba(236,72,153,0.35);
+    transition: transform var(--t-spring);
+}
+.salao-logo-frame:hover { transform: rotate(-3deg) scale(1.06); }
+
+/* --- Tabs públicas: pílula de vidro com ativo em gradiente --- */
+.public-tabs {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.8);
+}
+.public-tabs .nav-link {
+    border-radius: 10px;
+    font-weight: 600;
+    transition: color var(--t-fast), background var(--t-base), box-shadow var(--t-base), transform var(--t-base);
+}
+.public-tabs .nav-link:hover:not(.active) { background: rgba(236,72,153,0.08); transform: translateY(-1px); }
+.public-tabs .nav-link.active {
+    background: var(--gradient-pink);
+    color: #fff !important;
+    box-shadow: 0 8px 24px rgba(236,72,153,0.35);
+}
+
+/* --- Navbar pública / topbar reagem ao scroll (classe via JS) --- */
+.public-navbar { transition: background var(--t-base), box-shadow var(--t-base); }
+.public-navbar.is-scrolled { background: rgba(255,255,255,0.94); box-shadow: 0 10px 36px rgba(131,20,73,0.10); }
+.topbar { transition: box-shadow var(--t-base); }
+.topbar.is-scrolled { box-shadow: 0 10px 28px rgba(131,20,73,0.08); }
+
+/* --- Galeria: zoom cinematográfico + véu gradiente --- */
+.galeria-thumb { overflow: hidden; border-radius: var(--radius-md); display: block; position: relative; }
+.galeria-thumb img { transition: transform 0.9s cubic-bezier(0.32, 0.72, 0, 1), filter 0.5s ease; }
+.galeria-thumb::after {
+    content: '\f00e'; /* fa-magnifying-glass-plus */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 14px;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(131,20,73,0.55), transparent 55%);
+    opacity: 0;
+    transition: opacity var(--t-base);
+    pointer-events: none;
+    border-radius: inherit;
+}
+.galeria-thumb:hover img { transform: scale(1.09); }
+.galeria-thumb:hover::after { opacity: 1; }
+
+/* --- Dark mode: vidro noturno --- */
+[data-theme="dark"] .card,
+[data-theme="dark"] .stat-card {
+    background: linear-gradient(150deg, rgba(36,28,48,0.94), rgba(27,21,36,0.90));
+    border-color: rgba(255,255,255,0.07);
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+[data-theme="dark"] .card:hover,
+[data-theme="dark"] .stat-card:hover {
+    border-color: transparent;
+    background:
+        linear-gradient(150deg, rgba(40,31,53,0.97), rgba(30,23,40,0.94)) padding-box,
+        linear-gradient(135deg, rgba(236,72,153,0.55), rgba(168,85,247,0.55)) border-box;
+}
+[data-theme="dark"] .modal-content { background: rgba(27,21,36,0.95); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .public-tabs { background: rgba(27,21,36,0.72); border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .public-navbar.is-scrolled { background: rgba(27,21,36,0.94); }
+[data-theme="dark"] .salao-name {
+    background: linear-gradient(120deg, #fdf2f8 20%, var(--pink-400) 60%, var(--lavender));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* --- Acessibilidade: sem movimento, tudo visível de imediato --- */
+@media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+    .text-gradient, .salao-name { animation: none; }
+    .salao-hero::before, .salao-hero::after { animation: none; }
+}

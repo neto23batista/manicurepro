@@ -243,6 +243,90 @@ document.addEventListener('submit', function (e) {
     }
 });
 
+// ---- Premium FX: scroll-reveal, contadores, tilt 3D, navbar scrolled ----
+// Tudo progressivo (sem JS = conteúdo visível) e respeitando reduced-motion.
+document.addEventListener('DOMContentLoaded', function () {
+    var reduzMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Navbar pública / topbar ganham sombra ao rolar
+    var chrome = document.querySelectorAll('.public-navbar, .topbar');
+    if (chrome.length) {
+        var aoRolar = function () {
+            var rolou = window.scrollY > 10;
+            chrome.forEach(function (el) { el.classList.toggle('is-scrolled', rolou); });
+        };
+        window.addEventListener('scroll', aoRolar, { passive: true });
+        aoRolar();
+    }
+
+    // Contador animado nos valores de estatística (ex.: "R$ 1.234,56" → sobe até o valor)
+    function animarContador(el) {
+        if (el.dataset.contado) return;
+        el.dataset.contado = '1';
+        if (reduzMovimento) return;
+
+        var m = el.textContent.trim().match(/^([^\d-]*)([\d.,]+)(.*)$/);
+        if (!m) return;
+        var valor = parseFloat(m[2].replace(/\./g, '').replace(',', '.'));
+        if (isNaN(valor) || valor === 0) return;
+        var decimais = (m[2].split(',')[1] || '').length;
+
+        var inicio = null, dur = 900;
+        function quadro(ts) {
+            if (!inicio) inicio = ts;
+            var p = Math.min((ts - inicio) / dur, 1);
+            var eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+            el.textContent = m[1] + (valor * eased).toLocaleString('pt-BR', {
+                minimumFractionDigits: decimais, maximumFractionDigits: decimais,
+            }) + m[3];
+            if (p < 1) requestAnimationFrame(quadro);
+        }
+        requestAnimationFrame(quadro);
+    }
+
+    // Scroll-reveal com stagger
+    if (!reduzMovimento && 'IntersectionObserver' in window) {
+        var alvos = document.querySelectorAll('.card, .stat-card, .agenda-item, .galeria-thumb, .empty-state');
+        var vistos = 0;
+        var io = new IntersectionObserver(function (entradas) {
+            entradas.forEach(function (entrada) {
+                if (!entrada.isIntersecting) return;
+                var el = entrada.target;
+                el.style.setProperty('--reveal-delay', ((vistos++ % 6) * 55) + 'ms');
+                el.classList.add('reveal-in');
+                io.unobserve(el);
+                el.querySelectorAll('.stat-value').forEach(animarContador);
+            });
+        }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+
+        alvos.forEach(function (el) { el.classList.add('reveal'); io.observe(el); });
+    } else {
+        // Sem observer/reduced-motion: só dispara os contadores marcados como "vistos"
+        document.querySelectorAll('.stat-value').forEach(animarContador);
+    }
+
+    // Tilt 3D sutil nos stat cards (só mouse; vars lidas pelo CSS no :hover)
+    if (!reduzMovimento && window.matchMedia('(pointer: fine)').matches) {
+        document.addEventListener('mousemove', function (e) {
+            var card = e.target.closest && e.target.closest('.stat-card');
+            if (!card) return;
+            var r = card.getBoundingClientRect();
+            var ry = ((e.clientX - r.left) / r.width - 0.5) * 6;
+            var rx = (0.5 - (e.clientY - r.top) / r.height) * 6;
+            card.style.setProperty('--rx', rx.toFixed(2) + 'deg');
+            card.style.setProperty('--ry', ry.toFixed(2) + 'deg');
+        }, { passive: true });
+
+        document.addEventListener('mouseout', function (e) {
+            var card = e.target.closest && e.target.closest('.stat-card');
+            if (card && !card.contains(e.relatedTarget)) {
+                card.style.setProperty('--rx', '0deg');
+                card.style.setProperty('--ry', '0deg');
+            }
+        }, true);
+    }
+});
+
 // ---- Helper: format BRL currency ----
 function formatBRL(value) {
     return 'R$ ' + parseFloat(value).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
