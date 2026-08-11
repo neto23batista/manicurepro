@@ -6,15 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Agendar em {{ $salao->nome }}</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ec4899">
     <meta name="app-env" content="{{ app()->environment() }}">
+    <x-theme-vars />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="public-body">
 
+<x-skip-link />
 <x-public-navbar :back-url="route('public.salao', $salao->slug)" />
 
-<div class="container py-4">
+<main id="mainContent" class="container py-4" tabindex="-1">
     <div class="row justify-content-center">
         <div class="col-lg-9">
 
@@ -29,29 +30,32 @@
                 </div>
             </div>
 
-            @guest
-                <div class="alert alert-pink d-flex align-items-center gap-3 mb-4">
-                    <i class="fas fa-lock fs-3" aria-hidden="true"></i>
-                    <div class="flex-grow-1">
-                        <strong>É rápido!</strong> Para agendar você precisa de uma conta.
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('login') }}?salao={{ $salao->slug }}" class="btn btn-outline-pink btn-sm">Entrar</a>
-                        <a href="{{ route('register') }}?salao={{ $salao->id }}" class="btn btn-pink btn-sm">Criar conta</a>
-                    </div>
+            @if($errors->any())
+                <div class="alert alert-danger mb-4">
+                    <ul class="mb-0 ps-3">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
+            @endif
 
-                <div class="text-center my-5">
-                    <i class="fas fa-calendar-heart text-pink fs-1 opacity-50 mb-3" aria-hidden="true"></i>
-                    <h4 class="fw-bold">Cadastre-se em 30 segundos</h4>
-                    <p class="text-muted">Acesso gratuito a todos os recursos, com programa de fidelidade.</p>
-                    <a href="{{ route('register') }}?salao={{ $salao->id }}" class="btn btn-pink btn-lg px-5">
-                        <i class="fas fa-rocket me-2" aria-hidden="true"></i> Começar agora
-                    </a>
+            @guest
+                <div class="alert alert-light border d-flex flex-wrap align-items-center gap-3 mb-4">
+                    <div class="flex-grow-1">
+                        <strong>Agende sem criar conta</strong>
+                        <div class="small text-muted">Informe nome e telefone no final. Já tem conta?
+                            <a href="{{ route('login') }}?salao={{ $salao->slug }}">Entrar</a>
+                        </div>
+                    </div>
                 </div>
-            @else
-            <form method="POST" action="{{ route('cliente.agendamentos.store') }}" id="formPublicoAgendar">
+            @endguest
+
+            <form method="POST"
+                  action="{{ auth()->check() ? route('cliente.agendamentos.store') : route('public.agendar.store', $salao) }}"
+                  id="formPublicoAgendar">
                 @csrf
+                <x-honeypot />
                 <input type="hidden" name="salao_id" value="{{ $salao->id }}">
 
                 {{-- Step 1: Manicure --}}
@@ -65,8 +69,10 @@
                             @foreach($salao->manicures as $m)
                                 <div class="col-md-4 col-6">
                                     <label class="w-100 cursor-pointer">
-                                        <input type="radio" name="manicure_id" value="{{ $m->id }}" class="visually-hidden manicure-radio" required>
-                                        <div class="manicure-card p-3 text-center">
+                                        <input type="radio" name="manicure_id" value="{{ $m->id }}"
+                                               class="visually-hidden manicure-radio" required
+                                               @checked(old('manicure_id') == $m->id)>
+                                        <div class="manicure-card p-3 text-center @if(old('manicure_id') == $m->id) selected @endif">
                                             <img src="{{ $m->foto_url }}" alt="{{ $m->nome }}" class="rounded-circle mb-2 manicure-photo">
                                             <div class="fw-semibold">{{ $m->nome }}</div>
                                             @if($m->nota_media > 0)
@@ -93,8 +99,9 @@
                                     <label class="w-100 cursor-pointer">
                                         <input type="checkbox" name="servico_ids[]" value="{{ $s->id }}"
                                                data-preco="{{ $s->preco }}" data-duracao="{{ $s->duracao }}"
-                                               class="servico-check visually-hidden">
-                                        <div class="servico-option p-3">
+                                               class="servico-check visually-hidden"
+                                               @checked(collect(old('servico_ids', []))->contains($s->id))>
+                                        <div class="servico-option p-3 @if(collect(old('servico_ids', []))->contains($s->id)) selected @endif">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
                                                     <div class="fw-semibold">{{ $s->nome }}</div>
@@ -122,31 +129,44 @@
                         <h6 class="mb-0 fw-bold">Data & horário</h6>
                     </div>
                     <div class="card-body">
+                        @include('agendamentos._slots_picker', [
+                            'dateLabel' => 'Data',
+                            'timeLabel' => 'Horário',
+                            'hint' => 'Selecione manicure, serviços e data para ver os horários.',
+                        ])
+                    </div>
+                </div>
+
+                @guest
+                {{-- Step 4: Contato guest --}}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex align-items-center gap-2">
+                        <span class="badge bg-pink rounded-circle step-badge">4</span>
+                        <h6 class="mb-0 fw-bold">Seus dados</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label" for="inputData">Data</label>
-                                <input type="date" id="inputData" class="form-control form-control-lg"
-                                       min="{{ today()->addDay()->toDateString() }}" required>
+                            <div class="col-md-6">
+                                <label class="form-label" for="guestNome">Nome <span class="text-danger">*</span></label>
+                                <input type="text" name="nome" id="guestNome" class="form-control form-control-lg"
+                                       value="{{ old('nome') }}" required maxlength="255" autocomplete="name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="guestTelefone">Telefone / WhatsApp <span class="text-danger">*</span></label>
+                                <input type="tel" name="telefone" id="guestTelefone" class="form-control form-control-lg"
+                                       value="{{ old('telefone') }}" required maxlength="20" autocomplete="tel"
+                                       placeholder="(11) 99999-9999">
                             </div>
                             <div class="col-12">
-                                <label class="form-label d-block">Horário</label>
-                                <p class="text-muted small mb-2" id="slotsHint">Selecione manicure, serviços e data para ver os horários.</p>
-                                <div id="skeletonHora" class="d-none">
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                </div>
-                                <div class="slots-grid d-none" id="slotsGrid" role="group" aria-label="Horários disponíveis"></div>
-                                <input type="hidden" name="data_hora_inicio" id="dataHoraInicio">
+                                <label class="form-label" for="guestEmail">E-mail <small class="text-muted">(opcional)</small></label>
+                                <input type="email" name="email" id="guestEmail" class="form-control form-control-lg"
+                                       value="{{ old('email') }}" maxlength="255" autocomplete="email"
+                                       placeholder="Para receber a confirmação">
                             </div>
                         </div>
                     </div>
                 </div>
+                @endguest
 
                 {{-- Resumo --}}
                 <div class="card border-0 mb-4 d-none resumo-card" id="resumoCard">
@@ -168,7 +188,7 @@
                 {{-- Observações --}}
                 <div class="mb-4">
                     <label class="form-label fw-semibold" for="observacoes">Observações <small class="text-muted">(opcional)</small></label>
-                    <textarea name="observacoes" id="observacoes" class="form-control" rows="2" placeholder="Alguma alergia ou preferência específica?"></textarea>
+                    <textarea name="observacoes" id="observacoes" class="form-control" rows="2" placeholder="Alguma alergia ou preferência específica?">{{ old('observacoes') }}</textarea>
                 </div>
 
                 <div class="booking-submit">
@@ -177,124 +197,102 @@
                     </button>
                 </div>
             </form>
-            @endguest
         </div>
     </div>
-</div>
+</main>
 
 <x-public-footer compact />
 
-@auth
 <script>
-const btnSubmit = document.getElementById('btnSubmit');
-const inputData = document.getElementById('inputData');
-const slotsGrid = document.getElementById('slotsGrid');
-const slotsHint = document.getElementById('slotsHint');
-const skeletonHora = document.getElementById('skeletonHora');
-const dataHoraInicio = document.getElementById('dataHoraInicio');
-const resumoCard = document.getElementById('resumoCard');
+document.addEventListener('DOMContentLoaded', function () {
+    const btnSubmit = document.getElementById('btnSubmit');
+    const resumoCard = document.getElementById('resumoCard');
+    const isGuest = {{ auth()->guest() ? 'true' : 'false' }};
 
-function getDuracao() { return [...document.querySelectorAll('.servico-check:checked')].reduce((s,c)=>s+parseInt(c.dataset.duracao),0); }
-function getValor()   { return [...document.querySelectorAll('.servico-check:checked')].reduce((s,c)=>s+parseFloat(c.dataset.preco),0); }
-function getManicureId() { const r=document.querySelector('.manicure-radio:checked'); return r?r.value:null; }
-
-function resetSlots(msg) {
-    slotsGrid.innerHTML = '';
-    slotsGrid.classList.add('d-none');
-    dataHoraInicio.value = '';
-    slotsHint.textContent = msg;
-    slotsHint.classList.remove('d-none');
-}
-
-async function carregarSlots() {
-    const m=getManicureId(), d=inputData.value, dur=getDuracao();
-    if (!m || !d || !dur) {
-        resetSlots('Selecione manicure, serviços e data para ver os horários.');
-        verificarBotao(); return;
+    function getDuracao() {
+        return [...document.querySelectorAll('.servico-check:checked')]
+            .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
     }
-    slotsHint.classList.add('d-none');
-    slotsGrid.classList.add('d-none');
-    skeletonHora.classList.remove('d-none');
-
-    try {
-        const r=await fetch(`/api/slots?manicure_id=${m}&data=${d}&duracao=${dur}`);
-        const j=await r.json();
-        skeletonHora.classList.add('d-none');
-        if (j.slots?.length) {
-            slotsGrid.innerHTML = j.slots.map(s=>
-                `<button type="button" class="slot-chip" data-dt="${s.datetime}">${s.hora}</button>`
-            ).join('');
-            slotsGrid.classList.remove('d-none');
-
-            const v=getValor(), h=Math.floor(dur/60), mm=dur%60;
-            resumoCard.classList.remove('d-none');
-            document.getElementById('resumoDuracao').textContent = h>0?`${h}h ${mm}min`:`${mm}min`;
-            document.getElementById('resumoValor').textContent = 'R$ '+v.toFixed(2).replace('.',',');
-        } else {
-            resetSlots('Sem horários disponíveis nesta data. Tente outro dia.');
-        }
-    } catch(e) {
-        skeletonHora.classList.add('d-none');
-        resetSlots('Erro ao buscar horários. Tente novamente.');
+    function getValor() {
+        return [...document.querySelectorAll('.servico-check:checked')]
+            .reduce((s, c) => s + parseFloat(c.dataset.preco), 0);
     }
-    verificarBotao();
-}
+    function getManicureId() {
+        const r = document.querySelector('.manicure-radio:checked');
+        return r ? r.value : null;
+    }
 
-function verificarBotao() {
-    btnSubmit.disabled = !(getDuracao()>0 && getManicureId() && inputData.value && dataHoraInicio.value);
-}
+    function guestDadosOk() {
+        if (!isGuest) return true;
+        const nome = document.getElementById('guestNome')?.value.trim();
+        const tel = (document.getElementById('guestTelefone')?.value || '').replace(/\D/g, '');
+        return !!(nome && tel.length >= 10);
+    }
 
-// Seleção do chip de horário — reserva temporária para evitar choque de horário
-let holdToken = null;
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-
-slotsGrid.addEventListener('click', async function(e) {
-    const chip = e.target.closest('.slot-chip');
-    if (!chip || chip.disabled) return;
-
-    try {
-        const r = await fetch('/api/slots/hold', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-            body: JSON.stringify({
-                manicure_id: getManicureId(),
-                data_hora_inicio: chip.dataset.dt,
-                duracao: getDuracao(),
-                token: holdToken,
-            }),
-        });
-        if (r.status === 409) {
-            chip.disabled = true;
-            chip.style.opacity = '0.4';
-            chip.title = 'Acabou de ser reservado';
-            window.showToast?.('Esse horário acabou de ser reservado. Escolha outro.', 'warning');
+    function atualizarResumo(duracao) {
+        if (!(duracao > 0)) {
+            resumoCard.classList.add('d-none');
             return;
         }
-        const j = await r.json();
-        holdToken = j.token || holdToken;
-    } catch (_) { /* sem rede: segue sem reserva */ }
+        const v = getValor(), h = Math.floor(duracao / 60), mm = duracao % 60;
+        resumoCard.classList.remove('d-none');
+        document.getElementById('resumoDuracao').textContent = h > 0 ? `${h}h ${mm}min` : `${mm}min`;
+        document.getElementById('resumoValor').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
+    }
 
-    slotsGrid.querySelectorAll('.slot-chip').forEach(c => c.classList.remove('selected'));
-    chip.classList.add('selected');
-    dataHoraInicio.value = chip.dataset.dt;
+    function verificarBotao() {
+        btnSubmit.disabled = !(getDuracao() > 0 && getManicureId()
+            && picker?.inputData?.value && picker?.getValue() && guestDadosOk());
+    }
+
+    const picker = window.createSlotPicker({
+        getManicureId,
+        getDuracao,
+        hold: true,
+        emptyHint: 'Selecione manicure, serviços e data para ver os horários.',
+        onChange: verificarBotao,
+        onSlotsLoaded: (slots, ctx) => {
+            if (slots?.length) atualizarResumo(ctx.duracao);
+            else resumoCard.classList.add('d-none');
+            verificarBotao();
+        },
+    });
+
+    document.querySelectorAll('.servico-check').forEach((c) => {
+        c.addEventListener('change', function () {
+            this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
+            picker?.load();
+        });
+    });
+    document.querySelectorAll('.manicure-radio').forEach((r) => {
+        r.addEventListener('change', function () {
+            document.querySelectorAll('.manicure-card').forEach((card) => card.classList.remove('selected'));
+            this.closest('label').querySelector('.manicure-card').classList.add('selected');
+            picker?.load();
+        });
+    });
+
+    ['guestNome', 'guestTelefone'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', verificarBotao);
+    });
+
+    // Restaura data a partir de old(data_hora_inicio) e recarrega chips
+    const oldDt = document.getElementById('dataHoraInicio')?.value;
+    if (oldDt && picker?.inputData) {
+        const dt = oldDt.replace(' ', 'T');
+        if (dt.length >= 10) {
+            picker.inputData.value = dt.slice(0, 10);
+            picker.load().then(() => {
+                picker.selectDatetime(oldDt);
+            });
+        }
+    }
+
+    // Resumo imediato se serviços já vinham marcados (old input)
+    if (getDuracao() > 0) atualizarResumo(getDuracao());
     verificarBotao();
 });
-
-document.querySelectorAll('.servico-check').forEach(c=>{
-    c.addEventListener('change', function() {
-        this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
-        carregarSlots();
-    });
-});
-document.querySelectorAll('.manicure-radio').forEach(r=>{
-    r.addEventListener('change', function() {
-        document.querySelectorAll('.manicure-card').forEach(c=>c.classList.remove('selected'));
-        this.closest('label').querySelector('.manicure-card').classList.add('selected');
-        carregarSlots();
-    });
-});
-inputData.addEventListener('change', carregarSlots);
 </script>
-@endauth
 </body>
 </html>

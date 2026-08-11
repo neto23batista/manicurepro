@@ -86,3 +86,28 @@ test('cliente não acessa o módulo de produtos', function () {
     $cliente = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->actingAs($cliente)->get('/dono/produtos')->assertForbidden();
 });
+
+test('cadastro sem estoque_minimo usa o limiar padrão da config', function () {
+    config(['manicure.estoque.minimo_padrao' => 4]);
+
+    $this->actingAs($this->dono)->post('/dono/produtos', [
+        'nome'          => 'Base Coat',
+        'preco_venda'   => 55,
+        'estoque_atual' => 8,
+        'unidade'       => 'un',
+    ])->assertRedirect('/dono/produtos');
+
+    $produto = Produto::where('nome', 'Base Coat')->first();
+    expect((float) $produto->estoque_minimo)->toBe(4.0);
+});
+
+test('index alerta quando há produtos com estoque baixo', function () {
+    novoProduto($this->salao->id, ['nome' => 'Top Coat', 'estoque_atual' => 1, 'estoque_minimo' => 3]);
+    novoProduto($this->salao->id, ['nome' => 'Esmalte OK', 'estoque_atual' => 20, 'estoque_minimo' => 3]);
+
+    $this->actingAs($this->dono)
+        ->get('/dono/produtos')
+        ->assertOk()
+        ->assertSee('produto(s) com estoque no mínimo ou zerado')
+        ->assertSee('1');
+});

@@ -8,7 +8,11 @@ class UpdateClienteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->salao_id !== null;
+        $cliente = $this->route('cliente');
+
+        return $cliente
+            ? ($this->user()?->can('update', $cliente) ?? false)
+            : false;
     }
 
     public function rules(): array
@@ -22,6 +26,10 @@ class UpdateClienteRequest extends FormRequest
             'endereco'         => ['nullable', 'string', 'max:500'],
             'observacoes'      => ['nullable', 'string', 'max:1000'],
             'alergias'         => ['nullable', 'string', 'max:500'],
+            'notas_unhas'      => ['nullable', 'string', 'max:2000'],
+            'cores_preferidas' => ['nullable', 'string', 'max:500'],
+            'contraindicacoes' => ['nullable', 'string', 'max:1000'],
+            'ultima_formula'   => ['nullable', 'string', 'max:2000'],
             'ativo'            => ['sometimes', 'boolean'],
         ];
     }

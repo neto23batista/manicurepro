@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HorarioFuncionamento extends Model
 {
@@ -21,7 +22,8 @@ class HorarioFuncionamento extends Model
         0 => 'Dom', 1 => 'Seg', 2 => 'Ter', 3 => 'Qua', 4 => 'Qui', 5 => 'Sex', 6 => 'Sáb',
     ];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }

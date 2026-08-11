@@ -4,10 +4,10 @@
     'showAuthButtons' => true,
 ])
 
-<nav class="navbar navbar-expand-lg sticky-top public-navbar">
+<nav class="navbar navbar-expand-lg sticky-top public-navbar" aria-label="Navegação pública">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
-            <div class="brand-logo-sm brand-logo-gradient">F</div>
+            <div class="brand-logo-sm brand-logo-gradient" aria-hidden="true">F</div>
             <span class="text-gradient public-brand-text">{{ config('app.name') }}</span>
         </a>
 

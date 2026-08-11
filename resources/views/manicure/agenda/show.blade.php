@@ -3,26 +3,49 @@
 @section('title', 'Detalhes do Agendamento')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+@php
+    $cliente = $agendamento->cliente;
+    $temAlergia = filled($cliente?->alergias);
+    $ehRisco = $cliente?->eh_risco_no_show;
+@endphp
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2 class="fw-bold mb-0">
         <i class="fa-solid fa-calendar-check me-2 text-pink"></i>Agendamento #{{ $agendamento->id }}
     </h2>
-    <a href="{{ route('manicure.agenda.index') }}" class="btn btn-outline-secondary">
+    <a href="{{ route('manicure.agenda.index', ['data' => $agendamento->data_hora_inicio->toDateString()]) }}"
+       class="btn btn-outline-secondary">
         <i class="fa-solid fa-arrow-left me-1"></i>Minha Agenda
     </a>
 </div>
+
+@if($temAlergia)
+    <div class="alert alert-danger alert-permanent d-flex align-items-start gap-2">
+        <i class="fas fa-exclamation-triangle mt-1" aria-hidden="true"></i>
+        <div>
+            <strong>Alergias do cliente:</strong> {{ $cliente->alergias }}
+        </div>
+    </div>
+@endif
+
+@if($ehRisco)
+    <div class="alert alert-warning alert-permanent d-flex align-items-start gap-2">
+        <i class="fas fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+        <div>
+            <strong>Atenção:</strong> este cliente já registra
+            {{ $cliente->total_faltas }} {{ \Illuminate\Support\Str::plural('falta', $cliente->total_faltas) }}
+            (não comparecimento). Considere confirmar presença com antecedência.
+        </div>
+    </div>
+@endif
 
 <div class="row g-4">
     <div class="col-lg-8">
         {{-- Status Card --}}
         <div class="card shadow-sm mb-4">
             <div class="card-body p-4">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <span class="badge fs-6 px-3 py-2"
-                          style="background-color: {{ $agendamento->status_color }}">
-                        <i class="fa-solid fa-circle me-1" style="font-size:8px"></i>
-                        {{ $agendamento->status_label }}
-                    </span>
+                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                    <x-badge-status :status="$agendamento->status" class="fs-6 px-3 py-2" />
                     <span class="text-muted small">
                         <i class="fa-solid fa-clock me-1"></i>
                         {{ $agendamento->data_hora_inicio->format('d/m/Y \à\s H:i') }}
@@ -53,7 +76,9 @@
                             <span class="badge bg-light text-dark border">
                                 @switch($agendamento->origem)
                                     @case('app') <i class="fa-solid fa-mobile me-1"></i>App @break
+                                    @case('web')
                                     @case('site') <i class="fa-solid fa-globe me-1"></i>Site @break
+                                    @case('guest') <i class="fa-solid fa-user me-1"></i>Convidado @break
                                     @case('telefone') <i class="fa-solid fa-phone me-1"></i>Telefone @break
                                     @default <i class="fa-solid fa-store me-1"></i>Presencial
                                 @endswitch
@@ -101,6 +126,85 @@
             </div>
             <div class="card-body">
                 <p class="mb-0">{{ $agendamento->observacoes }}</p>
+            </div>
+        </div>
+        @endif
+
+        {{-- Ficha de unhas --}}
+        @if($agendamento->cliente)
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-hand-sparkles me-2 text-pink"></i>Ficha de unhas</h6>
+            </div>
+            <div class="card-body">
+                @if($cliente->contraindicacoes)
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <strong><i class="fas fa-ban me-1"></i>Contraindicações:</strong> {{ $cliente->contraindicacoes }}
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('manicure.agenda.ficha', $agendamento) }}">
+                    @csrf @method('PATCH')
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small" for="notas_unhas">Notas das unhas</label>
+                            <textarea name="notas_unhas" id="notas_unhas" rows="2" maxlength="2000"
+                                      class="form-control form-control-sm @error('notas_unhas') is-invalid @enderror">{{ old('notas_unhas', $cliente->notas_unhas) }}</textarea>
+                            @error('notas_unhas') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small" for="cores_preferidas">Cores preferidas</label>
+                            <textarea name="cores_preferidas" id="cores_preferidas" rows="2" maxlength="500"
+                                      class="form-control form-control-sm @error('cores_preferidas') is-invalid @enderror">{{ old('cores_preferidas', $cliente->cores_preferidas) }}</textarea>
+                            @error('cores_preferidas') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small" for="contraindicacoes">Contraindicações</label>
+                            <textarea name="contraindicacoes" id="contraindicacoes" rows="2" maxlength="1000"
+                                      class="form-control form-control-sm @error('contraindicacoes') is-invalid @enderror">{{ old('contraindicacoes', $cliente->contraindicacoes) }}</textarea>
+                            @error('contraindicacoes') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small" for="ultima_formula">Última fórmula</label>
+                            <textarea name="ultima_formula" id="ultima_formula" rows="2" maxlength="2000"
+                                      class="form-control form-control-sm @error('ultima_formula') is-invalid @enderror">{{ old('ultima_formula', $cliente->ultima_formula) }}</textarea>
+                            @error('ultima_formula') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check mb-2">
+                                <input type="hidden" name="registrar_visita" value="0">
+                                <input class="form-check-input" type="checkbox" name="registrar_visita" value="1"
+                                       id="registrar_visita" {{ old('registrar_visita') ? 'checked' : '' }}>
+                                <label class="form-check-label small" for="registrar_visita">
+                                    Registrar no histórico desta visita
+                                </label>
+                            </div>
+                            <label class="form-label fw-semibold small" for="notas_visita">Nota da visita (opcional)</label>
+                            <textarea name="notas_visita" id="notas_visita" rows="2" maxlength="2000"
+                                      class="form-control form-control-sm @error('notas_visita') is-invalid @enderror"
+                                      placeholder="O que foi feito hoje...">{{ old('notas_visita') }}</textarea>
+                            @error('notas_visita') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-pink btn-sm">
+                                <i class="fas fa-save me-1"></i>Salvar ficha
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                @if($cliente->fichaHistorico->isNotEmpty())
+                    <hr class="my-3">
+                    <small class="text-muted fw-semibold d-block mb-2">Histórico recente</small>
+                    @foreach($cliente->fichaHistorico as $entrada)
+                        <div class="small text-muted {{ !$loop->last ? 'mb-2 pb-2 border-bottom' : '' }}">
+                            <div>{{ $entrada->created_at->format('d/m/Y H:i') }}</div>
+                            @if($entrada->cores)<div>Cores: {{ $entrada->cores }}</div>@endif
+                            @if($entrada->formula)<div>Fórmula: {{ $entrada->formula }}</div>@endif
+                            @if($entrada->notas)<div>{{ $entrada->notas }}</div>@endif
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
         @endif
@@ -158,14 +262,9 @@
                 @endif
 
                 @if($agendamento->status === 'em_andamento')
-                    <form action="{{ route('manicure.agenda.status', $agendamento) }}" method="POST"
-                          data-confirm="Finalizar atendimento?" data-confirm-message="Confirmar a conclusão do atendimento?" data-confirm-type="success" data-confirm-ok="Finalizar">
-                        @csrf @method('PATCH')
-                        <input type="hidden" name="status" value="concluido">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fa-solid fa-flag-checkered me-1"></i>Finalizar Atendimento
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#modalFinalizarShow">
+                        <i class="fa-solid fa-flag-checkered me-1"></i>Finalizar Atendimento
+                    </button>
                 @endif
 
                 @if($agendamento->podeSerCancelado())
@@ -179,7 +278,8 @@
                     </form>
                 @endif
 
-                <a href="{{ route('manicure.agenda.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('manicure.agenda.index', ['data' => $agendamento->data_hora_inicio->toDateString()]) }}"
+                   class="btn btn-outline-secondary">
                     <i class="fa-solid fa-calendar me-1"></i>Ver Agenda
                 </a>
             </div>
@@ -207,10 +307,31 @@
                             <span class="text-muted">Total gasto</span>
                             <strong class="text-pink">R$ {{ number_format($agendamento->cliente->total_gasto, 2, ',', '.') }}</strong>
                         </li>
-                        <li class="d-flex justify-content-between py-1">
+                        <li class="d-flex justify-content-between py-1 border-bottom">
                             <span class="text-muted">Pontos fidelidade</span>
                             <strong>{{ $agendamento->cliente->pontos_fidelidade }} pts</strong>
                         </li>
+                        <li class="d-flex justify-content-between py-1 {{ $temAlergia || $ehRisco ? 'border-bottom' : '' }}">
+                            <span class="text-muted">Faltas</span>
+                            <strong class="{{ $ehRisco ? 'text-warning' : '' }}">{{ $agendamento->cliente->total_faltas }}</strong>
+                        </li>
+                        @if($temAlergia)
+                            <li class="py-2">
+                                <span class="text-muted d-block mb-1">Alergias</span>
+                                <span class="badge bg-red-light text-danger text-wrap text-start w-100">
+                                    <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i>
+                                    {{ $agendamento->cliente->alergias }}
+                                </span>
+                            </li>
+                        @endif
+                        @if($ehRisco)
+                            <li class="pt-2">
+                                <span class="badge bg-yellow-light text-dark text-wrap text-start w-100">
+                                    <i class="fas fa-user-clock me-1" aria-hidden="true"></i>
+                                    Risco de não comparecimento
+                                </span>
+                            </li>
+                        @endif
                     </ul>
                 @else
                     <p class="text-muted small mb-0">
@@ -222,8 +343,59 @@
         </div>
     </div>
 </div>
+
+@if($agendamento->status === 'em_andamento')
+<div class="modal fade" id="modalFinalizarShow" tabindex="-1" aria-labelledby="modalFinalizarShowLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFinalizarShowLabel">Finalizar Atendimento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="POST" action="{{ route('manicure.agenda.status', $agendamento) }}" class="agenda-status-form">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="concluido">
+                <div class="modal-body">
+                    <p class="mb-1"><strong>Cliente:</strong> {{ $agendamento->nome_cliente_exibido }}</p>
+                    <p class="mb-1"><strong>Serviços:</strong> {{ $agendamento->servicos->pluck('nome')->implode(', ') }}</p>
+                    <p class="mb-3"><strong>Valor:</strong> R$ {{ number_format($agendamento->valor_total, 2, ',', '.') }}</p>
+                    @if($temAlergia)
+                        <div class="alert alert-danger py-2 small">
+                            <i class="fas fa-exclamation-triangle me-1" aria-hidden="true"></i>
+                            <strong>Alergias:</strong> {{ $cliente->alergias }}
+                        </div>
+                    @endif
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="formaPagamentoShow">Forma de Pagamento</label>
+                        <select name="forma_pagamento" id="formaPagamentoShow" class="form-select" required>
+                            @foreach(\App\Models\Pagamento::FORMAS_LABELS as $val => $label)
+                                <option value="{{ $val }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="gorjetaShow">Gorjeta (opcional)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" name="gorjeta" id="gorjetaShow" class="form-control"
+                                   min="0" step="0.01" value="0" placeholder="0,00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-pink">
+                        <i class="fas fa-check me-2" aria-hidden="true"></i> Finalizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
+@push('styles')
 <style>
 .avatar-circle {
     width: 50px;
@@ -238,3 +410,18 @@
     font-size: 1.2rem;
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.querySelectorAll('.agenda-status-form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+        const btn = form.querySelector('button[type="submit"]');
+        if (!btn || btn.dataset.submitting === '1') return;
+        btn.dataset.submitting = '1';
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Salvando…';
+    });
+});
+</script>
+@endpush

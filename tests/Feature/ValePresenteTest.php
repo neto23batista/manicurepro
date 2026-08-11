@@ -117,6 +117,53 @@ test('vale cancelado não pode ser aplicado', function () {
         ->assertSessionHasErrors('error');
 });
 
+test('vale já usado não pode ser aplicado de novo (double redeem)', function () {
+    $vale = valeAtivo($this->salao->id, 100);
+
+    $this->actingAs($this->dono)->post(route('dono.agendamentos.vale', $this->agendamento), [
+        'codigo' => 'VP-TESTE01',
+    ])->assertSessionHasNoErrors();
+
+    expect($vale->fresh()->status)->toBe(ValePresente::STATUS_USADO);
+
+    $this->actingAs($this->dono)->post(route('dono.agendamentos.vale', $this->agendamento), [
+        'codigo' => 'VP-TESTE01',
+    ])->assertSessionHasErrors('error');
+
+    expect((float) $vale->fresh()->saldo)->toBe(0.0);
+});
+
+test('resgate parcial deixa saldo para outro atendimento', function () {
+    $vale = valeAtivo($this->salao->id, 150);
+
+    $this->actingAs($this->dono)->post(route('dono.agendamentos.vale', $this->agendamento), [
+        'codigo' => 'VP-TESTE01',
+    ])->assertSessionHasNoErrors();
+
+    expect((float) $vale->fresh()->saldo)->toBe(50.0)
+        ->and($vale->fresh()->status)->toBe(ValePresente::STATUS_ATIVO);
+
+    $inicio = now()->addDays(2)->setTime(11, 0);
+    $outro = Agendamento::factory()->create([
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'cliente_id'       => $this->cliente->id,
+        'data_hora_inicio' => $inicio,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(60),
+        'status'           => 'em_andamento',
+        'valor_total'      => 40,
+        'valor_desconto'   => 0,
+    ]);
+
+    $this->actingAs($this->dono)->post(route('dono.agendamentos.vale', $outro), [
+        'codigo' => 'VP-TESTE01',
+    ])->assertSessionHasNoErrors();
+
+    expect((float) $vale->fresh()->saldo)->toBe(10.0)
+        ->and($vale->fresh()->status)->toBe(ValePresente::STATUS_ATIVO)
+        ->and((float) $outro->fresh()->comanda->total_pago)->toBe(40.0);
+});
+
 test('dono cancela vale e ele deixa de ser aplicável', function () {
     $vale = valeAtivo($this->salao->id, 50);
 

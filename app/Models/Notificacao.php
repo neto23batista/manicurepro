@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Cache;
 
 class Notificacao extends Model
@@ -15,8 +16,8 @@ class Notificacao extends Model
     ];
 
     protected $casts = [
-        'lida' => 'boolean',
-        'dados' => 'array',
+        'lida'    => 'boolean',
+        'dados'   => 'array',
         'lida_em' => 'datetime',
     ];
 
@@ -25,14 +26,15 @@ class Notificacao extends Model
      */
     protected static function booted(): void
     {
-        $invalidate = fn(Notificacao $n) => Cache::forget("user:{$n->user_id}:notif_topbar");
+        $invalidate = fn (Notificacao $n) => Cache::forget("user:{$n->user_id}:notif_topbar");
 
         static::created($invalidate);
         static::updated($invalidate);
         static::deleted($invalidate);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

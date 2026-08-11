@@ -11,6 +11,7 @@
             <strong>Atenção:</strong> este cliente já registra
             {{ $agendamento->cliente->total_faltas }} {{ \Illuminate\Support\Str::plural('falta', $agendamento->cliente->total_faltas) }}
             (não comparecimento). Considere confirmar presença com antecedência.
+            <x-badge-no-show :cliente="$agendamento->cliente" class="ms-2" />
         </div>
     </div>
 @endif
@@ -301,6 +302,20 @@
                     </form>
                 @endif
 
+                @if($agendamento->status === 'concluido' && config('manicure.fiscal.enabled'))
+                    <form method="POST" action="{{ route('dono.notas-fiscais.store') }}">
+                        @csrf
+                        <input type="hidden" name="agendamento_id" value="{{ $agendamento->id }}">
+                        <button type="submit" class="btn btn-outline-secondary w-100"
+                                title="Stub local — NÃO emite SEFAZ">
+                            <i class="fas fa-file-invoice me-2"></i> Gerar rascunho NF-e (stub)
+                        </button>
+                    </form>
+                    <a href="{{ route('dono.notas-fiscais.index') }}" class="btn btn-ghost btn-sm text-muted">
+                        Ver rascunhos fiscais
+                    </a>
+                @endif
+
                 <a href="{{ route('dono.agendamentos.index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i> Voltar
                 </a>
@@ -328,6 +343,14 @@
                                 <option value="{{ $val }}">{{ $label }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="gorjeta">Gorjeta (opcional)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" name="gorjeta" id="gorjeta" class="form-control"
+                                   min="0" step="0.01" value="{{ old('gorjeta', 0) }}" placeholder="0,00">
+                        </div>
                     </div>
                     <div class="alert alert-info">
                         <strong>Total a receber:</strong>

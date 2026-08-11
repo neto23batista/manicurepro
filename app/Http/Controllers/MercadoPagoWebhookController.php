@@ -17,7 +17,7 @@ class MercadoPagoWebhookController extends Controller
      */
     public function handle(Request $request): JsonResponse
     {
-        if (!$this->assinaturaValida($request)) {
+        if (! $this->assinaturaValida($request)) {
             return response()->json(['error' => 'assinatura inválida'], 401);
         }
 
@@ -29,7 +29,7 @@ class MercadoPagoWebhookController extends Controller
 
         $paymentId = $request->input('data.id', $request->query('id'));
 
-        if (!$paymentId) {
+        if (! $paymentId) {
             return response()->json(['ok' => true]);
         }
 
@@ -44,14 +44,14 @@ class MercadoPagoWebhookController extends Controller
 
     /**
      * Valida a assinatura do webhook (cabeçalho x-signature, HMAC-SHA256).
-     * Se MP_WEBHOOK_SECRET não estiver configurado, não bloqueia — o status
-     * é sempre reconfirmado na API da Mercado Pago de qualquer forma.
+     * Se Mercado Pago estiver habilitado e o secret ausente, rejeita (fail-closed).
+     * Fora disso, sem secret também rejeita — nunca aceitar webhooks anônimos.
      */
     private function assinaturaValida(Request $request): bool
     {
         $secret = config('manicure.pagamento.mercadopago.webhook_secret');
-        if (!$secret) {
-            return true;
+        if (! $secret) {
+            return false;
         }
 
         $xSignature = (string) $request->header('x-signature', '');
@@ -62,11 +62,15 @@ class MercadoPagoWebhookController extends Controller
         $v1 = null;
         foreach (explode(',', $xSignature) as $parte) {
             [$chave, $valor] = array_pad(explode('=', trim($parte), 2), 2, null);
-            if ($chave === 'ts') $ts = $valor;
-            if ($chave === 'v1') $v1 = $valor;
+            if ($chave === 'ts') {
+                $ts = $valor;
+            }
+            if ($chave === 'v1') {
+                $v1 = $valor;
+            }
         }
 
-        if (!$ts || !$v1) {
+        if (! $ts || ! $v1) {
             return false;
         }
 

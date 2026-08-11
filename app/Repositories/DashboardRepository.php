@@ -6,6 +6,7 @@ use App\Enums\AgendamentoStatus;
 use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Manicure;
+use App\Models\Produto;
 use App\Models\Salao;
 use App\Models\Servico;
 use App\Models\User;
@@ -41,9 +42,8 @@ class DashboardRepository
 
     public function topSaloes(int $limit = 5)
     {
-        return Salao::withCount(['agendamentos' => fn($q) =>
-                $q->whereMonth('data_hora_inicio', now()->month)
-            ])
+        return Salao::withCount(['agendamentos' => fn ($q) => $q->whereMonth('data_hora_inicio', now()->month),
+        ])
             ->withAvg('avaliacoes as nota_media_calc', 'nota')
             ->orderByDesc('agendamentos_count')
             ->take($limit)
@@ -82,6 +82,7 @@ class DashboardRepository
         return collect(range($meses - 1, 0))->reverse()->map(function ($i) use ($rows) {
             $mes = now()->subMonths($i);
             $row = $rows->get($mes->format('Y-m'));
+
             return [
                 'mes'         => $mes->format('M/Y'),
                 'total'       => (int) ($row->total ?? 0),
@@ -92,28 +93,43 @@ class DashboardRepository
 
     // ===== DONO =====
 
+    /** Eager-load cliente (total_faltas column powers eh_risco_no_show). */
+    private function withClienteFaltas(): array
+    {
+        return [
+            'manicure',
+            'servicos',
+            'cliente',
+        ];
+    }
+
     public function donoResumoHoje(Salao $salao): array
     {
         $hojeAgs = $salao->agendamentos()
             ->whereDate('data_hora_inicio', today())
-            ->with(['manicure', 'servicos', 'cliente'])
+            ->with($this->withClienteFaltas())
             ->orderBy('data_hora_inicio')
             ->get();
 
         $concluido = AgendamentoStatus::Concluido->value;
+        $riscoHoje = $hojeAgs
+            ->filter(fn ($ag) => $ag->cliente?->eh_risco_no_show)
+            ->unique('cliente_id')
+            ->values();
 
         return [
-            'agendamentosHoje' => $hojeAgs,
-            'totalHoje'        => $hojeAgs->count(),
-            'concluidosHoje'   => $hojeAgs->where('status', $concluido)->count(),
-            'faturamentoHoje'  => (float) $hojeAgs->where('status', $concluido)->sum('valor_total'),
+            'agendamentosHoje'  => $hojeAgs,
+            'totalHoje'         => $hojeAgs->count(),
+            'concluidosHoje'    => $hojeAgs->where('status', $concluido)->count(),
+            'faturamentoHoje'   => (float) $hojeAgs->where('status', $concluido)->sum('valor_total'),
+            'clientesRiscoHoje' => $riscoHoje,
         ];
     }
 
     public function donoResumoMes(Salao $salao): array
     {
         return [
-            'totalMes' => $salao->agendamentos()->doMes()->count(),
+            'totalMes'       => $salao->agendamentos()->doMes()->count(),
             'faturamentoMes' => (float) $salao->agendamentos()
                 ->concluidos()
                 ->doMes()
@@ -125,8 +141,7 @@ class DashboardRepository
     public function donoManicures(Salao $salao)
     {
         return $salao->manicures()
-            ->withCount(['agendamentos as agendamentos_hoje' => fn($q) =>
-                $q->whereDate('data_hora_inicio', today())
+            ->withCount(['agendamentos as agendamentos_hoje' => fn ($q) => $q->whereDate('data_hora_inicio', today()),
             ])
             ->withAvg('avaliacoes as nota_media_calc', 'nota')
             ->get();
@@ -141,7 +156,7 @@ class DashboardRepository
                 AgendamentoStatus::NaoCompareceu->value,
                 AgendamentoStatus::Concluido->value,
             ])
-            ->with(['manicure', 'servicos', 'cliente'])
+            ->with($this->withClienteFaltas())
             ->orderBy('data_hora_inicio')
             ->take($limit)
             ->get();
@@ -151,29 +166,38 @@ class DashboardRepository
     {
         return collect(range(6, 0))->reverse()->map(function ($i) use ($salao) {
             $dia = now()->subDays($i);
+
             return [
-                'dia'         => $dia->format('d/m'),
-                'total'       => $salao->agendamentos()
-                                     ->whereDate('data_hora_inicio', $dia->toDateString())
-                                     ->count(),
+                'dia'   => $dia->format('d/m'),
+                'total' => $salao->agendamentos()
+                    ->whereDate('data_hora_inicio', $dia->toDateString())
+                    ->count(),
                 'faturamento' => (float) $salao->agendamentos()
-                                      ->concluidos()
-                                      ->whereDate('data_hora_inicio', $dia->toDateString())
-                                      ->sum('valor_total'),
+                    ->concluidos()
+                    ->whereDate('data_hora_inicio', $dia->toDateString())
+                    ->sum('valor_total'),
             ];
         })->values();
     }
 
     public function donoServicosPopulares(Salao $salao, int $limit = 5)
     {
-        return Servico::withCount(['agendamentos as total_mes' => fn($q) =>
-                $q->where('agendamentos.salao_id', $salao->id)
-                  ->whereMonth('agendamentos.data_hora_inicio', now()->month)
-            ])
+        return Servico::withCount(['agendamentos as total_mes' => fn ($q) => $q->where('agendamentos.salao_id', $salao->id)
+            ->whereMonth('agendamentos.data_hora_inicio', now()->month),
+        ])
             ->where('salao_id', $salao->id)
             ->orderByDesc('total_mes')
             ->take($limit)
             ->get();
+    }
+
+    /** Quantidade de produtos ativos com estoque no mínimo ou abaixo. */
+    public function donoBaixoEstoque(Salao $salao): int
+    {
+        return Produto::where('salao_id', $salao->id)
+            ->where('ativo', true)
+            ->estoqueBaixo()
+            ->count();
     }
 
     // ===== MANICURE =====
@@ -212,10 +236,10 @@ class DashboardRepository
                 ->concluidos()
                 ->doMes()
                 ->count(),
-            'faturamentoMes' => $faturamentoMes,
-            'comissaoMes'    => $faturamentoMes * ($manicure->comissao / 100),
-            'notaMedia'      => $manicure->nota_media,
-            'totalAvaliacoes'=> $manicure->avaliacoes()->count(),
+            'faturamentoMes'  => $faturamentoMes,
+            'comissaoMes'     => $faturamentoMes * ($manicure->comissao / 100),
+            'notaMedia'       => $manicure->nota_media,
+            'totalAvaliacoes' => $manicure->avaliacoes()->count(),
         ];
     }
 

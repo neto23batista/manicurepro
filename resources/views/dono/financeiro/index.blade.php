@@ -33,6 +33,14 @@
                 <small class="text-muted">
                     {{ $inicio->format('d/m/Y') }} — {{ $fim->format('d/m/Y') }}
                 </small>
+                @if(config('manicure.fiscal.enabled'))
+                    <div class="mt-1">
+                        <a href="{{ route('dono.notas-fiscais.index') }}" class="btn btn-sm btn-outline-secondary"
+                           title="Stub local — NÃO emite SEFAZ">
+                            <i class="fas fa-file-invoice me-1"></i>Notas fiscais (stub)
+                        </a>
+                    </div>
+                @endif
             </div>
         </form>
     </div>
@@ -40,7 +48,7 @@
 
 {{-- Cards-resumo --}}
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-pink h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -54,7 +62,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
@@ -67,15 +75,31 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="small text-uppercase text-muted">Comissões a pagar</div>
-                        <div class="fs-3 fw-bold text-danger">@money($totalComissoes)</div>
+                        <div class="fs-3 fw-bold text-danger">@money($totalAPagar)</div>
                     </div>
                     <i class="fas fa-hand-holding-dollar fa-2x text-danger opacity-50"></i>
+                </div>
+                @if($totalPago > 0)
+                    <div class="small text-muted mt-1">Gerado: @money($totalComissoes)</div>
+                @endif
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="small text-uppercase text-muted">Já repassado</div>
+                        <div class="fs-3 fw-bold text-success">@money($totalPago)</div>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x text-success opacity-50"></i>
                 </div>
             </div>
         </div>
@@ -140,6 +164,7 @@
                                     <th class="text-end">Serviços</th>
                                     <th class="text-center">Taxa</th>
                                     <th class="text-end">Comissão</th>
+                                    <th class="text-end">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -156,6 +181,42 @@
                                             @endif
                                         </td>
                                         <td class="text-end fw-bold">@money($c['comissao'])</td>
+                                        <td class="text-end">
+                                            @if($c['pago'])
+                                                <span class="badge text-bg-success">Pago</span>
+                                                @if($c['pagamento_id'])
+                                                    <form method="POST"
+                                                          action="{{ route('dono.financeiro.comissoes.destroy', $c['pagamento_id']) }}"
+                                                          class="d-inline"
+                                                          data-confirm="Desfazer repasse?"
+                                                          data-confirm-message="A comissão voltará a constar como a pagar."
+                                                          data-confirm-ok="Desfazer">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-link btn-sm text-muted p-0 ms-1" title="Desfazer">
+                                                            <i class="fas fa-undo"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @elseif($c['manicure_id'] && $c['comissao'] > 0)
+                                                <form method="POST" action="{{ route('dono.financeiro.comissoes.store') }}" class="d-inline"
+                                                      data-confirm="Marcar como pago?"
+                                                      data-confirm-message="Registrar repasse de {{ $c['nome'] }} no período selecionado."
+                                                      data-confirm-type="success"
+                                                      data-confirm-ok="Marcar pago">
+                                                    @csrf
+                                                    <input type="hidden" name="manicure_id" value="{{ $c['manicure_id'] }}">
+                                                    <input type="hidden" name="data_inicio" value="{{ $inicio->toDateString() }}">
+                                                    <input type="hidden" name="data_fim" value="{{ $fim->toDateString() }}">
+                                                    <input type="hidden" name="periodo" value="{{ $periodo }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                                        <i class="fas fa-check me-1"></i>Marcar pago
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -165,6 +226,7 @@
                                     <td class="text-end">@money($totalServicos)</td>
                                     <td></td>
                                     <td class="text-end">@money($totalComissoes)</td>
+                                    <td class="text-end text-danger">@money($totalAPagar)</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -172,11 +234,112 @@
                     <p class="text-muted small p-3 mb-0">
                         <i class="fas fa-circle-info me-1"></i>
                         A taxa de comissão de cada profissional é definida no cadastro de manicures. Produtos não entram na base.
+                        Marcar como pago registra o repasse deste período filtrado.
                     </p>
                 @else
                     <div class="empty-state py-4">
                         <div class="empty-state-icon"><i class="fas fa-hand-sparkles"></i></div>
                         <p class="mb-0">Nenhum atendimento concluído no período.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Repasses do período + histórico --}}
+<div class="row g-4 mt-1">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-money-bill-transfer text-pink me-2"></i>Repasses neste período</h5>
+            </div>
+            <div class="card-body p-0">
+                @if($repasses->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Profissional</th>
+                                    <th class="text-end">Valor</th>
+                                    <th>Pago em</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($repasses as $r)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $r->manicure?->nome ?? '—' }}</td>
+                                        <td class="text-end">@money($r->valor)</td>
+                                        <td>
+                                            <span>{{ $r->pago_em->format('d/m/Y H:i') }}</span>
+                                            @if($r->observacao)
+                                                <div class="small text-muted">{{ $r->observacao }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            <form method="POST"
+                                                  action="{{ route('dono.financeiro.comissoes.destroy', $r) }}"
+                                                  data-confirm="Desfazer repasse?"
+                                                  data-confirm-message="A comissão voltará a constar como a pagar."
+                                                  data-confirm-ok="Desfazer">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Desfazer">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="empty-state py-4">
+                        <div class="empty-state-icon"><i class="fas fa-money-bill-transfer"></i></div>
+                        <p class="mb-0">Nenhum repasse registrado neste período.</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-clock-rotate-left text-pink me-2"></i>Histórico recente</h5>
+            </div>
+            <div class="card-body p-0">
+                @if($historico->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Profissional</th>
+                                    <th>Período</th>
+                                    <th class="text-end">Valor</th>
+                                    <th>Pago em</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($historico as $h)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $h->manicure?->nome ?? '—' }}</td>
+                                        <td class="small text-muted">
+                                            {{ $h->periodo_inicio->format('d/m/Y') }} — {{ $h->periodo_fim->format('d/m/Y') }}
+                                        </td>
+                                        <td class="text-end">@money($h->valor)</td>
+                                        <td class="small">{{ $h->pago_em->format('d/m/Y H:i') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="empty-state py-4">
+                        <div class="empty-state-icon"><i class="fas fa-clock-rotate-left"></i></div>
+                        <p class="mb-0">Nenhum repasse registrado ainda.</p>
                     </div>
                 @endif
             </div>

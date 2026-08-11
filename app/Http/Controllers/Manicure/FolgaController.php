@@ -12,8 +12,9 @@ class FolgaController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', FolgaManicure::class);
+
         $manicure = auth()->user()->manicure;
-        if (!$manicure) abort(403);
 
         $folgas = $manicure->folgas()
             ->where('data', '>=', today()->subDays(30))
@@ -25,6 +26,8 @@ class FolgaController extends Controller
 
     public function store(StoreFolgaManicureRequest $request)
     {
+        $this->authorize('create', FolgaManicure::class);
+
         $manicure = auth()->user()->manicure;
         $data = $request->validated();
 
@@ -51,13 +54,14 @@ class FolgaController extends Controller
         ]);
 
         return redirect()->route('manicure.folgas.index')
-            ->with('success', 'Folga cadastrada!');
+            ->with('success', 'Folga cadastrada. Sua agenda ficou bloqueada nesse período.');
     }
 
     public function destroy(FolgaManicure $folga)
     {
-        if ($folga->manicure_id !== auth()->user()->manicure?->id) abort(403);
+        $this->authorize('delete', $folga);
         $folga->delete();
-        return back()->with('success', 'Folga removida.');
+
+        return back()->with('success', 'Folga removida. A agenda volta a aceitar agendamentos nessa data.');
     }
 }

@@ -3,68 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ec4899">
+    <meta name="application-name" content="Fernanda Silva Nails">
+    <meta name="apple-mobile-web-app-title" content="Fernanda Nails">
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>Sem conexão — Fernanda Silva Nails</title>
     <style>
+        :root {
+            --pink: #ec4899;
+            --pink-deep: #be135c;
+            --violet: #a855f7;
+            --bg-0: #fff1f8;
+            --bg-1: #fce7f3;
+            --ink: #1f1220;
+            --muted: #6b4a5c;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #e91e8c, #9c27b0);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            padding: 24px;
+            color: var(--ink);
+            font-family: Georgia, 'Times New Roman', 'Segoe UI', serif;
+            background:
+                radial-gradient(ellipse 80% 60% at 15% 10%, rgba(236, 72, 153, 0.28), transparent 55%),
+                radial-gradient(ellipse 70% 50% at 90% 85%, rgba(168, 85, 247, 0.22), transparent 50%),
+                linear-gradient(165deg, var(--bg-0) 0%, var(--bg-1) 55%, #f5e9ff 100%);
+        }
+        .shell {
+            width: 100%;
+            max-width: 420px;
             text-align: center;
         }
-        .container {
-            max-width: 400px;
-            padding: 40px 32px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.2);
+        .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 36px;
         }
         .logo {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 20px;
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #a855f7 100%);
+            box-shadow:
+                0 12px 32px rgba(236, 72, 153, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+        .brand-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .brand-sub {
+            margin-top: -6px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+        }
+        p {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--muted);
+            margin-bottom: 28px;
+        }
+        .actions {
             display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
-            font-weight: 900;
-            margin: 0 auto 24px;
-        }
-        h1 { font-size: 28px; margin-bottom: 12px; }
-        p { font-size: 16px; opacity: 0.85; line-height: 1.6; margin-bottom: 28px; }
-        .icon { font-size: 60px; margin-bottom: 16px; }
-        button {
-            background: white;
-            color: #e91e8c;
-            border: none;
-            padding: 14px 32px;
-            border-radius: 50px;
-            font-size: 16px;
+            min-height: 48px;
+            padding: 0 28px;
+            border-radius: 999px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.95rem;
             font-weight: 700;
+            text-decoration: none;
+            border: none;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
-        button:hover { transform: translateY(-2px); }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:focus-visible {
+            outline: 3px solid rgba(236, 72, 153, 0.45);
+            outline-offset: 2px;
+        }
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, #ec4899 0%, #d946ef 55%, #a855f7 100%);
+            box-shadow: 0 10px 24px rgba(236, 72, 153, 0.28);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 14px 28px rgba(236, 72, 153, 0.36);
+        }
+        .btn-ghost {
+            color: var(--pink-deep);
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(236, 72, 153, 0.28);
+        }
+        .status {
+            margin-top: 28px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #f43f5e;
+            vertical-align: middle;
+            box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">📡</div>
-        <div class="logo">F</div>
+    <main class="shell">
+        <header class="brand">
+            <div class="logo" aria-hidden="true">F</div>
+            <div class="brand-name">Fernanda Silva Nails</div>
+            <div class="brand-sub">Estúdio de unhas</div>
+        </header>
+
         <h1>Sem conexão</h1>
         <p>
-            Parece que você está sem internet.<br>
-            Verifique sua conexão e tente novamente.
+            Não foi possível carregar esta página agora.<br>
+            Confira sua internet e tente de novo — seus agendamentos
+            ficam disponíveis assim que a conexão voltar.
         </p>
-        <button onclick="window.location.reload()">
-            🔄 Tentar Novamente
-        </button>
-    </div>
+
+        <div class="actions">
+            <a class="btn btn-primary" href="/" id="btn-retry">Tentar novamente</a>
+            <a class="btn btn-ghost" href="/">Ir para o início</a>
+        </div>
+
+        <p class="status"><span class="dot" aria-hidden="true"></span>Modo offline</p>
+    </main>
+    <script>
+        (function () {
+            var btn = document.getElementById('btn-retry');
+            if (!btn) return;
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.reload();
+            });
+        })();
+    </script>
 </body>
 </html>

@@ -6,6 +6,9 @@
 import * as bootstrap from 'bootstrap';
 import ApexCharts from 'apexcharts';
 
+// Slot picker compartilhado (agendar / reagendar) — expõe window.createSlotPicker
+import './booking-slots.js';
+
 // Expor globalmente para uso em scripts inline nas views
 window.bootstrap = bootstrap;
 window.ApexCharts = ApexCharts;
@@ -21,15 +24,22 @@ document.addEventListener('DOMContentLoaded', function () {
         backdrop.className = 'sidebar-backdrop';
         document.body.appendChild(backdrop);
 
+        const setExpanded = function (aberto) {
+            sidebarToggle.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+            sidebarToggle.setAttribute('aria-label', aberto ? 'Fechar menu lateral' : 'Abrir menu lateral');
+        };
+
         const openSidebar = function () {
             sidebar.classList.add('open');
             backdrop.classList.add('show');
             document.body.classList.add('sidebar-open');
+            setExpanded(true);
         };
         const closeSidebar = function () {
             sidebar.classList.remove('open');
             backdrop.classList.remove('show');
             document.body.classList.remove('sidebar-open');
+            setExpanded(false);
         };
 
         sidebarToggle.addEventListener('click', function () {
@@ -132,6 +142,13 @@ document.addEventListener('DOMContentLoaded', function () {
         new bootstrap.Tooltip(el);
     });
 
+    // ---- Modais: reforça aria-modal (Bootstrap já faz focus trap / restore) ----
+    document.querySelectorAll('.modal').forEach(function (modalEl) {
+        if (!modalEl.hasAttribute('aria-modal')) {
+            modalEl.setAttribute('aria-modal', 'true');
+        }
+    });
+
     // ---- PWA Install Prompt ----
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', function (e) {
@@ -162,7 +179,9 @@ document.addEventListener('DOMContentLoaded', function () {
             || (['localhost', '127.0.0.1', '[::1]'].indexOf(location.hostname) !== -1 ? 'local' : 'production');
 
         if (appEnv === 'production') {
-            navigator.serviceWorker.register('/sw.js').catch(function (err) {
+            navigator.serviceWorker.register('/sw.js').then(function (reg) {
+                subscribeWebPushIfConfigured(reg);
+            }).catch(function (err) {
                 console.warn('SW registration failed:', err);
             });
         } else {
@@ -177,6 +196,63 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 });
+
+/**
+ * Web Push — só tenta se meta vapid-public-key estiver presente (VAPID no .env).
+ * Sem chaves / sem PushManager / sem permissão: no-op silencioso.
+ */
+function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(base64);
+    var output = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) {
+        output[i] = raw.charCodeAt(i);
+    }
+    return output;
+}
+
+function subscribeWebPushIfConfigured(registration) {
+    var vapidMeta = document.querySelector('meta[name="vapid-public-key"]');
+    var urlMeta = document.querySelector('meta[name="push-subscribe-url"]');
+    var csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!vapidMeta?.content || !urlMeta?.content || !csrf) return;
+    if (!('PushManager' in window) || !registration?.pushManager) return;
+
+    var ensureAndSave = function () {
+        return registration.pushManager.getSubscription().then(function (existing) {
+            if (existing) return existing;
+            return registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidMeta.content),
+            });
+        }).then(function (subscription) {
+            if (!subscription) return;
+            return fetch(urlMeta.content, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(subscription.toJSON()),
+            });
+        }).catch(function () { /* permissão negada / SW sem push — silencioso */ });
+    };
+
+    if (typeof Notification === 'undefined') return;
+
+    if (Notification.permission === 'granted') {
+        ensureAndSave();
+    } else if (Notification.permission === 'default') {
+        // Pedido sem gesto do usuário pode falhar em alguns browsers — ok para fundação.
+        Notification.requestPermission().then(function (permission) {
+            if (permission === 'granted') ensureAndSave();
+        }).catch(function () {});
+    }
+}
 
 // ---- Alternar tema claro/escuro ----
 window.toggleTheme = function () {

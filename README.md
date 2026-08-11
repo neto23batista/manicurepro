@@ -1,293 +1,212 @@
-# 💅 ManicurePro
+# ManicurePro — Fernanda Silva Nails
 
-Sistema web completo para gestão de salões de manicure e pedicure.  
-Desenvolvido com **Laravel 11**, **MySQL 8**, **Blade**, **Sanctum** e tema rosa.
+Aplicação **single-tenant** Laravel 11 para o salão **Fernanda Silva Nails**: site público (PWA), painéis por perfil e API REST com Sanctum.
 
----
+Não é um SaaS multi-salão. A home pública é a página do próprio salão (`Salao::principal()`).
 
-## ✨ Funcionalidades
+Produção: ver **[docs/PRODUCAO.md](docs/PRODUCAO.md)** (`php artisan manicure:verificar-producao`).  
+Docker / Sail (opcional): **[docs/DOCKER.md](docs/DOCKER.md)**.
 
-- **Multi-perfil**: admin, dono de salão, atendente, manicure, cliente
-- **Agendamento online** com seleção de manicure, serviços e horários disponíveis
-- **Gestão de agenda** com detecção de conflitos em tempo real
-- **Comandas e pagamentos** com finalização atômica via `DB::transaction()`
-- **Programa de fidelidade** com pontos por atendimento
-- **Cupons de desconto** percentual e fixo com validade
-- **Relatórios em PDF** via dompdf com faturamento e ticket médio
-- **Dashboard** com gráficos ApexCharts (agendamentos + faturamento)
-- **Controle de estoque** de produtos
-- **Avaliações** de clientes por agendamento
-- **Lembretes automáticos** por e-mail (comando agendado)
-- **PWA** (Progressive Web App) — funciona offline
-- **API REST** com autenticação Sanctum para apps mobile
+Backlog restante: **[MELHORIAS.md](MELHORIAS.md)**.
 
 ---
 
-## 🗂️ Arquitetura
+## Stack
 
-### Stack
 | Camada | Tecnologia |
-|--------|-----------|
+|--------|------------|
 | Backend | PHP 8.2+ / Laravel 11 |
-| Banco de dados | MySQL 8 |
-| Templates | Blade + Bootstrap 5.3 |
-| Autenticação web | Laravel Sanctum (session) |
-| Autenticação API | Laravel Sanctum (tokens) |
-| PDF | barryvdh/laravel-dompdf 2.2 |
-| Gráficos | ApexCharts (CDN) |
-| Ícones | Font Awesome 6 (CDN) |
+| Banco | MySQL 8 (ou MariaDB 10.6+) |
+| Views | Blade + Bootstrap 5.3 |
+| Assets | Vite (`npm run dev` / `npm run build`) |
+| Auth web | Sessão + Sanctum |
+| Auth API | Sanctum (Bearer tokens) |
+| PDF | barryvdh/laravel-dompdf |
+| Gráficos | ApexCharts (via Vite) |
+| Ícones | Font Awesome 6 (via Vite) |
 | Testes | Pest 2.x |
 
-### Estrutura de diretórios
-```
-manicurepro/
-├── app/
-│   ├── Console/Commands/     # EnviarLembretes, LimparAgendamentosExpirados
-│   ├── Http/
-│   │   ├── Controllers/      # Admin, Dono, Manicure, Cliente, Api, Auth
-│   │   └── Middleware/       # RoleMiddleware, CheckSalao
-│   ├── Models/               # 21 models Eloquent
-│   ├── Notifications/        # AgendamentoConfirmado, AgendamentoCancelado, AgendamentoLembrete
-│   └── Services/             # AgendaService.php
-├── database/
-│   ├── factories/            # 5 factories para testes
-│   ├── migrations/           # 26 migrações
-│   └── seeders/              # DatabaseSeeder com dados realistas
-├── public/
-│   ├── css/app.css           # Tema rosa completo
-│   ├── js/app.js             # Scripts globais
-│   ├── sw.js                 # Service Worker (PWA)
-│   ├── manifest.json         # PWA manifest
-│   └── offline.html          # Página offline
-├── resources/views/          # Blade views por perfil
-├── routes/
-│   ├── web.php               # Rotas web com middleware
-│   └── api.php               # API REST
-└── tests/Feature/            # AuthTest, AgendamentoTest, PublicTest
-```
+---
+
+## O que existe hoje
+
+- **Perfis:** `admin`, `dono`, `atendente`, `manicure`, `cliente`
+- **Agendamento online** (exige conta): manicure, serviços, slots, hold temporário de horário
+- **Agenda** com conflito, folgas, recorrência (pelo painel do dono), reagendamento, confirmação por link assinado
+- **Calendário:** download `.ics` (cliente e export da agenda dono/manicure) + link template do Google Calendar no detalhe do cliente; sync OAuth ainda no backlog
+- **Comandas / caixa** (dono): finalização, venda de produto na comanda, cupom, vale-presente
+- **Estoque** de produtos + movimentações
+- **Fidelidade** com pontos e resgate
+- **Cupons**, **lista de espera**, **avaliações**, **galeria** de trabalhos
+- **Sinal Pix** opcional (Mercado Pago) + webhook; **WhatsApp Cloud API** opcional (lembretes/confirmações)
+- **Relatórios PDF**, dashboard com gráficos
+- **Perfil** (avatar, senha), verificação de e-mail, reset de senha, **2FA TOTP**, exportação/exclusão LGPD
+- **PWA** (`manifest.json`, service worker, `offline.html`)
+- **API `/api/v1`** — ver seção abaixo
+
+### Atendente ≠ dono (financeiro)
+
+Rotas sob `role:dono,atendente` cobrem operação (agenda, clientes, cupons, produtos, galeria, folgas).
+
+**Somente `dono` (admin herda via `RoleMiddleware`):** financeiro, vales-presente e configuração do salão. Atendente recebe **403** nessas rotas.
 
 ---
 
-## 🚀 Instalação
-
-### Pré-requisitos
-- PHP 8.2+
-- Composer
-- MySQL 8+
-- Node.js (opcional, para assets)
-
-### Passos
+## Instalação (local)
 
 ```bash
-# 1. Clone o repositório
-git clone <url-do-repositorio> manicurepro
-cd manicurepro
-
-# 2. Instale as dependências PHP
 composer install
-
-# 3. Configure o ambiente
 cp .env.example .env
 php artisan key:generate
-
-# 4. Configure o banco de dados no .env
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=manicurepro
-# DB_USERNAME=root
-# DB_PASSWORD=sua_senha
-
-# 5. Execute as migrações e seeders
+# Configure DB_* no .env
 php artisan migrate --seed
-
-# 6. Crie o link de storage
 php artisan storage:link
-
-# 7. Inicie o servidor
+npm ci && npm run build   # ou: npm run dev
 php artisan serve
 ```
 
-Acesse: `http://localhost:8000`
+Acesse `http://localhost:8000`.
+
+### Docker / Sail (opcional)
+
+Alternativa ao stack nativo — não substitui a instalação acima. Compose Sail (`docker-compose.yml`: MySQL, Redis, app PHP, Mailpit). Ver **[docs/DOCKER.md](docs/DOCKER.md)**.
 
 ---
 
-## 🔑 Credenciais de Teste
+## Credenciais do seeder
+
+Seeders em `database/seeders/` (`Demo*Seeder`) são **idempotentes** (podem rodar de novo com `php artisan db:seed`). Agendamentos demo só são criados uma vez (marcador interno).
 
 | Perfil | E-mail | Senha |
 |--------|--------|-------|
-| Admin | admin@manicurepro.com | admin123 |
-| Dono / Atendente | dono@manicurepro.com | admin123 |
-| Manicure (Ana) | ana@manicurepro.com | manicure123 |
-| Manicure (Bia) | bia@manicurepro.com | manicure123 |
-| Manicure (Carla) | carla@manicurepro.com | manicure123 |
-| Cliente | cliente@manicurepro.com | cliente123 |
+| Admin | `admin@fernandasilvanails.com` | `admin123` |
+| Dono | `fernanda@fernandasilvanails.com` | `dono123` |
+| Atendente | `atendente@fernandasilvanails.com` | `atendente123` |
+| Manicure | `fernanda.profissional@fernandasilvanails.com` | `manicure123` |
+| Manicure | `camila@fernandasilvanails.com` | `manicure123` |
+| Manicure | `juliana@fernandasilvanails.com` | `manicure123` |
+| Cliente | `cliente@fernandasilvanails.com` | `cliente123` |
+
+Site público: `/` (página do salão `fernanda-silva-nails`).
+
+Cupons demo: `BEMVINDA`, `FIDELIDADE10`, `DESCONTO20`, `ANIVERSARIO`.
 
 ---
 
-## 💇 Serviços Padrão
+## Serviços seedados (referência)
 
 | Serviço | Preço | Duração |
 |---------|-------|---------|
-| Manicure Simples | R$ 25,00 | 30 min |
-| Pedicure Completa | R$ 35,00 | 45 min |
-| Manicure + Pedicure | R$ 55,00 | 75 min |
-| Unhas em Gel | R$ 45,00 | 60 min |
-| Unhas Acrílicas | R$ 80,00 | 90 min |
-| Nail Art | R$ 60,00 | 60 min |
-| Remoção de Gel/Acrílico | R$ 30,00 | 30 min |
-| Spa dos Pés | R$ 50,00 | 60 min |
-| Blindagem de Unhas | R$ 40,00 | 45 min |
-| Combo Premium | R$ 120,00 | 120 min |
+| Manicure Simples | R$ 30 | 30 min |
+| Pedicure | R$ 40 | 45 min |
+| Manicure + Pedicure | R$ 65 | 75 min |
+| Esmaltação em Gel | R$ 55 | 60 min |
+| Alongamento em Fibra | R$ 120 | 120 min |
+| Alongamento em Gel | R$ 130 | 120 min |
+| Nail Art (por unha) | R$ 10 | 30 min |
+| Remoção de Gel/Alongamento | R$ 35 | 30 min |
+| Spa dos Pés | R$ 55 | 60 min |
+| Blindagem | R$ 45 | 45 min |
+| Combo Premium | R$ 150 | 120 min |
 
 ---
 
-## 🗃️ Banco de Dados (26 tabelas)
-
-```
-users                          cupons
-saloes                         sessions
-configuracoes_salao            cache / cache_locks
-manicures                      jobs / job_batches / failed_jobs
-categorias_servico             personal_access_tokens
-servicos
-agendamentos
-agendamento_servicos
-horarios_funcionamento
-disponibilidades_manicure
-folgas
-folgas_manicure
-clientes
-produtos
-estoque_movimentacoes
-comandas
-comanda_itens
-pagamentos
-avaliacoes
-notificacoes
-fidelidade_pontos
-```
-
----
-
-## 🔐 Perfis e Permissões
+## Perfis e acesso
 
 | Perfil | Acesso |
 |--------|--------|
-| **admin** | Tudo — painel global, todos os salões, usuários |
-| **dono** | Seu salão — agenda, manicures, serviços, relatórios |
-| **atendente** | Igual ao dono, sem gerenciamento financeiro |
-| **manicure** | Sua agenda, perfil, atendimento |
-| **cliente** | Agendar, histórico, avaliações, programa fidelidade |
+| **admin** | Painel admin (salão único, manicures, serviços, categorias, usuários, relatórios). Herda operação de dono/atendente; **não** herda rotas de cliente/manicure. |
+| **dono** | Operação + financeiro + vales + configuração do salão |
+| **atendente** | Operação do salão **sem** financeiro, vales nem config |
+| **manicure** | Dashboard, agenda própria, folgas próprias |
+| **cliente** | Agendar, histórico, iCal, sinal, lista de espera, fidelidade, avaliações |
 
-> **Regra:** `admin` engloba automaticamente permissões de `dono` no `RoleMiddleware`.
-
----
-
-## 📅 AgendaService — Lógica de Slots
-
-O `AgendaService` gera horários disponíveis respeitando:
-1. Horário de funcionamento do salão
-2. Disponibilidade individual da manicure
-3. Agendamentos já existentes (sem conflito de horário)
-4. Folgas do salão e da manicure
-5. Intervalo configurável entre atendimentos
-
-Ao **criar** um agendamento, a verificação de conflito é feita novamente dentro de `DB::transaction()` para evitar condições de corrida.
+Painéis autenticados usam middleware `verified` (e-mail confirmado).
 
 ---
 
-## 🧪 Testes
+## API REST (`/api/v1`)
 
-```bash
-# Rodar todos os testes
-php artisan test
+Fonte de verdade: `routes/api.php`.
 
-# Ou com Pest diretamente
-./vendor/bin/pest
+**Públicas** (throttle 60/min; login 5/min):
 
-# Com cobertura de código
-./vendor/bin/pest --coverage
+```
+POST /api/v1/login
+GET  /api/v1/saloes
+GET  /api/v1/saloes/{slug}
+GET  /api/v1/saloes/{slug}/servicos
+GET  /api/v1/saloes/{slug}/manicures
+GET  /api/v1/saloes/{slug}/slots
 ```
 
-**Suites disponíveis:**
-- `AuthTest` — login, logout, registro, throttle
-- `AgendamentoTest` — slots, conflito, criação, finalização com comanda
-- `PublicTest` — homepage, página do salão, API pública
+**Autenticadas** (Sanctum + throttle 120/min):
 
----
-
-## ⏰ Comandos Agendados
-
-```bash
-# Enviar lembretes de agendamentos do dia seguinte
-php artisan manicure:enviar-lembretes
-
-# Limpar agendamentos expirados (aguardando > 24h)
-php artisan manicure:limpar-expirados
+```
+GET  /api/v1/me
+POST /api/v1/logout
+GET  /api/v1/agendamentos
+POST /api/v1/agendamentos
+GET  /api/v1/agendamentos/slots
+GET  /api/v1/agendamentos/{id}
+POST /api/v1/agendamentos/{id}/cancelar
 ```
 
-Configure o cron do sistema para rodar `php artisan schedule:run` a cada minuto:
-```
-* * * * * cd /caminho/do/projeto && php artisan schedule:run >> /dev/null 2>&1
-```
+Login:
 
----
-
-## 📱 PWA (Progressive Web App)
-
-O sistema pode ser instalado como app no celular:
-1. Abra o site no Chrome (Android) ou Safari (iOS)
-2. Toque em "Adicionar à tela inicial"
-3. Use offline com cache de páginas principais
-
----
-
-## 🌐 API REST
-
-Base URL: `/api/v1/`
-
-**Autenticação:**
 ```bash
 POST /api/v1/login
 { "email": "...", "password": "...", "device_name": "meu-app" }
-# Retorna: { "token": "..." }
+# → { "token": "..." }
 ```
 
-**Endpoints públicos:**
-```
-GET  /api/v1/saloes                    # Lista salões
-GET  /api/v1/saloes/{slug}             # Detalhes do salão
-GET  /api/v1/saloes/{slug}/servicos    # Serviços disponíveis
-GET  /api/v1/saloes/{slug}/manicures   # Profissionais
-POST /api/v1/saloes/{slug}/slots       # Horários disponíveis
-POST /api/v1/saloes/{slug}/agendar     # Criar agendamento
+Não há endpoint público de “agendar sem login” nem “avaliar” na API v1 atual.
+
+---
+
+## Comandos e cron
+
+```bash
+php artisan manicure:enviar-lembretes 24h   # ou 2h
+php artisan manicure:enviar-aniversarios
+php artisan manicure:limpar-expirados
+php artisan manicure:verificar-producao
 ```
 
-**Endpoints autenticados (Bearer token):**
+Em produção: cron `* * * * * php artisan schedule:run` + worker de fila (`queue:work`). Detalhes em [docs/PRODUCAO.md](docs/PRODUCAO.md).
+
+---
+
+## Testes
+
+```bash
+php artisan test
+# ou
+./vendor/bin/pest
 ```
-GET  /api/v1/me                        # Perfil do usuário
-GET  /api/v1/meus-agendamentos         # Histórico
-POST /api/v1/agendamentos/{id}/cancelar
-POST /api/v1/agendamentos/{id}/avaliar
+
+Cobertura inclui auth, agendamento, segurança (IDOR API, headers/CSP, webhook MP), acesso do atendente, financeiro, fidelidade, Mercado Pago, etc.
+
+---
+
+## Estrutura (resumo)
+
+```
+app/
+  Console/Commands/     # lembretes, aniversários, limpeza, verificar-producao
+  Http/Controllers/     # Admin, Dono, Manicure, Cliente, Api, Auth, Public
+  Models/               # salão, agenda, comanda, fidelidade, galeria, vales…
+  Policies/             # Agendamento, Cliente, Cupom (cobertura ainda parcial)
+  Services/             # Agenda, Comanda, Estoque, Fidelidade, MercadoPago, …
+resources/views/        # Blade por perfil + público
+routes/web.php          # site + painéis
+routes/api.php          # /api/v1
+docs/PRODUCAO.md        # deploy e checklist
+docs/DOCKER.md          # Sail / Compose (dev local opcional)
 ```
 
 ---
 
-## 🎨 Tema Visual
+## Licença
 
-| Propriedade | Valor |
-|-------------|-------|
-| Cor primária | `#e91e8c` (rosa) |
-| Gradiente | `135deg, #e91e8c → #ff6bb5` |
-| Fonte | Arial / system-ui |
-| Framework CSS | Bootstrap 5.3.2 |
-
----
-
-## 📄 Licença
-
-Este projeto é privado e proprietário. Todos os direitos reservados.
-
----
-
-*ManicurePro — Gestão profissional para salões de manicure* 💅
+Projeto privado / proprietário.

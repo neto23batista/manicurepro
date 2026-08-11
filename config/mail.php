@@ -53,4 +53,21 @@ return [
         'address' => env('MAIL_FROM_ADDRESS', 'noreply@fernandasilvanails.com'),
         'name' => env('MAIL_FROM_NAME', 'Fernanda Silva Nails'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Tema e componentes publicados em resources/views/vendor/mail
+    | (marca Fernanda Silva Nails). Paths customizados têm prioridade
+    | sobre os do framework.
+    |
+    */
+    'markdown' => [
+        'theme' => env('MAIL_MARKDOWN_THEME', 'default'),
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
 ];

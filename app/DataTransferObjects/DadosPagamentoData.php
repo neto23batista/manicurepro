@@ -10,17 +10,20 @@ final readonly class DadosPagamentoData
         public FormaPagamento $forma = FormaPagamento::Dinheiro,
         public ?float $valor = null,
         public ?string $observacao = null,
+        public ?float $gorjeta = null,
     ) {}
 
     public static function fromArray(array $d): self
     {
         $forma = $d['forma'] ?? null;
+
         return new self(
-            forma:      $forma instanceof FormaPagamento
+            forma: $forma instanceof FormaPagamento
                             ? $forma
                             : (FormaPagamento::tryFrom((string) ($forma ?? '')) ?? FormaPagamento::Dinheiro),
-            valor:      isset($d['valor']) ? (float) $d['valor'] : null,
+            valor: isset($d['valor']) ? (float) $d['valor'] : null,
             observacao: $d['observacao'] ?? null,
+            gorjeta: isset($d['gorjeta']) ? (float) $d['gorjeta'] : null,
         );
     }
 }

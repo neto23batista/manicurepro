@@ -6,6 +6,7 @@
 @section('content')
 <form method="POST" action="{{ route('password.update') }}">
     @csrf
+    <x-honeypot />
     <input type="hidden" name="token" value="{{ $token }}">
 
     <div class="text-center mb-4">

@@ -1,13 +1,13 @@
 {{-- Modal de confirmação global (substitui confirm() nativo) --}}
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true"
-     aria-labelledby="confirmTitle" aria-describedby="confirmMessage" role="dialog">
+     aria-labelledby="confirmTitle" aria-describedby="confirmMessage" role="dialog" aria-modal="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 confirm-modal-content">
             <div class="modal-body text-center p-4">
                 <div class="confirm-icon mx-auto mb-3 d-flex align-items-center justify-content-center"
                      id="confirmIcon"
                      aria-hidden="true">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
                 </div>
                 <h5 class="fw-bold mb-2" id="confirmTitle">Tem certeza?</h5>
                 <p class="text-muted mb-0" id="confirmMessage">Esta ação não pode ser desfeita.</p>
@@ -54,7 +54,7 @@ window.Confirm = {
 
             icon.style.background = s.bg;
             icon.style.color = s.color;
-            icon.innerHTML = `<i class="fa-solid ${s.icon}"></i>`;
+            icon.innerHTML = `<i class="fa-solid ${s.icon}" aria-hidden="true"></i>`;
 
             titleEl.textContent = title;
             msgEl.textContent = message;
@@ -74,6 +74,10 @@ window.Confirm = {
 
             document.getElementById('confirmOk').addEventListener('click', () => finish(true), {once:true});
             modal.addEventListener('hidden.bs.modal', () => finish(false), {once:true});
+            modal.addEventListener('shown.bs.modal', () => {
+                // Foco no cancelar (ação menos destrutiva) após o modal abrir
+                document.getElementById('confirmCancel')?.focus();
+            }, {once:true});
 
             bsModal.show();
         });

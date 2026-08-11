@@ -8,7 +8,11 @@ class UpdateProdutoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return in_array($this->user()?->role, ['dono', 'atendente', 'admin'], true);
+        $produto = $this->route('produto');
+
+        return $produto
+            ? ($this->user()?->can('update', $produto) ?? false)
+            : false;
     }
 
     public function rules(): array

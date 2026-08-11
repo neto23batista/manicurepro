@@ -25,7 +25,7 @@ Route::prefix('v1')->group(function () {
     // ========================
     // Autenticadas (120 req/min por usuário)
     // ========================
-    Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+    Route::middleware(['auth:sanctum', 'user.active', 'throttle:120,1'])->group(function () {
         Route::get('/me',      [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/slots',                   [AgendamentoController::class, 'slots']);
             Route::get('/{agendamento}',           [AgendamentoController::class, 'show']);
             Route::post('/{agendamento}/cancelar', [AgendamentoController::class, 'cancelar']);
+            Route::post('/{agendamento}/avaliar',  [AgendamentoController::class, 'avaliar']);
         });
     });
 });

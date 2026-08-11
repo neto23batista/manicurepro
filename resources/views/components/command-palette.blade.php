@@ -49,15 +49,15 @@
     }
 @endphp
 
-<div class="command-palette" id="commandPalette" role="dialog" aria-label="Busca rápida">
-    <div class="command-box">
+<div class="command-palette" id="commandPalette" role="dialog" aria-modal="true" aria-label="Busca rápida" aria-hidden="true" hidden>
+    <div class="command-box" role="document">
         <div class="command-search">
-            <i class="fas fa-search text-pink"></i>
-            <input type="text" id="commandInput" placeholder="O que você procura? Digite para filtrar..." autocomplete="off">
-            <kbd>ESC</kbd>
+            <i class="fas fa-search text-pink" aria-hidden="true"></i>
+            <input type="text" id="commandInput" placeholder="O que você procura? Digite para filtrar..." autocomplete="off" aria-label="Buscar comandos" aria-controls="commandResults" role="combobox" aria-expanded="true" aria-autocomplete="list">
+            <kbd aria-hidden="true">ESC</kbd>
         </div>
-        <div class="command-results" id="commandResults"></div>
-        <div class="command-footer">
+        <div class="command-results" id="commandResults" role="listbox" aria-label="Resultados"></div>
+        <div class="command-footer" aria-hidden="true">
             <span><kbd>↑↓</kbd> navegar &nbsp; <kbd>↵</kbd> selecionar</span>
             <span>Pressione <kbd>Ctrl</kbd>+<kbd>K</kbd> a qualquer momento</span>
         </div>
@@ -71,20 +71,43 @@ window.commandList = @json($commands);
     const palette = document.getElementById('commandPalette');
     const input   = document.getElementById('commandInput');
     const results = document.getElementById('commandResults');
+    const box     = palette.querySelector('.command-box');
     let activeIndex = 0;
     let filtered = [];
+    let previousFocus = null;
+    const reduzMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function focusables() {
+        return [...box.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+            .filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null);
+    }
 
     function open() {
+        if (palette.classList.contains('open')) {
+            input.focus();
+            return;
+        }
+        previousFocus = document.activeElement;
+        palette.hidden = false;
+        palette.setAttribute('aria-hidden', 'false');
         palette.classList.add('open');
         input.value = '';
         render();
         setTimeout(() => input.focus(), 50);
     }
     function close() {
+        if (!palette.classList.contains('open')) return;
         palette.classList.remove('open');
+        palette.setAttribute('aria-hidden', 'true');
+        palette.hidden = true;
+        const restore = previousFocus;
+        previousFocus = null;
+        if (restore && typeof restore.focus === 'function') {
+            restore.focus();
+        }
     }
     function normalize(s) {
-        return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
     function render() {
         const q = normalize(input.value.trim());
@@ -94,7 +117,7 @@ window.commandList = @json($commands);
         activeIndex = 0;
 
         if (!filtered.length) {
-            results.innerHTML = '<div class="command-empty"><i class="fas fa-search-minus fa-2x mb-2 d-block opacity-25"></i>Nada encontrado para "' + escapeHtml(input.value) + '"</div>';
+            results.innerHTML = '<div class="command-empty" role="status"><i class="fas fa-search-minus fa-2x mb-2 d-block opacity-25" aria-hidden="true"></i>Nada encontrado para "' + escapeHtml(input.value) + '"</div>';
             return;
         }
 
@@ -105,10 +128,10 @@ window.commandList = @json($commands);
         let html = '';
         let i = 0;
         for (const [groupName, items] of Object.entries(groups)) {
-            html += `<div class="command-group-label">${escapeHtml(groupName)}</div>`;
+            html += `<div class="command-group-label" role="presentation">${escapeHtml(groupName)}</div>`;
             items.forEach(c => {
-                html += `<a href="${c.url}" class="command-item${i === activeIndex ? ' is-active' : ''}" data-index="${i}">
-                    <i class="fas ${c.icon}"></i>
+                html += `<a href="${c.url}" class="command-item${i === activeIndex ? ' is-active' : ''}" data-index="${i}" role="option" aria-selected="${i === activeIndex ? 'true' : 'false'}">
+                    <i class="fas ${c.icon}" aria-hidden="true"></i>
                     <span>${escapeHtml(c.label)}</span>
                 </a>`;
                 i++;
@@ -123,8 +146,10 @@ window.commandList = @json($commands);
     }
     function updateActive() {
         results.querySelectorAll('.command-item').forEach((el, idx) => {
-            el.classList.toggle('is-active', idx === activeIndex);
-            if (idx === activeIndex) el.scrollIntoView({block: 'nearest'});
+            const ativo = idx === activeIndex;
+            el.classList.toggle('is-active', ativo);
+            el.setAttribute('aria-selected', ativo ? 'true' : 'false');
+            if (ativo) el.scrollIntoView({ block: 'nearest', behavior: reduzMovimento ? 'auto' : 'smooth' });
         });
     }
 
@@ -146,6 +171,39 @@ window.commandList = @json($commands);
             if (item) window.location = item.href;
         } else if (e.key === 'Escape') {
             close();
+        } else if (e.key === 'Tab') {
+            const els = focusables();
+            if (!els.length) {
+                e.preventDefault();
+                return;
+            }
+            const first = els[0];
+            const last = els[els.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    palette.addEventListener('keydown', function(e) {
+        if (!palette.classList.contains('open')) return;
+        if (e.key !== 'Tab') return;
+        // Trap Tab when focus is outside the input (e.g. on result links)
+        if (e.target === input) return;
+        const els = focusables();
+        if (!els.length) return;
+        const first = els[0];
+        const last = els[els.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
         }
     });
 
@@ -169,6 +227,7 @@ window.commandList = @json($commands);
         }
         // ESC fecha
         if (e.key === 'Escape' && palette.classList.contains('open')) {
+            e.preventDefault();
             close();
         }
     });

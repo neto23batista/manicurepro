@@ -35,8 +35,10 @@ class UpdateDadosSalaoRequest extends FormRequest
     {
         return [
             'logo.image'      => 'A logo deve ser uma imagem.',
+            'logo.mimes'      => 'A logo deve ser PNG, JPG ou WebP.',
             'logo.max'        => 'A logo não pode passar de 3 MB.',
             'foto_capa.image' => 'A capa deve ser uma imagem.',
+            'foto_capa.mimes' => 'A capa deve ser PNG, JPG ou WebP.',
             'foto_capa.max'   => 'A capa não pode passar de 5 MB.',
         ];
     }

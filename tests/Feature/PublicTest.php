@@ -42,6 +42,7 @@ test('página de agendamento online é acessível quando habilitada', function (
 
     $response = $this->get("/salao/{$salao->slug}/agendar");
     $response->assertStatus(200);
+    $response->assertSee('Agende sem criar conta');
 });
 
 test('página de agendamento redireciona quando desabilitada', function () {

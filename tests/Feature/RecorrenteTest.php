@@ -88,5 +88,70 @@ test('pula ocorrência em conflito sem interromper a série', function () {
     ], 'semanal', 4);
 
     expect($res['criados'])->toHaveCount(3);
-    expect($res['pulados'])->toHaveCount(1);
+    expect($res['pulados'])->toHaveCount(1)
+        ->and($res['pulados'][0])->toBe($conflito->format('d/m/Y H:i'));
+
+    // Série parcial: 4 solicitadas − 1 conflito pré-existente = 3 criados + 1 prévio
+    expect(Agendamento::count())->toBe(4);
+
+    $datasCriadas = collect($res['criados'])
+        ->map(fn ($a) => $a->data_hora_inicio->format('Y-m-d H:i'))
+        ->all();
+
+    expect($datasCriadas)->toBe([
+        $base->format('Y-m-d H:i'),
+        $base->copy()->addWeek()->format('Y-m-d H:i'),
+        $base->copy()->addWeeks(3)->format('Y-m-d H:i'),
+    ]);
+});
+
+test('série parcial reporta múltiplas datas em conflito', function () {
+    $base = Carbon::now()->addDay()->setTime(14, 0);
+
+    $conflitos = [
+        $base->copy()->addWeeks(1),
+        $base->copy()->addWeeks(3),
+    ];
+
+    foreach ($conflitos as $conflito) {
+        Agendamento::factory()->create([
+            'salao_id' => $this->salao->id,
+            'manicure_id' => $this->manicure->id,
+            'data_hora_inicio' => $conflito,
+            'data_hora_fim' => $conflito->copy()->addMinutes(30),
+            'status' => 'confirmado',
+        ]);
+    }
+
+    $res = $this->agendaService->criarRecorrente([
+        'salao_id' => $this->salao->id,
+        'manicure_id' => $this->manicure->id,
+        'servico_ids' => [$this->servico->id],
+        'data_hora_inicio' => $base->toDateTimeString(),
+        'origem' => 'balcao',
+        'status' => 'confirmado',
+    ], 'semanal', 5);
+
+    expect($res['criados'])->toHaveCount(3);
+    expect($res['pulados'])->toBe([
+        $conflitos[0]->format('d/m/Y H:i'),
+        $conflitos[1]->format('d/m/Y H:i'),
+    ]);
+});
+
+test('limita recorrência a no máximo 12 ocorrências', function () {
+    $base = Carbon::now()->addDay()->setTime(9, 0);
+
+    $res = $this->agendaService->criarRecorrente([
+        'salao_id' => $this->salao->id,
+        'manicure_id' => $this->manicure->id,
+        'servico_ids' => [$this->servico->id],
+        'data_hora_inicio' => $base->toDateTimeString(),
+        'origem' => 'balcao',
+        'status' => 'confirmado',
+    ], 'semanal', 20);
+
+    expect($res['criados'])->toHaveCount(12);
+    expect($res['pulados'])->toBeEmpty();
+    expect(Agendamento::count())->toBe(12);
 });

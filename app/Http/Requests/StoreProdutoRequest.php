@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Produto;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProdutoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return in_array($this->user()?->role, ['dono', 'atendente', 'admin'], true);
+        return $this->user()?->can('create', Produto::class) ?? false;
     }
 
     public function rules(): array
@@ -25,6 +26,15 @@ class StoreProdutoRequest extends FormRequest
             'unidade'        => ['nullable', 'string', 'max:20'],
             'ativo'          => ['sometimes', 'boolean'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('estoque_minimo')) {
+            $this->merge([
+                'estoque_minimo' => config('manicure.estoque.minimo_padrao', 1),
+            ]);
+        }
     }
 
     public function messages(): array

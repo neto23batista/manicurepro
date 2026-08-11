@@ -17,6 +17,36 @@ test('usuário não-verificado vê tela de verificação', function () {
     $r->assertSee('Verifique seu e-mail');
 });
 
+test('usuário não-verificado é redirecionado do dashboard do cliente para verification.notice', function () {
+    $user = User::factory()->unverified()->create(['role' => 'cliente', 'ativo' => true]);
+
+    $this->actingAs($user)
+        ->get('/cliente/dashboard')
+        ->assertRedirect(route('verification.notice'));
+});
+
+test('middleware verified redireciona não-verificados dos painéis protegidos', function (string $role, string $uri) {
+    $attrs = ['role' => $role, 'ativo' => true];
+    if (in_array($role, ['dono', 'atendente', 'manicure'], true)) {
+        $salao = \App\Models\Salao::factory()->create(['ativo' => true]);
+        $attrs['salao_id'] = $salao->id;
+    }
+
+    $user = User::factory()->unverified()->create($attrs);
+
+    $this->actingAs($user)
+        ->get($uri)
+        ->assertRedirect(route('verification.notice'));
+})->with([
+    ['cliente', '/cliente/dashboard'],
+    ['cliente', '/cliente/agendamentos'],
+    ['dono', '/dono/dashboard'],
+    ['dono', '/dono/financeiro'],
+    ['atendente', '/dono/agendamentos'],
+    ['manicure', '/manicure/dashboard'],
+    ['admin', '/admin/dashboard'],
+]);
+
 test('usuário já verificado é redirecionado ao dashboard', function () {
     $user = User::factory()->create(['ativo' => true, 'role' => 'cliente']);
     // create() default já vem verified pelo factory

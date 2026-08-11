@@ -7,7 +7,6 @@
     <title>@yield('title', config('app.name')) - {{ config('app.name') }}</title>
     <meta name="description" content="@yield('description', 'Sistema de gestão para salões de manicure')">
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ec4899">
     <link rel="icon" type="image/png" href="/images/favicon.png">
     <link rel="apple-touch-icon" href="/images/icon-192.png">
 
@@ -22,15 +21,22 @@
         })();
     </script>
 
+    <x-theme-vars />
+
     {{-- Vite bundle (Bootstrap, Font Awesome, ApexCharts e app.css/js) --}}
     <meta name="app-env" content="{{ app()->environment() }}">
+    @if (filled(config('manicure.webpush.vapid.public_key')))
+        <meta name="vapid-public-key" content="{{ config('manicure.webpush.vapid.public_key') }}">
+        <meta name="push-subscribe-url" content="{{ route('push-subscriptions.store') }}">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
 <body>
+    <x-skip-link />
     <x-sidebar />
 
-    <main class="main-content" id="mainContent">
+    <main class="main-content" id="mainContent" tabindex="-1">
         <x-topbar :title="View::yieldContent('page-title', 'Dashboard')" />
 
         <div class="page-content">

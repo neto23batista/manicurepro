@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -21,8 +23,8 @@ class Salao extends Model
     ];
 
     protected $casts = [
-        'ativo' => 'boolean',
-        'latitude' => 'float',
+        'ativo'     => 'boolean',
+        'latitude'  => 'float',
         'longitude' => 'float',
     ];
 
@@ -81,79 +83,100 @@ class Salao extends Model
         if ($field === 'slug') {
             return $this->where('slug', $value)->where('ativo', true)->firstOrFail();
         }
+
         return parent::resolveRouteBinding($value, $field);
     }
 
-    public function configuracao()
+    /** @return HasOne<ConfiguracaoSalao, $this> */
+    public function configuracao(): HasOne
     {
         return $this->hasOne(ConfiguracaoSalao::class);
     }
 
-    public function manicures()
+    /** @return HasMany<Manicure, $this> */
+    public function manicures(): HasMany
     {
         return $this->hasMany(Manicure::class)->where('ativo', true);
     }
 
-    public function todasManicures()
+    /** @return HasMany<Manicure, $this> */
+    public function todasManicures(): HasMany
     {
         return $this->hasMany(Manicure::class);
     }
 
-    public function servicos()
+    /** @return HasMany<Servico, $this> */
+    public function servicos(): HasMany
     {
         return $this->hasMany(Servico::class)->where('ativo', true);
     }
 
-    public function categorias()
+    /** @return HasMany<CategoriaServico, $this> */
+    public function categorias(): HasMany
     {
         return $this->hasMany(CategoriaServico::class)->where('ativo', true)->orderBy('ordem');
     }
 
-    public function agendamentos()
+    /** @return HasMany<Agendamento, $this> */
+    public function agendamentos(): HasMany
     {
         return $this->hasMany(Agendamento::class);
     }
 
-    public function clientes()
+    /** @return HasMany<Cliente, $this> */
+    public function clientes(): HasMany
     {
         return $this->hasMany(Cliente::class)->where('ativo', true);
     }
 
-    public function horarios()
+    /** @return HasMany<HorarioFuncionamento, $this> */
+    public function horarios(): HasMany
     {
         return $this->hasMany(HorarioFuncionamento::class)->orderBy('dia_semana');
     }
 
-    public function folgas()
+    /** @return HasMany<Folga, $this> */
+    public function folgas(): HasMany
     {
         return $this->hasMany(Folga::class);
     }
 
-    public function produtos()
+    /** @return HasMany<Produto, $this> */
+    public function produtos(): HasMany
     {
         return $this->hasMany(Produto::class)->where('ativo', true);
     }
 
-    public function galeria()
+    /** @return HasMany<GaleriaFoto, $this> */
+    public function galeria(): HasMany
     {
         return $this->hasMany(GaleriaFoto::class)->orderBy('ordem')->orderByDesc('id');
     }
 
-    public function cupons()
+    /** @return HasMany<Cupom, $this> */
+    public function cupons(): HasMany
     {
         return $this->hasMany(Cupom::class)->where('ativo', true);
     }
 
-    public function avaliacoes()
+    /** @return HasMany<Pacote, $this> */
+    public function pacotes(): HasMany
+    {
+        return $this->hasMany(Pacote::class);
+    }
+
+    /** @return HasMany<Avaliacao, $this> */
+    public function avaliacoes(): HasMany
     {
         return $this->hasMany(Avaliacao::class);
     }
 
     public function getLogoUrlAttribute(): string
     {
-        if ($this->logo && file_exists(public_path('storage/' . $this->logo))) {
-            return asset('storage/' . $this->logo);
+        if ($this->logo && file_exists(public_path('storage/'.$this->logo))) {
+            return asset('storage/'.$this->logo);
         }
+
         return asset('images/logo-default.png');
     }
 
@@ -161,12 +184,13 @@ class Salao extends Model
     {
         $parts = array_filter([
             $this->endereco,
-            $this->numero ? 'nº ' . $this->numero : null,
+            $this->numero ? 'nº '.$this->numero : null,
             $this->complemento,
             $this->bairro,
             $this->cidade,
             $this->estado,
         ]);
+
         return implode(', ', $parts);
     }
 
@@ -175,8 +199,11 @@ class Salao extends Model
         $agora = now();
         $diaSemana = (int) $agora->format('w');
         $horario = $this->horarios()->where('dia_semana', $diaSemana)->where('ativo', true)->first();
-        if (!$horario) return false;
+        if (! $horario) {
+            return false;
+        }
         $hora = $agora->format('H:i:s');
+
         return $hora >= $horario->hora_abertura && $hora <= $horario->hora_fechamento;
     }
 
@@ -186,6 +213,7 @@ class Salao extends Model
         if (array_key_exists('nota_media_calc', $this->attributes)) {
             return round((float) $this->attributes['nota_media_calc'], 1);
         }
+
         return round($this->avaliacoes()->avg('nota') ?? 0, 1);
     }
 }

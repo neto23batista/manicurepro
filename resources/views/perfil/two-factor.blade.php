@@ -14,6 +14,18 @@
                         <div>A verificação em duas etapas está <strong>ativa</strong> na sua conta.</div>
                     </div>
 
+                    @if(!empty($recoveryCodes))
+                        <div class="alert alert-warning alert-permanent">
+                            <div class="fw-bold mb-2">Guarde estes códigos de recuperação</div>
+                            <p class="small mb-0">Cada código só pode ser usado uma vez. Eles não serão exibidos de novo.</p>
+                            <ul class="list-unstyled font-monospace mb-0 mt-2">
+                                @foreach($recoveryCodes as $code)
+                                    <li>{{ $code }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     @error('password')<div class="alert alert-danger alert-permanent">{{ $message }}</div>@enderror
 
                     <form method="POST" action="{{ route('2fa.disable') }}">

@@ -20,9 +20,31 @@ return [
         'valor_desconto'       => env('MANICURE_VALOR_DESCONTO', 10.00),
     ],
 
+    /*
+     * Programa de indicação. Quando enabled, o indicador recebe recompensa
+     * na primeira visita concluída do indicado (pontos ou cupom).
+     */
+    'indicacao' => [
+        'enabled'             => env('INDICACAO_ENABLED', true),
+        'recompensa'          => env('INDICACAO_RECOMPENSA', 'pontos'), // pontos | cupom
+        'pontos'              => env('INDICACAO_PONTOS', 50),
+        'cupom_valor'         => env('INDICACAO_CUPOM_VALOR', 20),
+        'cupom_validade_dias' => env('INDICACAO_CUPOM_VALIDADE', 30),
+    ],
+
     'no_show' => [
         // A partir de quantas faltas o cliente passa a exibir alerta de risco no painel.
         'limite_alerta' => env('MANICURE_NO_SHOW_ALERTA', 2),
+    ],
+
+    /*
+     * Estoque de produtos. `minimo_padrao` é o limiar sugerido no cadastro
+     * (alerta visual no index/dashboard quando estoque_atual <= estoque_minimo).
+     * `notificar_zerado` dispara e-mail/database ao dono quando uma venda zera o estoque.
+     */
+    'estoque' => [
+        'minimo_padrao'    => env('ESTOQUE_MINIMO_PADRAO', 1),
+        'notificar_zerado' => env('ESTOQUE_NOTIFICAR_ZERADO', true),
     ],
 
     /*
@@ -59,6 +81,7 @@ return [
     'cache_ttl' => [
         'configuracao_salao'   => env('MANICURE_CACHE_CONFIG_TTL', 3600),   // 1h
         'notificacoes_topbar'  => env('MANICURE_CACHE_NOTIF_TTL', 60),      // 60s
+        'slots_disponiveis'    => env('MANICURE_CACHE_SLOTS_TTL', 60),      // 60s
     ],
 
     'ui_avatars' => [
@@ -69,6 +92,17 @@ return [
 
     'tema' => [
         'cor_primaria' => env('MANICURE_COR_PRIMARIA', '#e91e8c'),
+    ],
+
+    /*
+     * Redes sociais exibidas no rodapé público.
+     * Deixe vazio para ocultar o ícone correspondente.
+     */
+    'social' => [
+        'instagram' => env('MANICURE_INSTAGRAM'), // URL completa ou @usuario
+        'facebook'  => env('MANICURE_FACEBOOK'),  // URL completa
+        'tiktok'    => env('MANICURE_TIKTOK'),    // URL completa ou @usuario
+        'whatsapp'  => env('MANICURE_WHATSAPP'),  // telefone com DDI ou URL wa.me
     ],
 
     /*
@@ -99,6 +133,28 @@ return [
         'templates' => [
             'lembrete'   => env('WHATSAPP_TEMPLATE_LEMBRETE'),
             'confirmado' => env('WHATSAPP_TEMPLATE_CONFIRMADO'),
+        ],
+    ],
+
+    /*
+     * Fiscal / NF-e — STUB apenas (NÃO emite na SEFAZ).
+     * Quando enabled=true, o dono pode criar rascunhos locais vinculados a
+     * agendamento/comanda. Não há certificado, autorização nem webservice.
+     */
+    'fiscal' => [
+        'enabled' => env('FISCAL_ENABLED', false),
+    ],
+
+    /*
+     * Web Push (PWA). Opcional — sem VAPID_* o JS não tenta subscrever e
+     * WebPushService::sendToUser / WebPushChannel são no-op.
+     * Gere o par com openssl/web-push CLI (não obrigatório em produção).
+     */
+    'webpush' => [
+        'vapid' => [
+            'subject'     => env('VAPID_SUBJECT', 'mailto:noreply@manicurepro.com.br'),
+            'public_key'  => env('VAPID_PUBLIC_KEY'),
+            'private_key' => env('VAPID_PRIVATE_KEY'),
         ],
     ],
 

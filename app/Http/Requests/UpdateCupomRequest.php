@@ -8,7 +8,11 @@ class UpdateCupomRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->salao_id !== null;
+        $cupom = $this->route('cupom');
+
+        return $cupom
+            ? ($this->user()?->can('update', $cupom) ?? false)
+            : false;
     }
 
     public function rules(): array

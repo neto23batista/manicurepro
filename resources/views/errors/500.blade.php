@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>500 — Erro Interno | {{ config('app.name') }}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <x-theme-vars />
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        :root { --pink: #e91e8c; }
         body { background: linear-gradient(135deg, #fff5fb 0%, #fce4ec 100%); min-height: 100vh; display: flex; align-items: center; }
         .error-code { font-size: 6rem; font-weight: 900; color: var(--pink); line-height: 1; }
         .icon-big { font-size: 5rem; color: var(--pink); opacity: .25; }
-        .btn-pink { background: var(--pink); color: white; border: none; }
-        .btn-pink:hover { background: #c2177c; color: white; }
     </style>
 </head>
 <body>
@@ -26,7 +23,7 @@
             Algo deu errado no servidor. Nossa equipe foi notificada e está trabalhando para resolver.
         </p>
         <div class="d-flex justify-content-center gap-3">
-            <a href="javascript:location.reload()" class="btn btn-outline-secondary">
+            <a href="{{ url('/') }}" class="btn btn-outline-secondary">
                 <i class="fa-solid fa-rotate-right me-1"></i>Tentar novamente
             </a>
             <a href="/" class="btn btn-pink px-4">

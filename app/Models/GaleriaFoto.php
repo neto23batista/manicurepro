@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GaleriaFoto extends Model
 {
@@ -19,21 +20,24 @@ class GaleriaFoto extends Model
         'ordem'    => 'integer',
     ];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function manicure()
+    /** @return BelongsTo<Manicure, $this> */
+    public function manicure(): BelongsTo
     {
         return $this->belongsTo(Manicure::class);
     }
 
     public function getFotoUrlAttribute(): string
     {
-        if ($this->caminho && file_exists(public_path('storage/' . $this->caminho))) {
-            return asset('storage/' . $this->caminho);
+        if ($this->caminho && file_exists(public_path('storage/'.$this->caminho))) {
+            return asset('storage/'.$this->caminho);
         }
+
         return asset('images/logo-default.png');
     }
 

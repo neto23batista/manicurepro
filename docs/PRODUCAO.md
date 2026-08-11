@@ -91,35 +91,53 @@ Após cada deploy: `php artisan queue:restart` (faz os workers recarregarem o c�
 ## 6. Agendador (cron)
 
 Os disparos automáticos (lembretes 24h/2h, **felicitações de aniversário**,
-limpeza de reservas expiradas) dependem do scheduler. Adicione **uma** linha de cron:
+limpeza de no-shows e holds) dependem do scheduler. Adicione **uma** linha de cron:
 
 ```cron
 * * * * * cd /var/www/manicurepro && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-Tarefas agendadas (ver `routes/console.php`):
+Horários seguem `APP_TIMEZONE` (padrão `America/Sao_Paulo`). As notificações
+implementam `ShouldQueue` — o **worker de fila** (passo 5) precisa estar ativo
+para e-mail/WhatsApp saírem de fato.
 
-| Comando                              | Quando            |
-|--------------------------------------|-------------------|
-| `manicure:enviar-lembretes 24h`      | diário 08:00      |
-| `manicure:enviar-lembretes 2h`       | de hora em hora   |
-| `manicure:enviar-aniversarios`       | diário 09:00      |
-| `manicure:limpar-expirados`          | diário 03:00      |
+Tarefas agendadas (ver `routes/console.php`; todas com `withoutOverlapping`):
+
+| Comando                              | Quando            | O que faz |
+|--------------------------------------|-------------------|-----------|
+| `manicure:enviar-lembretes 24h`      | diário 08:00      | Lembrete dos agendamentos de **amanhã** (`aguardando`/`confirmado`). Marca `lembrete_24h_em`. |
+| `manicure:enviar-lembretes 2h`       | de hora em hora   | Lembrete dos que começam nas próximas ~2h15. Marca `lembrete_2h_em`. |
+| `manicure:enviar-aniversarios`       | diário 09:00      | Felicita clientes ativos com aniversário hoje (29/02 → 28/02 em ano não bissexto). Marca `aniversario_enviado_em` e opcionalmente gera cupom `NIVER-{id}-{ano}`. |
+| `manicure:limpar-expirados`          | diário 03:00      | Marca `nao_compareceu` se `data_hora_fim` passou há >2h (ainda aberto) e apaga `slot_holds` expirados. |
+
+**Idempotência:** reexecutar o mesmo comando no mesmo dia não reenvia —
+os campos `lembrete_*_em` / `aniversario_enviado_em` e o filtro de status
+impedem duplicata. Em falha no `notify`, o marcador é liberado para retry.
+
+Rodar manualmente (útil para smoke-test após deploy):
+
+```bash
+php artisan manicure:enviar-lembretes 24h
+php artisan manicure:enviar-lembretes 2h
+php artisan manicure:enviar-aniversarios
+php artisan manicure:limpar-expirados
+php artisan schedule:list   # confere o que o cron vai disparar
+```
 
 ## 7. Integrações opcionais (config-gated)
 
 Desligadas por padrão; ative preenchendo o `.env`:
 
-- **Mercado Pago (sinal via Pix):** `MP_ENABLED=true`, `MP_ACCESS_TOKEN`,
-  `MP_WEBHOOK_SECRET`, `SINAL_HABILITADO=true`. Webhook: `POST /webhooks/mercadopago`.
+- **Mercado Pago (Pix online):** `MP_ENABLED=true`, `MP_ACCESS_TOKEN`,
+  `MP_WEBHOOK_SECRET`. Webhook: `POST /webhooks/mercadopago`.
+  - Sinal antecipado: `SINAL_HABILITADO=true`, `SINAL_TIPO=percentual|fixo`, `SINAL_VALOR`.
+  - Valor total/restante: `PAGAMENTO_TOTAL_HABILITADO=true` (cobra o líquido, ou o
+    restante se o sinal já foi pago). Cancelamento do agendamento tenta cancelar/
+    estornar a cobrança na MP (best-effort).
 - **WhatsApp (Cloud API):** `WHATSAPP_ENABLED=true`, `WHATSAPP_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID` e os templates aprovados.
 - **Aniversário:** ligado por padrão (`ANIVERSARIO_ENABLED=true`); gera cupom-presente
   (`ANIVERSARIO_CUPOM=true`, `ANIVERSARIO_CUPOM_VALOR=15`).
-
-> **Pagamento online do valor cheio:** ainda não implementado. É uma extensão
-> direta do fluxo de sinal — parametrizar `MercadoPagoService::criarPixSinal`
-> para cobrar o total (em vez do percentual) e reaproveitar o mesmo webhook.
 
 ## 8. Pós-deploy — verificação
 

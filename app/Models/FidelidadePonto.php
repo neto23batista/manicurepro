@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FidelidadePonto extends Model
 {
@@ -13,17 +14,20 @@ class FidelidadePonto extends Model
         'pontos', 'tipo', 'descricao',
     ];
 
-    public function cliente()
+    /** @return BelongsTo<Cliente, $this> */
+    public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function agendamento()
+    /** @return BelongsTo<Agendamento, $this> */
+    public function agendamento(): BelongsTo
     {
         return $this->belongsTo(Agendamento::class);
     }

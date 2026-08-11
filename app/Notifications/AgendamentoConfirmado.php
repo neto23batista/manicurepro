@@ -8,36 +8,45 @@ use App\Notifications\Concerns\FormataAgendamentoMail;
 use App\Notifications\Messages\WhatsAppMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AgendamentoConfirmado extends Notification implements ShouldQueue
 {
-    use Queueable, FormataAgendamentoMail, EnviaPorWhatsApp;
+    use EnviaPorWhatsApp, FormataAgendamentoMail, Queueable;
 
     public function __construct(public Agendamento $agendamento) {}
 
     public function via(object $notifiable): array
     {
-        return $this->comWhatsApp(['mail', 'database']);
+        $canais = ['mail'];
+
+        // AnonymousNotifiable (guest com e-mail) não persiste database notifications
+        if (! $notifiable instanceof AnonymousNotifiable) {
+            $canais[] = 'database';
+        }
+
+        return $this->comWhatsApp($canais);
     }
 
     public function toWhatsApp(object $notifiable): WhatsAppMessage
     {
         $ag = $this->agendamento;
+        $nome = $this->nomeNotifiable($notifiable);
         $template = config('manicure.whatsapp.templates.confirmado');
 
         if ($template) {
             return WhatsAppMessage::create()->template($template, [
-                $notifiable->name,
+                $nome,
                 $ag->data_hora_inicio->format('d/m/Y H:i'),
                 $ag->manicure->nome,
             ]);
         }
 
         return WhatsAppMessage::create(
-            "Olá, {$notifiable->name}! 💅 Seu agendamento foi confirmado para "
-            . $ag->data_hora_inicio->format('d/m/Y \à\s H:i') . " com {$ag->manicure->nome}. Até breve!"
+            "Olá, {$nome}! Seu agendamento na {$this->brandName()} foi confirmado para "
+            .$ag->data_hora_inicio->format('d/m/Y \à\s H:i')." com {$ag->manicure->nome}. Até breve!",
         );
     }
 
@@ -45,23 +54,24 @@ class AgendamentoConfirmado extends Notification implements ShouldQueue
     {
         $ag = $this->agendamento;
         $valorLiquido = number_format($ag->valor_total - $ag->valor_desconto, 2, ',', '.');
+        $guest = ! $ag->user_id;
 
-        $mail = $this->baseMail('Agendamento Confirmado', $notifiable)
-            ->line('Seu agendamento foi confirmado com sucesso.');
+        $mail = $this->baseMail('Agendamento confirmado', $notifiable)
+            ->line('Seu horário na **'.$this->brandName().'** foi confirmado com sucesso.');
 
         $this->appendAgendamentoLines($mail);
 
         return $mail
-            ->line('**Valor Total:** R$ ' . $valorLiquido)
-            ->action('Ver Agendamento', route('cliente.agendamentos.show', $ag))
-            ->line('Aguardamos você! 💅');
+            ->line('**Valor total:** R$ '.$valorLiquido)
+            ->action($guest ? 'Confirmar presença' : 'Ver meu agendamento', $this->urlVerAgendamento())
+            ->line('Aguardamos você!');
     }
 
     public function toArray(object $notifiable): array
     {
         return $this->payload(
             'Agendamento Confirmado',
-            'Seu agendamento para ' . $this->agendamento->data_hora_inicio->format('d/m/Y H:i') . ' foi confirmado.'
+            'Seu agendamento para '.$this->agendamento->data_hora_inicio->format('d/m/Y H:i').' foi confirmado.',
         );
     }
 }

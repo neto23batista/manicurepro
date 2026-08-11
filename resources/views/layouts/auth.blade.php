@@ -6,11 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Acesso') - {{ config('app.name') }}</title>
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#e91e8c">
     <link rel="icon" type="image/png" href="/images/favicon.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <x-theme-vars />
     <meta name="app-env" content="{{ app()->environment() }}">
+    {{-- Bootstrap + Font Awesome vêm do bundle Vite (sem CDN — alinhado à CSP). --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="auth-body">
@@ -32,8 +31,6 @@
             </p>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     {{-- Toasts globais --}}
     @include('components.toasts')

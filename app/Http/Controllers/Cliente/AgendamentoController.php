@@ -3,16 +3,23 @@
 namespace App\Http\Controllers\Cliente;
 
 use App\Enums\AgendamentoStatus;
-use App\Http\Controllers\Concerns\AuthorizesSalao;
+use App\Events\AgendamentoCanceladoEvent;
+use App\Http\Controllers\Concerns\HandlesDomainExceptions;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreAgendamentoRequest;
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
+use App\Models\Cliente;
 use App\Models\Salao;
 use App\Services\AgendaService;
+use App\Services\ICalService;
+use App\Services\MercadoPagoService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AgendamentoController extends Controller
 {
-    use AuthorizesSalao;
+    use HandlesDomainExceptions;
 
     public function __construct(private AgendaService $agendaService) {}
 
@@ -42,84 +49,75 @@ class AgendamentoController extends Controller
         return view('cliente.agendamentos.create', compact('salao', 'manicures', 'servicos'));
     }
 
-    public function store(Request $request)
+    public function store(StoreAgendamentoRequest $request)
     {
-        // O salão é definido pelo servidor (instalação de salão único).
-        $request->merge(['salao_id' => Salao::principalId()]);
-
-        $request->validate([
-            'salao_id' => 'required|exists:saloes,id',
-            'manicure_id' => 'required|exists:manicures,id',
-            'servico_ids' => 'required|array|min:1',
-            'servico_ids.*' => 'exists:servicos,id',
-            'data_hora_inicio' => 'required|date|after:now',
-            'observacoes' => 'nullable|string|max:500',
-        ]);
-
+        $validated = $request->validated();
         $user = auth()->user();
         $cliente = $user->cliente;
 
         // Cria registro Cliente se ainda não existir (associado ao salão escolhido)
-        if (!$cliente) {
-            $cliente = \App\Models\Cliente::create([
-                'user_id' => $user->id,
-                'salao_id' => $request->salao_id,
-                'nome' => $user->name,
-                'email' => $user->email,
+        if (! $cliente) {
+            $cliente = Cliente::create([
+                'user_id'  => $user->id,
+                'salao_id' => $validated['salao_id'],
+                'nome'     => $user->name,
+                'email'    => $user->email,
                 'telefone' => $user->phone,
             ]);
         }
 
         try {
             $agendamento = $this->agendaService->criarAgendamento([
-                'salao_id' => $request->salao_id,
-                'manicure_id' => $request->manicure_id,
-                'servico_ids' => $request->servico_ids,
-                'data_hora_inicio' => $request->data_hora_inicio,
-                'cliente_id' => $cliente->id,
-                'user_id' => $user->id,
-                'nome_cliente' => $user->name,
+                'salao_id'         => $validated['salao_id'],
+                'manicure_id'      => $validated['manicure_id'],
+                'servico_ids'      => $validated['servico_ids'],
+                'data_hora_inicio' => $validated['data_hora_inicio'],
+                'cliente_id'       => $cliente->id,
+                'user_id'          => $user->id,
+                'nome_cliente'     => $user->name,
                 'telefone_cliente' => $user->phone,
-                'observacoes' => $request->observacoes,
-                'origem' => 'web',
-                'status' => AgendamentoStatus::Aguardando->value,
+                'observacoes'      => $validated['observacoes'] ?? null,
+                'origem'           => 'web',
+                'status'           => AgendamentoStatus::Aguardando->value,
             ]);
             // Notificações: enviadas pelo listener NotificarAgendamentoCriado.
 
             return redirect()->route('cliente.agendamentos.show', $agendamento)
                 ->with('success', 'Agendamento realizado com sucesso! 💅');
-        } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return $this->domainExceptionBack($e, 'Não foi possível criar o agendamento.', withInput: true);
         }
     }
 
-    public function show(Agendamento $agendamento)
+    public function show(Agendamento $agendamento, ICalService $ical)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('view', $agendamento);
         $agendamento->load(['manicure', 'servicos', 'salao', 'avaliacao', 'pagamentos']);
-        return view('cliente.agendamentos.show', compact('agendamento'));
+        $googleCalendarUrl = $ical->linkGoogleCalendar($agendamento);
+
+        return view('cliente.agendamentos.show', compact('agendamento', 'googleCalendarUrl'));
     }
 
     /**
      * Exporta o agendamento como arquivo iCalendar (.ics) para a agenda do cliente.
      */
-    public function ical(Agendamento $agendamento, \App\Services\ICalService $ical)
+    public function ical(Agendamento $agendamento, ICalService $ical)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('view', $agendamento);
 
         $conteudo = $ical->paraAgendamento($agendamento);
 
         return response($conteudo, 200, [
             'Content-Type'        => 'text/calendar; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $ical->nomeArquivo($agendamento) . '"',
+            'Content-Disposition' => 'attachment; filename="'.$ical->nomeArquivo($agendamento).'"',
         ]);
     }
 
     public function reagendarForm(Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('view', $agendamento);
 
-        if (!$agendamento->podeSerReagendado()) {
+        if (! $agendamento->podeSerReagendado()) {
             return redirect()->route('cliente.agendamentos.show', $agendamento)
                 ->withErrors(['error' => 'Este agendamento não pode ser remarcado.']);
         }
@@ -131,9 +129,9 @@ class AgendamentoController extends Controller
 
     public function reagendar(Request $request, Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('view', $agendamento);
 
-        if (!$agendamento->podeSerReagendado()) {
+        if (! $agendamento->podeSerReagendado()) {
             return back()->withErrors(['error' => 'Este agendamento não pode ser remarcado.']);
         }
 
@@ -142,29 +140,29 @@ class AgendamentoController extends Controller
         ]);
 
         try {
-            $this->agendaService->reagendar($agendamento, \Carbon\Carbon::parse($request->data_hora_inicio));
+            $this->agendaService->reagendar($agendamento, Carbon::parse($request->data_hora_inicio));
 
             return redirect()->route('cliente.agendamentos.show', $agendamento)
                 ->with('success', 'Agendamento remarcado com sucesso! 💅');
-        } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return $this->domainExceptionBack($e, 'Não foi possível remarcar o agendamento.', withInput: true);
         }
     }
 
     public function cancelar(Request $request, Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('cancel', $agendamento);
 
-        if (!$agendamento->podeSerCancelado()) {
+        if (! $agendamento->podeSerCancelado()) {
             return back()->withErrors(['error' => 'Este agendamento não pode ser cancelado.']);
         }
 
         $agendamento->update(['status' => AgendamentoStatus::Cancelado->value]);
 
-        \App\Events\AgendamentoCanceladoEvent::dispatch(
+        AgendamentoCanceladoEvent::dispatch(
             $agendamento,
             'Cancelado a pedido do cliente.',
-            'cliente'
+            'cliente',
         );
 
         unset($request);
@@ -175,10 +173,10 @@ class AgendamentoController extends Controller
 
     public function sinal(Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
-        $mp = app(\App\Services\MercadoPagoService::class);
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
 
-        if (!$mp->sinalHabilitado()) {
+        if (! $mp->sinalHabilitado()) {
             return redirect()->route('cliente.agendamentos.show', $agendamento)
                 ->withErrors(['error' => 'Pagamento de sinal não está disponível no momento.']);
         }
@@ -204,8 +202,8 @@ class AgendamentoController extends Controller
 
     public function sinalStatus(Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
-        $mp = app(\App\Services\MercadoPagoService::class);
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
 
         $pix = $mp->consultarPix($agendamento);
         $pago = ($pix['status'] ?? null) === 'pago';
@@ -219,7 +217,7 @@ class AgendamentoController extends Controller
 
     public function avaliar(Request $request, Agendamento $agendamento)
     {
-        $this->authorizeClienteAccess($agendamento);
+        $this->authorize('view', $agendamento);
 
         if ($agendamento->status !== AgendamentoStatus::Concluido->value) {
             return back()->withErrors(['error' => 'Só é possível avaliar agendamentos concluídos.']);
@@ -230,20 +228,19 @@ class AgendamentoController extends Controller
         }
 
         $request->validate([
-            'nota' => 'required|integer|min:1|max:5',
+            'nota'       => 'required|integer|min:1|max:5',
             'comentario' => 'nullable|string|max:500',
         ]);
 
-        \App\Models\Avaliacao::create([
+        Avaliacao::create([
             'agendamento_id' => $agendamento->id,
-            'cliente_id' => auth()->user()->cliente?->id,
-            'manicure_id' => $agendamento->manicure_id,
-            'salao_id' => $agendamento->salao_id,
-            'nota' => $request->nota,
-            'comentario' => $request->comentario,
+            'cliente_id'     => auth()->user()->cliente?->id,
+            'manicure_id'    => $agendamento->manicure_id,
+            'salao_id'       => $agendamento->salao_id,
+            'nota'           => $request->nota,
+            'comentario'     => $request->comentario,
         ]);
 
         return back()->with('success', 'Obrigada pela avaliação! 🌸');
     }
-
 }

@@ -12,7 +12,7 @@ use Illuminate\Notifications\Notification;
 
 class AgendamentoReagendado extends Notification implements ShouldQueue
 {
-    use Queueable, FormataAgendamentoMail;
+    use FormataAgendamentoMail, Queueable;
 
     public function __construct(
         public Agendamento $agendamento,
@@ -26,23 +26,24 @@ class AgendamentoReagendado extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $mail = $this->baseMail('Agendamento Remarcado', $notifiable)
-            ->line('Seu agendamento foi remarcado.')
-            ->line('**Antes:** ' . $this->dataAnterior->format('d/m/Y H:i'));
+        $mail = $this->baseMail('Agendamento remarcado', $notifiable)
+            ->line('Seu horário na **'.$this->brandName().'** foi remarcado.')
+            ->line('**Antes:** '.$this->dataAnterior->format('d/m/Y H:i'));
 
         $this->appendAgendamentoLines($mail);
 
         return $mail
-            ->action('Ver Agendamento', route('cliente.agendamentos.show', $this->agendamento))
-            ->line('Até breve! 💅');
+            ->action('Confirmar novo horário', $this->linkConfirmacao())
+            ->line('O botão usa um link seguro e assinado — sem precisar fazer login.')
+            ->line('[Ver detalhes do agendamento]('.$this->urlVerAgendamento().')');
     }
 
     public function toArray(object $notifiable): array
     {
         return $this->payload(
             'Agendamento Remarcado',
-            'Novo horário: ' . $this->agendamento->data_hora_inicio->format('d/m/Y H:i')
-                . ' (antes: ' . $this->dataAnterior->format('d/m/Y H:i') . ').'
+            'Novo horário: '.$this->agendamento->data_hora_inicio->format('d/m/Y H:i')
+                .' (antes: '.$this->dataAnterior->format('d/m/Y H:i').').',
         );
     }
 }

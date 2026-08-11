@@ -15,11 +15,11 @@ class UsuarioController extends Controller
     public function index(Request $request)
     {
         $users = User::with('salao')
-            ->when($request->role, fn($q) => $q->where('role', $request->role))
+            ->when($request->role, fn ($q) => $q->where('role', $request->role))
             ->when($request->search, function ($q) use ($request) {
                 $q->where(function ($q2) use ($request) {
-                    $q2->where('name', 'like', '%' . $request->search . '%')
-                       ->orWhere('email', 'like', '%' . $request->search . '%');
+                    $q2->where('name', 'like', '%'.$request->search.'%')
+                        ->orWhere('email', 'like', '%'.$request->search.'%');
                 });
             })
             ->orderBy('name')
@@ -63,19 +63,29 @@ class UsuarioController extends Controller
 
     public function update(UpdateUsuarioRequest $request, User $usuario)
     {
+        $newRole = $request->role;
+        $newAtivo = $request->boolean('ativo', true);
+
+        if ($this->wouldRemoveLastActiveAdmin($usuario, $newRole, $newAtivo)) {
+            return back()->withErrors([
+                'error' => 'Não é possível remover ou desativar o último administrador ativo.',
+            ]);
+        }
+
         $data = [
             'name'     => $request->name,
             'email'    => $request->email,
-            'role'     => $request->role,
+            'role'     => $newRole,
             'salao_id' => $request->salao_id,
             'phone'    => $request->phone,
-            'ativo'    => $request->boolean('ativo', true),
+            'ativo'    => $newAtivo,
         ];
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
+        // Role changes are audited by UserRoleAuditObserver → AuditLogger
         $usuario->update($data);
 
         return redirect()
@@ -85,12 +95,39 @@ class UsuarioController extends Controller
 
     public function destroy(User $usuario)
     {
+        if ($usuario->role === 'admin' && $usuario->ativo && $this->isLastActiveAdmin($usuario)) {
+            return back()->withErrors([
+                'error' => 'Não é possível desativar o último administrador ativo.',
+            ]);
+        }
+
         if ($usuario->id === auth()->id()) {
             return back()->withErrors(['error' => 'Você não pode excluir sua própria conta.']);
         }
 
+        // Soft-deactivate: preserve history instead of hard delete
         $usuario->update(['ativo' => false]);
 
         return back()->with('success', 'Usuário desativado.');
+    }
+
+    private function isLastActiveAdmin(User $usuario): bool
+    {
+        return ! User::query()
+            ->where('role', 'admin')
+            ->where('ativo', true)
+            ->where('id', '!=', $usuario->id)
+            ->exists();
+    }
+
+    private function wouldRemoveLastActiveAdmin(User $usuario, string $newRole, bool $newAtivo): bool
+    {
+        if ($usuario->role !== 'admin' || ! $usuario->ativo) {
+            return false;
+        }
+
+        $losingAdminStatus = $newRole !== 'admin' || ! $newAtivo;
+
+        return $losingAdminStatus && $this->isLastActiveAdmin($usuario);
     }
 }

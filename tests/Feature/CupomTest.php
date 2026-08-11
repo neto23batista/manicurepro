@@ -2,21 +2,87 @@
 
 use App\Models\ConfiguracaoSalao;
 use App\Models\Cupom;
+use App\Models\DisponibilidadeManicure;
+use App\Models\HorarioFuncionamento;
+use App\Models\Manicure;
 use App\Models\Salao;
+use App\Models\Servico;
 use App\Models\User;
+use App\Services\AgendaService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Notification::fake();
+
     $this->salao = Salao::factory()->create(['ativo' => true]);
-    ConfiguracaoSalao::create(['salao_id' => $this->salao->id]);
+    ConfiguracaoSalao::create([
+        'salao_id'              => $this->salao->id,
+        'intervalo_agendamento' => 30,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 30,
+    ]);
     $this->dono = User::factory()->create([
         'role'     => 'dono',
         'ativo'    => true,
         'salao_id' => $this->salao->id,
     ]);
+
+    $userManicure = User::factory()->create(['role' => 'manicure', 'salao_id' => $this->salao->id]);
+    $this->manicure = Manicure::factory()->create([
+        'salao_id' => $this->salao->id,
+        'user_id'  => $userManicure->id,
+        'ativo'    => true,
+    ]);
+
+    for ($dia = 1; $dia <= 5; $dia++) {
+        HorarioFuncionamento::create([
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
+            'hora_fechamento' => '18:00:00',
+            'ativo'           => true,
+        ]);
+        DisponibilidadeManicure::create([
+            'manicure_id' => $this->manicure->id,
+            'dia_semana'  => $dia,
+            'hora_inicio' => '08:00:00',
+            'hora_fim'    => '18:00:00',
+            'ativo'       => true,
+        ]);
+    }
+
+    $this->servico = Servico::factory()->create([
+        'salao_id'          => $this->salao->id,
+        'preco'             => 100.00,
+        'duracao'           => 30,
+        'ativo'             => true,
+        'disponivel_online' => true,
+    ]);
+
+    $this->agendaService = app(AgendaService::class);
 });
+
+function slotLivre(Carbon $base, int $offsetHours = 0): Carbon
+{
+    return $base->copy()->next(Carbon::MONDAY)->setTime(9 + $offsetHours, 0);
+}
+
+function payloadAgendamento($self, ?int $cupomId, Carbon $inicio): array
+{
+    return [
+        'salao_id'         => $self->salao->id,
+        'manicure_id'      => $self->manicure->id,
+        'servico_ids'      => [$self->servico->id],
+        'data_hora_inicio' => $inicio->toDateTimeString(),
+        'origem'           => 'web',
+        'status'           => 'aguardando',
+        'cupom_id'         => $cupomId,
+    ];
+}
 
 test('dono lista cupons do próprio salão', function () {
     Cupom::factory()->count(3)->create(['salao_id' => $this->salao->id]);
@@ -66,7 +132,6 @@ test('cupom com validade no passado é rejeitado', function () {
 test('dono atualiza cupom', function () {
     $cupom = Cupom::factory()->create(['salao_id' => $this->salao->id, 'valor' => 10]);
 
-    // Sanidade: cupom e dono no mesmo salão
     $this->actingAs($this->dono);
     $cupom->refresh();
     $dono = $this->dono->fresh();
@@ -81,15 +146,6 @@ test('dono atualiza cupom', function () {
         'ativo'  => '1',
     ]);
 
-    // Debug: se 403, dump cupom + user
-    if ($r->status() === 403) {
-        dump([
-            'cupom_id'       => $cupom->id,
-            'cupom_salao_id' => $cupom->salao_id,
-            'user_salao_id'  => auth()->user()->salao_id,
-            'authed_role'    => auth()->user()->role,
-        ]);
-    }
     $r->assertRedirect('/dono/cupons');
     expect((float) $cupom->fresh()->valor)->toEqual(25.0);
 });
@@ -115,4 +171,138 @@ test('dono A não pode editar cupom do salão B', function () {
 test('cliente não pode acessar área de cupons', function () {
     $cli = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->actingAs($cli)->get('/dono/cupons')->assertStatus(403);
+});
+
+test('aplicar cupom válido concede desconto e consome uso', function () {
+    $cupom = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'tipo'       => 'fixo',
+        'valor'      => 20,
+        'uso_maximo' => 5,
+        'uso_atual'  => 0,
+        'validade'   => now()->addMonth(),
+        'ativo'      => true,
+    ]);
+
+    $inicio = slotLivre(now());
+    $ag = $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $inicio));
+
+    expect((float) $ag->valor_desconto)->toBe(20.0);
+    expect($ag->cupom_id)->toBe($cupom->id);
+    expect((int) $cupom->fresh()->uso_atual)->toBe(1);
+});
+
+test('cupom expirado não pode ser aplicado', function () {
+    $cupom = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'tipo'       => 'fixo',
+        'valor'      => 20,
+        'uso_maximo' => 5,
+        'uso_atual'  => 0,
+        'validade'   => now()->subDay(),
+        'ativo'      => true,
+    ]);
+
+    $inicio = slotLivre(now());
+
+    expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $inicio)))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect((int) $cupom->fresh()->uso_atual)->toBe(0);
+    expect(\App\Models\Agendamento::count())->toBe(0);
+});
+
+test('cupom esgotado não pode ser aplicado', function () {
+    $cupom = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'tipo'       => 'fixo',
+        'valor'      => 20,
+        'uso_maximo' => 2,
+        'uso_atual'  => 2,
+        'validade'   => now()->addMonth(),
+        'ativo'      => true,
+    ]);
+
+    $inicio = slotLivre(now());
+
+    expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $inicio)))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect((int) $cupom->fresh()->uso_atual)->toBe(2);
+    expect(\App\Models\Agendamento::count())->toBe(0);
+});
+
+test('cupom de outro salão não pode ser aplicado', function () {
+    $outroSalao = Salao::factory()->create(['ativo' => true]);
+    $cupomOutro = Cupom::factory()->create([
+        'salao_id'   => $outroSalao->id,
+        'tipo'       => 'fixo',
+        'valor'      => 50,
+        'uso_maximo' => 10,
+        'uso_atual'  => 0,
+        'validade'   => now()->addMonth(),
+        'ativo'      => true,
+    ]);
+
+    $inicio = slotLivre(now());
+
+    expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupomOutro->id, $inicio)))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect((int) $cupomOutro->fresh()->uso_atual)->toBe(0);
+    expect(\App\Models\Agendamento::count())->toBe(0);
+});
+
+test('uso_maximo=1: segundo apply é rejeitado (race-safe consume)', function () {
+    $cupom = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'tipo'       => 'fixo',
+        'valor'      => 10,
+        'uso_maximo' => 1,
+        'uso_atual'  => 0,
+        'validade'   => now()->addMonth(),
+        'ativo'      => true,
+    ]);
+
+    $primeiro = slotLivre(now());
+    $segundo = slotLivre(now(), 1);
+
+    $ag = $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $primeiro));
+    expect((float) $ag->valor_desconto)->toBe(10.0);
+    expect((int) $cupom->fresh()->uso_atual)->toBe(1);
+
+    expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $segundo)))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect((int) $cupom->fresh()->uso_atual)->toBe(1);
+    expect(\App\Models\Agendamento::count())->toBe(1);
+});
+
+test('isValido rejeita salão errado, expirado e esgotado', function () {
+    $cupom = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'uso_maximo' => 1,
+        'uso_atual'  => 0,
+        'validade'   => now()->addDay(),
+        'ativo'      => true,
+    ]);
+
+    expect($cupom->isValido($this->salao->id))->toBeTrue();
+    expect($cupom->isValido($this->salao->id + 999))->toBeFalse();
+
+    $expirado = Cupom::factory()->create([
+        'salao_id' => $this->salao->id,
+        'validade' => now()->subDay(),
+        'ativo'    => true,
+    ]);
+    expect($expirado->isValido($this->salao->id))->toBeFalse();
+
+    $esgotado = Cupom::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'uso_maximo' => 3,
+        'uso_atual'  => 3,
+        'validade'   => now()->addMonth(),
+        'ativo'      => true,
+    ]);
+    expect($esgotado->isValido($this->salao->id))->toBeFalse();
 });

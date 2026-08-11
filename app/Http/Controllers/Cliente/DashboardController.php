@@ -30,9 +30,9 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
-        $totalVisitas = $cliente?->total_visitas ?? 0;
-        $totalGasto = $cliente?->total_gasto ?? 0;
-        $pontos = $cliente?->pontos_fidelidade ?? 0;
+        $totalVisitas = $cliente !== null ? ($cliente->total_visitas ?? 0) : 0;
+        $totalGasto = $cliente !== null ? ($cliente->total_gasto ?? 0) : 0;
+        $pontos = $cliente !== null ? ($cliente->pontos_fidelidade ?? 0) : 0;
 
         return view('cliente.dashboard', compact(
             'user', 'cliente', 'proximosAgendamentos',

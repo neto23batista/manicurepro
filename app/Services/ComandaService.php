@@ -6,6 +6,7 @@ use App\DataTransferObjects\DadosPagamentoData;
 use App\Enums\ComandaStatus;
 use App\Enums\FormaPagamento;
 use App\Enums\PagamentoStatus;
+use App\Events\EstoqueZerado;
 use App\Models\Agendamento;
 use App\Models\Comanda;
 use App\Models\ComandaItem;
@@ -14,6 +15,7 @@ use App\Models\Produto;
 use App\Models\ValePresente;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Comanda do atendimento: itens de serviço, venda de produtos (com baixa de
@@ -30,7 +32,9 @@ class ComandaService
     {
         return DB::transaction(function () use ($agendamento, $produto, $quantidade, $userId) {
             if ((float) $produto->estoque_atual < $quantidade) {
-                throw new \RuntimeException("Estoque insuficiente de \"{$produto->nome}\".");
+                throw ValidationException::withMessages([
+                    'error' => "Estoque insuficiente de \"{$produto->nome}\".",
+                ]);
             }
 
             $comanda = $this->travar($this->getOrCreateComanda($agendamento));
@@ -52,8 +56,13 @@ class ComandaService
                 $userId,
                 'Venda no atendimento',
                 $preco,
-                'Agendamento #' . $agendamento->id
+                'Agendamento #'.$agendamento->id,
             );
+
+            $produto = $produto->fresh();
+            if ((float) $produto->estoque_atual <= 0) {
+                EstoqueZerado::dispatch($produto);
+            }
 
             $this->recalcular($comanda);
 
@@ -80,7 +89,7 @@ class ComandaService
                         $userId,
                         'Estorno de venda',
                         null,
-                        'Agendamento #' . $comanda->agendamento_id
+                        'Agendamento #'.$comanda->agendamento_id,
                     );
                 }
             }
@@ -88,6 +97,14 @@ class ComandaService
             $item->delete();
             $this->recalcular($comanda);
         });
+    }
+
+    /**
+     * Expõe criação/recuperação da comanda (ex.: crédito de Pix online).
+     */
+    public function obterOuCriar(Agendamento $agendamento): Comanda
+    {
+        return $this->getOrCreateComanda($agendamento);
     }
 
     /**
@@ -104,7 +121,7 @@ class ComandaService
             $comanda = $this->travar($this->getOrCreateComanda($agendamento));
 
             // Registra os itens dos serviços (só uma vez).
-            if (!$comanda->itens()->where('tipo', 'servico')->exists()) {
+            if (! $comanda->itens()->where('tipo', 'servico')->exists()) {
                 $agendamento->loadMissing('servicos');
                 foreach ($agendamento->servicos as $servico) {
                     $comanda->itens()->create([
@@ -119,10 +136,20 @@ class ComandaService
             }
 
             $this->recalcular($comanda);
-            $comanda->update(['status' => ComandaStatus::Fechada->value]);
+
+            $gorjeta = max(0, (float) ($dto->gorjeta ?? 0));
+            $base = max(
+                0,
+                (float) $comanda->valor_servicos + (float) $comanda->valor_produtos - (float) $comanda->desconto,
+            );
+            $comanda->update([
+                'gorjeta' => $gorjeta,
+                'total'   => $base + $gorjeta,
+                'status'  => ComandaStatus::Fechada->value,
+            ]);
             $comanda->refresh();
 
-            // Paga apenas o saldo restante — respeita vouchers/vales já aplicados.
+            // Paga apenas o saldo restante — respeita vouchers/vales e Pix online já aplicados.
             $restante = max(0, (float) $comanda->saldo);
             $valor = $dto->valor ?? $restante;
 
@@ -134,6 +161,7 @@ class ComandaService
                     'forma'          => $dto->forma->value,
                     'valor'          => $valor,
                     'status'         => PagamentoStatus::Confirmado->value,
+                    'observacoes'    => $dto->observacao,
                 ]);
             }
 
@@ -154,7 +182,9 @@ class ComandaService
 
             $restante = max(0, (float) $comanda->saldo);
             if ($restante <= 0.001) {
-                throw new \RuntimeException('Esta comanda já está quitada.');
+                throw ValidationException::withMessages([
+                    'error' => 'Esta comanda já está quitada.',
+                ]);
             }
 
             $debito = $vales->debitar($vale, $restante);
@@ -166,7 +196,7 @@ class ComandaService
                 'forma'          => FormaPagamento::Voucher->value,
                 'valor'          => $debito,
                 'status'         => PagamentoStatus::Confirmado->value,
-                'observacoes'    => 'Vale-presente ' . $vale->codigo,
+                'observacoes'    => 'Vale-presente '.$vale->codigo,
             ]);
         });
     }
@@ -222,11 +252,13 @@ class ComandaService
         $produtos = (float) $comanda->itens()->where('tipo', 'produto')->sum('subtotal');
         $desconto = (float) $comanda->agendamento->valor_desconto;
 
+        $gorjeta = (float) ($comanda->gorjeta ?? 0);
+
         $comanda->update([
             'valor_servicos' => $servicos,
             'valor_produtos' => $produtos,
             'desconto'       => $desconto,
-            'total'          => max(0, $servicos + $produtos - $desconto),
+            'total'          => max(0, $servicos + $produtos - $desconto + $gorjeta),
         ]);
     }
 }

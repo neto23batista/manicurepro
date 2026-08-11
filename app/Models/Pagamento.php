@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pagamento extends Model
 {
@@ -14,26 +15,28 @@ class Pagamento extends Model
     protected $casts = ['valor' => 'decimal:2'];
 
     const FORMAS_LABELS = [
-        'dinheiro' => 'Dinheiro',
+        'dinheiro'       => 'Dinheiro',
         'cartao_credito' => 'Cartão de Crédito',
-        'cartao_debito' => 'Cartão de Débito',
-        'pix' => 'PIX',
-        'transferencia' => 'Transferência',
-        'voucher' => 'Voucher',
+        'cartao_debito'  => 'Cartão de Débito',
+        'pix'            => 'PIX',
+        'transferencia'  => 'Transferência',
+        'voucher'        => 'Voucher',
     ];
 
-    public function comanda()
+    /** @return BelongsTo<Comanda, $this> */
+    public function comanda(): BelongsTo
     {
         return $this->belongsTo(Comanda::class);
     }
 
-    public function agendamento()
+    /** @return BelongsTo<Agendamento, $this> */
+    public function agendamento(): BelongsTo
     {
         return $this->belongsTo(Agendamento::class);
     }
 
     public function getFormaLabelAttribute(): string
     {
-        return self::FORMAS_LABELS[$this->forma] ?? $this->forma;
+        return self::FORMAS_LABELS[$this->forma];
     }
 }

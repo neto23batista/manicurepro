@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ValePresente extends Model
 {
     protected $table = 'vales_presente';
 
-    public const STATUS_ATIVO     = 'ativo';
-    public const STATUS_USADO     = 'usado';
+    public const STATUS_ATIVO = 'ativo';
+
+    public const STATUS_USADO = 'usado';
+
     public const STATUS_CANCELADO = 'cancelado';
 
     protected $fillable = [
@@ -24,21 +27,23 @@ class ValePresente extends Model
         'validade' => 'date',
     ];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
     public function getExpiradoAttribute(): bool
     {
-        return $this->validade !== null && $this->validade->endOfDay()->isPast();
+        // copy(): endOfDay() muta o Carbon; sem isso a validade do model fica 23:59:59.
+        return $this->validade !== null && $this->validade->copy()->endOfDay()->isPast();
     }
 
     public function estaDisponivel(): bool
     {
         return $this->status === self::STATUS_ATIVO
             && (float) $this->saldo > 0
-            && !$this->expirado;
+            && ! $this->expirado;
     }
 
     public function getStatusLabelAttribute(): string

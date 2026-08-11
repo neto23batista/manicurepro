@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Salao;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin Salao */
 class SalaoResource extends JsonResource
 {
     public function toArray(Request $request): array

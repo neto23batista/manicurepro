@@ -1,7 +1,7 @@
 @props(['title' => 'Dashboard'])
 
 <div class="topbar">
-    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu lateral">
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu lateral" aria-controls="sidebar" aria-expanded="false">
         <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
 

@@ -131,9 +131,18 @@
                     <i class="fas fa-qrcode me-2"></i> Pagar sinal
                 </a>
             @endif
+            @if($agendamento->precisaPagamentoTotal())
+                <a href="{{ route('cliente.agendamentos.pagamento', $agendamento) }}" class="btn btn-success">
+                    <i class="fas fa-qrcode me-2"></i>
+                    {{ $agendamento->sinalPago() ? 'Pagar restante' : 'Pagar valor total' }}
+                </a>
+            @endif
             @if(!in_array($agendamento->status, ['cancelado', 'nao_compareceu']))
                 <a href="{{ route('cliente.agendamentos.ical', $agendamento) }}" class="btn btn-outline-pink">
-                    <i class="fas fa-calendar-plus me-2"></i> Adicionar à agenda
+                    <i class="fas fa-calendar-plus me-2"></i> Baixar .ics
+                </a>
+                <a href="{{ $googleCalendarUrl }}" class="btn btn-outline-pink" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-google me-2"></i> Google Calendar
                 </a>
             @endif
             @if($agendamento->podeSerReagendado())

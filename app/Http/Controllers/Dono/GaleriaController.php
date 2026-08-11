@@ -6,24 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreGaleriaFotoRequest;
 use App\Models\GaleriaFoto;
 use App\Models\Salao;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class GaleriaController extends Controller
 {
+    public function __construct(private ImageOptimizer $imageOptimizer) {}
+
     private function salaoId(): int
     {
         // Admin não tem salão vinculado — cai no salão único (single-tenant).
         return (int) (auth()->user()->salao_id ?? Salao::principalId());
     }
 
-    private function autoriza(GaleriaFoto $foto): void
-    {
-        abort_unless($foto->salao_id === $this->salaoId(), 403);
-    }
-
     public function index()
     {
+        $this->authorize('viewAny', GaleriaFoto::class);
+
         $salaoId = $this->salaoId();
 
         $fotos = GaleriaFoto::where('salao_id', $salaoId)
@@ -32,23 +32,30 @@ class GaleriaController extends Controller
             ->orderByDesc('id')
             ->paginate(24);
 
-        $manicures = (auth()->user()->salao ?? Salao::principal())?->manicures ?? collect();
+        $contexto = auth()->user()->salao ?? Salao::principal();
+        $manicures = $contexto !== null ? $contexto->manicures : collect();
 
         return view('dono.galeria.index', compact('fotos', 'manicures'));
     }
 
     public function store(StoreGaleriaFotoRequest $request)
     {
-        $salaoId  = $this->salaoId();
+        $this->authorize('create', GaleriaFoto::class);
+
+        $salaoId = $this->salaoId();
         $publicar = $request->boolean('publicar', true);
-        $titulo   = $request->input('titulo');
+        $titulo = $request->input('titulo');
         $manicureId = $request->filled('manicure_id') ? (int) $request->manicure_id : null;
 
         $ordemBase = (int) GaleriaFoto::where('salao_id', $salaoId)->max('ordem');
         $total = 0;
 
         foreach ($request->file('fotos', []) as $arquivo) {
-            $caminho = $arquivo->store('galeria/' . $salaoId, 'public');
+            $caminho = $this->imageOptimizer->storeOptimized(
+                $arquivo,
+                'galeria/'.$salaoId,
+                'public',
+            );
 
             GaleriaFoto::create([
                 'salao_id'    => $salaoId,
@@ -63,12 +70,12 @@ class GaleriaController extends Controller
         }
 
         return redirect()->route('dono.galeria.index')
-            ->with('success', $total . ' foto(s) adicionada(s) à galeria!');
+            ->with('success', $total.' foto(s) adicionada(s) à galeria!');
     }
 
     public function update(Request $request, GaleriaFoto $foto)
     {
-        $this->autoriza($foto);
+        $this->authorize('update', $foto);
 
         $request->validate([
             'titulo'      => ['nullable', 'string', 'max:120'],
@@ -94,15 +101,15 @@ class GaleriaController extends Controller
      */
     public function togglePublicar(GaleriaFoto $foto)
     {
-        $this->autoriza($foto);
-        $foto->update(['publicar' => !$foto->publicar]);
+        $this->authorize('update', $foto);
+        $foto->update(['publicar' => ! $foto->publicar]);
 
         return back()->with('success', $foto->publicar ? 'Foto publicada.' : 'Foto ocultada.');
     }
 
     public function destroy(GaleriaFoto $foto)
     {
-        $this->autoriza($foto);
+        $this->authorize('delete', $foto);
 
         if ($foto->caminho && Storage::disk('public')->exists($foto->caminho)) {
             Storage::disk('public')->delete($foto->caminho);

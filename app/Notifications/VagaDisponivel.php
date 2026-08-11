@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notification;
 
 class VagaDisponivel extends Notification implements ShouldQueue
 {
-    use Queueable, EnviaPorWhatsApp;
+    use EnviaPorWhatsApp, Queueable;
 
     public function __construct(public ListaEspera $entrada, public ?Carbon $dataVaga = null) {}
 
@@ -22,21 +22,28 @@ class VagaDisponivel extends Notification implements ShouldQueue
         return $this->comWhatsApp(['mail', 'database']);
     }
 
+    private function brandName(): string
+    {
+        return (string) config('app.name', 'Fernanda Silva Nails');
+    }
+
     private function quando(): string
     {
-        return $this->dataVaga ? ' para ' . $this->dataVaga->format('d/m/Y') : '';
+        return $this->dataVaga ? ' para '.$this->dataVaga->format('d/m/Y') : '';
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $salao = $this->entrada->salao;
+        $marca = $this->brandName();
 
         return (new MailMessage)
-            ->subject('Abriu uma vaga! — ' . $salao->nome)
-            ->greeting('Olá, ' . $notifiable->name . '!')
-            ->line('Abriu uma vaga em ' . $salao->nome . $this->quando() . '.')
+            ->subject('Vaga disponível — '.$marca)
+            ->greeting('Olá, '.$notifiable->name.'!')
+            ->line("Abriu uma vaga na **{$marca}**{$this->quando()}.")
             ->action('Agendar agora', route('public.agendar', $salao->slug))
-            ->line('As vagas são por ordem de chegada — corra! 🌸');
+            ->line('As vagas são por ordem de chegada — reserve o quanto antes.')
+            ->salutation("Com carinho,\n{$marca}");
     }
 
     public function toWhatsApp(object $notifiable): WhatsAppMessage
@@ -44,8 +51,8 @@ class VagaDisponivel extends Notification implements ShouldQueue
         $salao = $this->entrada->salao;
 
         return WhatsAppMessage::create(
-            "Olá, {$notifiable->name}! 🌸 Abriu uma vaga em {$salao->nome}{$this->quando()}. "
-            . 'Agende: ' . route('public.agendar', $salao->slug)
+            "Olá, {$notifiable->name}! Abriu uma vaga na {$this->brandName()}{$this->quando()}. "
+            .'Agende: '.route('public.agendar', $salao->slug),
         );
     }
 
@@ -53,7 +60,7 @@ class VagaDisponivel extends Notification implements ShouldQueue
     {
         return [
             'titulo'   => 'Vaga disponível',
-            'mensagem' => 'Abriu uma vaga em ' . $this->entrada->salao->nome . $this->quando() . '. Agende agora!',
+            'mensagem' => 'Abriu uma vaga em '.$this->entrada->salao->nome.$this->quando().'. Agende agora!',
         ];
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Produto extends Model
 {
@@ -13,21 +15,28 @@ class Produto extends Model
     ];
 
     protected $casts = [
-        'preco_custo' => 'decimal:2',
-        'preco_venda' => 'decimal:2',
-        'estoque_atual' => 'decimal:3',
+        'preco_custo'    => 'decimal:2',
+        'preco_venda'    => 'decimal:2',
+        'estoque_atual'  => 'decimal:3',
         'estoque_minimo' => 'decimal:3',
-        'ativo' => 'boolean',
+        'ativo'          => 'boolean',
     ];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function movimentacoes()
+    /** @return HasMany<EstoqueMovimentacao, $this> */
+    public function movimentacoes(): HasMany
     {
         return $this->hasMany(EstoqueMovimentacao::class);
+    }
+
+    public function scopeEstoqueBaixo($query)
+    {
+        return $query->whereColumn('estoque_atual', '<=', 'estoque_minimo');
     }
 
     public function getEstoqueBaixoAttribute(): bool

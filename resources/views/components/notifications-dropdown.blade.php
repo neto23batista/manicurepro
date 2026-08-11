@@ -5,7 +5,7 @@
             aria-label="Notificações ({{ $notificacoesNaoLidasQtd ?? 0 }} não lidas)">
         <i class="fas fa-bell" aria-hidden="true"></i>
         @if(($notificacoesNaoLidasQtd ?? 0) > 0)
-            <span class="badge-notification">{{ $notificacoesNaoLidasQtd }}</span>
+            <span class="badge-notification" aria-hidden="true">{{ $notificacoesNaoLidasQtd }}</span>
         @endif
     </button>
     <div class="dropdown-menu dropdown-menu-end notification-dropdown">

@@ -4,14 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmação · {{ $agendamento->salao->nome }}</title>
-    <meta name="theme-color" content="#ec4899">
     <meta name="app-env" content="{{ app()->environment() }}">
+    <x-theme-vars />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="public-body">
+<x-skip-link />
 <x-public-navbar :show-auth-buttons="false" />
 
-<div class="container py-5">
+<main id="mainContent" class="container py-5" tabindex="-1">
     <div class="row justify-content-center">
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm text-center">
@@ -54,6 +55,6 @@
             </div>
         </div>
     </div>
-</div>
+</main>
 </body>
 </html>

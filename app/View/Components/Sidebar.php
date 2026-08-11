@@ -32,8 +32,8 @@ class Sidebar extends Component
 
         return match ($role) {
             UserRole::Admin     => $this->menuAdmin(),
-            UserRole::Dono,
-            UserRole::Atendente => $this->menuDono(),
+            UserRole::Dono      => $this->menuDono(),
+            UserRole::Atendente => $this->menuAtendente(),
             UserRole::Manicure  => $this->menuManicure(),
             UserRole::Cliente   => $this->menuCliente(),
             default             => [],
@@ -58,6 +58,40 @@ class Sidebar extends Component
 
     private function menuDono(): array
     {
+        $items = [
+            ['route' => 'dono.dashboard',            'icon' => 'fa-chart-pie',     'label' => 'Dashboard',         'active_pattern' => 'dono.dashboard'],
+            ['route' => 'dono.agendamentos.index',   'icon' => 'fa-calendar-check','label' => 'Agendamentos',      'active_pattern' => ['dono.agendamentos.index', 'dono.agendamentos.show']],
+            ['route' => 'dono.agendamentos.create',  'icon' => 'fa-plus-circle',   'label' => 'Novo Agendamento',  'active_pattern' => 'dono.agendamentos.create'],
+            ['route' => 'dono.clientes.index',       'icon' => 'fa-users',         'label' => 'Clientes',          'active_pattern' => 'dono.clientes*'],
+            ['route' => 'dono.financeiro.index',     'icon' => 'fa-cash-register', 'label' => 'Caixa & Comissões', 'active_pattern' => 'dono.financeiro*'],
+        ];
+
+        // Stub NF-e — só aparece com manicure.fiscal.enabled (NÃO emite SEFAZ)
+        if (config('manicure.fiscal.enabled')) {
+            $items[] = [
+                'route' => 'dono.notas-fiscais.index',
+                'icon' => 'fa-file-invoice',
+                'label' => 'Notas fiscais (stub)',
+                'active_pattern' => 'dono.notas-fiscais*',
+            ];
+        }
+
+        $items = array_merge($items, [
+            ['route' => 'dono.cupons.index',         'icon' => 'fa-ticket',        'label' => 'Cupons',            'active_pattern' => 'dono.cupons*'],
+            ['route' => 'dono.pacotes.index',        'icon' => 'fa-layer-group',   'label' => 'Pacotes',           'active_pattern' => 'dono.pacotes*'],
+            ['route' => 'dono.vales.index',          'icon' => 'fa-gift',          'label' => 'Vale-presente',     'active_pattern' => 'dono.vales*'],
+            ['route' => 'dono.produtos.index',       'icon' => 'fa-box',           'label' => 'Produtos',          'active_pattern' => 'dono.produtos*'],
+            ['route' => 'dono.galeria.index',        'icon' => 'fa-images',        'label' => 'Galeria',           'active_pattern' => 'dono.galeria*'],
+            ['route' => 'dono.folgas.index',         'icon' => 'fa-umbrella-beach','label' => 'Folgas',            'active_pattern' => 'dono.folgas*'],
+            ['route' => 'dono.config.edit',          'icon' => 'fa-gear',          'label' => 'Configurações',     'active_pattern' => 'dono.config*'],
+        ]);
+
+        return [['label' => 'Gestão', 'items' => $items]];
+    }
+
+    /** Atendente: operação do salão sem caixa, vales nem configurações. */
+    private function menuAtendente(): array
+    {
         return [[
             'label' => 'Gestão',
             'items' => [
@@ -65,13 +99,11 @@ class Sidebar extends Component
                 ['route' => 'dono.agendamentos.index',   'icon' => 'fa-calendar-check','label' => 'Agendamentos',      'active_pattern' => ['dono.agendamentos.index', 'dono.agendamentos.show']],
                 ['route' => 'dono.agendamentos.create',  'icon' => 'fa-plus-circle',   'label' => 'Novo Agendamento',  'active_pattern' => 'dono.agendamentos.create'],
                 ['route' => 'dono.clientes.index',       'icon' => 'fa-users',         'label' => 'Clientes',          'active_pattern' => 'dono.clientes*'],
-                ['route' => 'dono.financeiro.index',     'icon' => 'fa-cash-register', 'label' => 'Caixa & Comissões', 'active_pattern' => 'dono.financeiro*'],
                 ['route' => 'dono.cupons.index',         'icon' => 'fa-ticket',        'label' => 'Cupons',            'active_pattern' => 'dono.cupons*'],
-                ['route' => 'dono.vales.index',          'icon' => 'fa-gift',          'label' => 'Vale-presente',     'active_pattern' => 'dono.vales*'],
+                ['route' => 'dono.pacotes.index',        'icon' => 'fa-layer-group',   'label' => 'Pacotes',           'active_pattern' => 'dono.pacotes*'],
                 ['route' => 'dono.produtos.index',       'icon' => 'fa-box',           'label' => 'Produtos',          'active_pattern' => 'dono.produtos*'],
                 ['route' => 'dono.galeria.index',        'icon' => 'fa-images',        'label' => 'Galeria',           'active_pattern' => 'dono.galeria*'],
                 ['route' => 'dono.folgas.index',         'icon' => 'fa-umbrella-beach','label' => 'Folgas',            'active_pattern' => 'dono.folgas*'],
-                ['route' => 'dono.config.edit',          'icon' => 'fa-gear',          'label' => 'Configurações',     'active_pattern' => 'dono.config*'],
             ],
         ]];
     }

@@ -105,13 +105,13 @@ window.Toast = {
         const toast = document.createElement('div');
         toast.className = `toast-item toast-${type}`;
         toast.innerHTML = `
-            <div class="toast-icon"><i class="fa-solid ${icons[type] || icons.info}"></i></div>
+            <div class="toast-icon" aria-hidden="true"><i class="fa-solid ${icons[type] || icons.info}"></i></div>
             <div class="toast-content">
                 <div class="toast-title">${this._escape(title)}</div>
                 ${message ? `<div class="toast-message">${this._escape(message)}</div>` : ''}
             </div>
             <button type="button" class="toast-close" aria-label="Fechar">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
             <div class="toast-progress" style="animation-duration: ${duration}ms"></div>
         `;
@@ -119,6 +119,11 @@ window.Toast = {
         stack.appendChild(toast);
 
         const remove = () => {
+            const reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduz) {
+                toast.remove();
+                return;
+            }
             toast.classList.add('toast-leaving');
             setTimeout(() => toast.remove(), 300);
         };

@@ -20,13 +20,10 @@ class ProdutoController extends Controller
         return (int) (auth()->user()->salao_id ?? Salao::principalId());
     }
 
-    private function autoriza(Produto $produto): void
-    {
-        abort_unless($produto->salao_id === $this->salaoId(), 403);
-    }
-
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Produto::class);
+
         $salaoId = $this->salaoId();
 
         $produtos = Produto::where('salao_id', $salaoId)
@@ -42,7 +39,7 @@ class ProdutoController extends Controller
 
         $baixoEstoque = Produto::where('salao_id', $salaoId)
             ->where('ativo', true)
-            ->whereColumn('estoque_atual', '<=', 'estoque_minimo')
+            ->estoqueBaixo()
             ->count();
 
         return view('dono.produtos.index', compact('produtos', 'baixoEstoque'));
@@ -50,16 +47,20 @@ class ProdutoController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Produto::class);
+
         return view('dono.produtos.create');
     }
 
     public function store(StoreProdutoRequest $request)
     {
+        $this->authorize('create', Produto::class);
+
         $data = $request->validated();
         $inicial = (float) ($data['estoque_atual'] ?? 0);
 
-        $data['salao_id']      = $this->salaoId();
-        $data['ativo']         = $request->boolean('ativo', true);
+        $data['salao_id'] = $this->salaoId();
+        $data['ativo'] = $request->boolean('ativo', true);
         $data['estoque_atual'] = 0; // o estoque inicial entra como movimentação
 
         $produto = Produto::create($data);
@@ -71,7 +72,7 @@ class ProdutoController extends Controller
                 $inicial,
                 auth()->id(),
                 'Estoque inicial',
-                (float) $produto->preco_custo
+                (float) $produto->preco_custo,
             );
         }
 
@@ -81,7 +82,7 @@ class ProdutoController extends Controller
 
     public function edit(Produto $produto)
     {
-        $this->autoriza($produto);
+        $this->authorize('update', $produto);
         $movimentacoes = $produto->movimentacoes()
             ->with('user')
             ->latest()
@@ -93,7 +94,7 @@ class ProdutoController extends Controller
 
     public function update(UpdateProdutoRequest $request, Produto $produto)
     {
-        $this->autoriza($produto);
+        $this->authorize('update', $produto);
 
         $data = $request->validated();
         $data['ativo'] = $request->boolean('ativo', true);
@@ -106,7 +107,7 @@ class ProdutoController extends Controller
 
     public function destroy(Produto $produto)
     {
-        $this->autoriza($produto);
+        $this->authorize('delete', $produto);
         $produto->update(['ativo' => false]);
 
         return back()->with('success', 'Produto desativado.');
@@ -117,7 +118,7 @@ class ProdutoController extends Controller
      */
     public function movimentar(Request $request, Produto $produto)
     {
-        $this->autoriza($produto);
+        $this->authorize('update', $produto);
 
         $request->validate([
             'tipo'       => 'required|in:entrada,saida,ajuste',
@@ -130,7 +131,7 @@ class ProdutoController extends Controller
             $request->tipo,
             (float) $request->quantidade,
             auth()->id(),
-            $request->motivo
+            $request->motivo,
         );
 
         return back()->with('success', 'Estoque atualizado!');

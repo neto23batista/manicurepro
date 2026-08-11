@@ -70,10 +70,38 @@ test('cliente NÃO vê agendamento de outro cliente', function () {
     expect($this->policy->view($this->userCliente, $agOutro))->toBeFalse();
 });
 
+test('cliente sem cadastro NÃO vê agendamento de balcão (cliente_id null)', function () {
+    $intruso = User::factory()->create(['role' => 'cliente']);
+    $balcao = Agendamento::factory()->create([
+        'salao_id' => $this->salaoA->id,
+        'manicure_id' => $this->manicure->id,
+        'cliente_id' => null,
+        'user_id' => $this->dono->id,
+    ]);
+
+    expect($this->policy->view($intruso, $balcao))->toBeFalse();
+    expect($intruso->can('view', $balcao))->toBeFalse();
+});
+
 test('cancel retorna false se status não permite cancelamento', function () {
     $ag = Agendamento::factory()->create([
         'salao_id' => $this->salaoA->id, 'manicure_id' => $this->manicure->id, 'cliente_id' => $this->cliente->id,
         'status' => 'concluido',
     ]);
     expect($this->policy->cancel($this->userCliente, $ag))->toBeFalse();
+});
+
+test('dono pode atualizar agendamento do próprio salão', function () {
+    expect($this->policy->update($this->dono, $this->agSalaoA))->toBeTrue();
+});
+
+test('manicure pode atualizar o próprio agendamento', function () {
+    expect($this->policy->update($this->userManicure, $this->agSalaoA))->toBeTrue();
+});
+
+test('cliente e staff podem criar agendamento; manicure não', function () {
+    expect($this->policy->create($this->userCliente))->toBeTrue();
+    expect($this->policy->create($this->dono))->toBeTrue();
+    expect($this->policy->create($this->userManicure))->toBeFalse();
+    expect($this->admin->can('create', Agendamento::class))->toBeTrue();
 });

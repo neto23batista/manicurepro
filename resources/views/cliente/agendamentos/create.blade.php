@@ -53,7 +53,7 @@
                         @enderror
                     </div>
 
-                    {{-- Passo 3: Serviços --}}
+                    {{-- Passo 2: Serviços --}}
                     <div class="mb-4">
                         <h6 class="fw-bold mb-3">2. Escolha os Serviços</h6>
                         <div class="row g-2" id="listaServicos">
@@ -84,30 +84,15 @@
                         @enderror
                     </div>
 
-                    {{-- Passo 4: Data e Hora --}}
+                    {{-- Passo 3: Data e Hora --}}
                     <div class="mb-4">
                         <h6 class="fw-bold mb-3">3. Data e Horário</h6>
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Selecione a Data</label>
-                                <input type="date" name="data" id="inputData" class="form-control"
-                                       min="{{ today()->addDay()->toDateString() }}" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Horário disponível</label>
-                                <select name="hora" id="selectHora" class="form-select" disabled required>
-                                    <option value="">Primeiro, selecione manicure, serviço e data</option>
-                                </select>
-                                <div id="skeletonHora" class="d-none mt-2">
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                    <span class="skeleton-slot">--:--</span>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="data_hora_inicio" id="dataHoraInicio">
+                        @include('agendamentos._slots_picker', [
+                            'dateLabel' => 'Selecione a Data',
+                            'timeLabel' => 'Horário disponível',
+                            'hint' => 'Selecione manicure, serviços e data para ver os horários.',
+                            'dateColClass' => 'col-md-6',
+                        ])
                     </div>
 
                     {{-- Resumo --}}
@@ -148,105 +133,68 @@
 @endsection
 
 @push('scripts')
+@if($salao)
 <script>
-const btnSubmit = document.getElementById('btnSubmit');
-const inputData = document.getElementById('inputData');
-const selectHora = document.getElementById('selectHora');
-const dataHoraInicio = document.getElementById('dataHoraInicio');
-const resumoCard = document.getElementById('resumoCard');
+document.addEventListener('DOMContentLoaded', function () {
+    const btnSubmit = document.getElementById('btnSubmit');
+    const resumoCard = document.getElementById('resumoCard');
 
-function getDuracao() {
-    return [...document.querySelectorAll('.servico-check:checked')]
-        .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
-}
-
-function getValor() {
-    return [...document.querySelectorAll('.servico-check:checked')]
-        .reduce((s, c) => s + parseFloat(c.dataset.preco), 0);
-}
-
-function getManicureId() {
-    const r = document.querySelector('.manicure-radio:checked');
-    return r ? r.value : null;
-}
-
-function atualizarResumo() {
-    const d = getDuracao(), v = getValor();
-    if (d > 0) {
-        resumoCard.classList.remove('d-none');
-        const h = Math.floor(d/60), m = d%60;
-        document.getElementById('resumoDuracao').textContent = h > 0 ? `${h}h ${m}min` : `${m}min`;
-        document.getElementById('resumoValor').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
-    } else {
-        resumoCard.classList.add('d-none');
-    }
-}
-
-async function carregarSlots() {
-    const manicureId = getManicureId();
-    const data = inputData.value;
-    const duracao = getDuracao();
-
-    if (!manicureId || !data || duracao === 0) {
-        selectHora.innerHTML = '<option value="">Selecione manicure, serviços e data</option>';
-        selectHora.disabled = true;
-        verificarBotao();
-        return;
+    function getDuracao() {
+        return [...document.querySelectorAll('.servico-check:checked')]
+            .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
     }
 
-    const sk = document.getElementById('skeletonHora');
-    selectHora.classList.add('d-none');
-    sk?.classList.remove('d-none');
-    selectHora.disabled = true;
-    selectHora.innerHTML = '<option value="">Buscando horários...</option>';
+    function getValor() {
+        return [...document.querySelectorAll('.servico-check:checked')]
+            .reduce((s, c) => s + parseFloat(c.dataset.preco), 0);
+    }
 
-    try {
-        const resp = await fetch(`/api/slots?manicure_id=${manicureId}&data=${data}&duracao=${duracao}`);
-        const json = await resp.json();
-        if (json.slots && json.slots.length > 0) {
-            selectHora.innerHTML = '<option value="">Escolha um horário</option>' +
-                json.slots.map(s => `<option value="${s.datetime}">${s.hora}</option>`).join('');
-            selectHora.disabled = false;
+    function getManicureId() {
+        const r = document.querySelector('.manicure-radio:checked');
+        return r ? r.value : null;
+    }
+
+    function atualizarResumo() {
+        const d = getDuracao(), v = getValor();
+        if (d > 0) {
+            resumoCard.classList.remove('d-none');
+            const h = Math.floor(d / 60), m = d % 60;
+            document.getElementById('resumoDuracao').textContent = h > 0 ? `${h}h ${m}min` : `${m}min`;
+            document.getElementById('resumoValor').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
         } else {
-            selectHora.innerHTML = '<option value="">Sem horários disponíveis nesta data</option>';
+            resumoCard.classList.add('d-none');
         }
-    } catch {
-        selectHora.innerHTML = '<option value="">Erro ao carregar horários</option>';
     }
-    sk?.classList.add('d-none');
-    selectHora.classList.remove('d-none');
-    verificarBotao();
-}
 
-function verificarBotao() {
-    const temServico = getDuracao() > 0;
-    const temManicure = !!getManicureId();
-    const temData = !!inputData.value;
-    const temHora = !!selectHora.value;
-    btnSubmit.disabled = !(temServico && temManicure && temData && temHora);
-}
+    function verificarBotao() {
+        btnSubmit.disabled = !(getDuracao() > 0 && getManicureId()
+            && picker?.inputData?.value && picker?.getValue());
+    }
 
-document.querySelectorAll('.servico-check').forEach(c => {
-    c.addEventListener('change', function() {
-        this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
-        atualizarResumo();
-        carregarSlots();
+    const picker = window.createSlotPicker({
+        getManicureId,
+        getDuracao,
+        emptyHint: 'Selecione manicure, serviços e data para ver os horários.',
+        onChange: verificarBotao,
+        onSlotsLoaded: () => verificarBotao(),
     });
-});
 
-document.querySelectorAll('.manicure-radio').forEach(r => {
-    r.addEventListener('change', function() {
-        document.querySelectorAll('.manicure-card').forEach(c => c.classList.remove('selected'));
-        this.closest('label').querySelector('.manicure-card').classList.add('selected');
-        carregarSlots();
+    document.querySelectorAll('.servico-check').forEach((c) => {
+        c.addEventListener('change', function () {
+            this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
+            atualizarResumo();
+            picker?.load();
+        });
     });
-});
 
-inputData.addEventListener('change', carregarSlots);
-
-selectHora.addEventListener('change', function() {
-    dataHoraInicio.value = this.value;
-    verificarBotao();
+    document.querySelectorAll('.manicure-radio').forEach((r) => {
+        r.addEventListener('change', function () {
+            document.querySelectorAll('.manicure-card').forEach((c) => c.classList.remove('selected'));
+            this.closest('label').querySelector('.manicure-card').classList.add('selected');
+            picker?.load();
+        });
+    });
 });
 </script>
+@endif
 @endpush

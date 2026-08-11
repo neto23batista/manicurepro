@@ -6,6 +6,7 @@ use App\Models\Manicure;
 use App\Models\Produto;
 use App\Models\Salao;
 use App\Models\User;
+use App\Notifications\EstoqueZerado;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
@@ -105,4 +106,44 @@ test('não vende produto em atendimento concluído', function () {
     $this->actingAs($this->dono)->post(route('dono.agendamentos.produto', $this->agendamento), [
         'produto_id' => $this->produto->id, 'quantidade' => 1,
     ])->assertSessionHasErrors('error');
+});
+
+test('venda que zera o estoque notifica o dono', function () {
+    config(['manicure.estoque.notificar_zerado' => true]);
+    $this->produto->update(['estoque_atual' => 2]);
+
+    $this->actingAs($this->dono)
+        ->post(route('dono.agendamentos.produto', $this->agendamento), [
+            'produto_id' => $this->produto->id,
+            'quantidade' => 2,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect((float) $this->produto->fresh()->estoque_atual)->toBe(0.0);
+    Notification::assertSentTo($this->dono, EstoqueZerado::class);
+});
+
+test('venda que não zera o estoque não notifica', function () {
+    config(['manicure.estoque.notificar_zerado' => true]);
+
+    $this->actingAs($this->dono)
+        ->post(route('dono.agendamentos.produto', $this->agendamento), [
+            'produto_id' => $this->produto->id,
+            'quantidade' => 1,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+    Notification::assertNotSentTo($this->dono, EstoqueZerado::class);
+});
+
+test('notificação de estoque zerado respeita a flag de config', function () {
+    config(['manicure.estoque.notificar_zerado' => false]);
+    $this->produto->update(['estoque_atual' => 1]);
+
+    $this->actingAs($this->dono)
+        ->post(route('dono.agendamentos.produto', $this->agendamento), [
+            'produto_id' => $this->produto->id,
+            'quantidade' => 1,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+    expect((float) $this->produto->fresh()->estoque_atual)->toBe(0.0);
+    Notification::assertNotSentTo($this->dono, EstoqueZerado::class);
 });

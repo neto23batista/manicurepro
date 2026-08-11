@@ -5,9 +5,13 @@ namespace App\Providers;
 use App\Events\AgendamentoCanceladoEvent;
 use App\Events\AgendamentoCriado;
 use App\Events\AgendamentoReagendado;
+use App\Events\EstoqueZerado;
+use App\Listeners\CancelarPagamentoMercadoPago;
+use App\Listeners\InvalidarCacheSlotsAgendamento;
 use App\Listeners\NotificarAgendamentoCancelado;
 use App\Listeners\NotificarAgendamentoCriado;
 use App\Listeners\NotificarAgendamentoReagendado;
+use App\Listeners\NotificarEstoqueZerado;
 use App\Listeners\NotificarListaEspera;
 use App\Models\User;
 use App\Observers\UserObserver;
@@ -51,7 +55,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(AgendamentoCriado::class, NotificarAgendamentoCriado::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarAgendamentoCancelado::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarListaEspera::class);
+        Event::listen(AgendamentoCanceladoEvent::class, InvalidarCacheSlotsAgendamento::class);
+        Event::listen(AgendamentoCanceladoEvent::class, CancelarPagamentoMercadoPago::class);
         Event::listen(AgendamentoReagendado::class, NotificarAgendamentoReagendado::class);
+        Event::listen(EstoqueZerado::class, NotificarEstoqueZerado::class);
 
         // Mantém Manicure/Cliente sincronizados com o User
         User::observe(UserObserver::class);

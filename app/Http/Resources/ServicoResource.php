@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Servico;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin Servico */
 class ServicoResource extends JsonResource
 {
     public function toArray(Request $request): array

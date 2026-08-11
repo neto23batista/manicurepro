@@ -23,7 +23,8 @@
     <div class="col-md-4">
         <label class="form-label fw-semibold">Estoque mínimo</label>
         <input type="number" step="0.001" min="0" name="estoque_minimo" class="form-control"
-               value="{{ old('estoque_minimo', $p->estoque_minimo ?? 0) }}">
+               value="{{ old('estoque_minimo', $p->estoque_minimo ?? config('manicure.estoque.minimo_padrao', 1)) }}">
+        <small class="text-muted">Alerta quando o estoque ficar neste nível ou abaixo.</small>
     </div>
 
     <div class="col-md-6">

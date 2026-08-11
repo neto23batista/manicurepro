@@ -30,8 +30,8 @@ test('dono envia fotos e elas são salvas no disco e no banco', function () {
         'titulo'   => 'Francesinha',
         'publicar' => '1',
         'fotos'    => [
-            UploadedFile::fake()->image('nail1.jpg'),
-            UploadedFile::fake()->image('nail2.png'),
+            UploadedFile::fake()->image('nail1.jpg', 800, 600),
+            UploadedFile::fake()->image('nail2.png', 800, 600),
         ],
     ])->assertRedirect('/dono/galeria')->assertSessionHasNoErrors();
 
@@ -50,6 +50,48 @@ test('upload exige imagem válida', function () {
     ])->assertSessionHasErrors('fotos.0');
 
     expect(GaleriaFoto::count())->toBe(0);
+});
+
+test('upload rejeita mime não permitido mascarado', function () {
+    $this->actingAs($this->dono)->post('/dono/galeria', [
+        'fotos' => [UploadedFile::fake()->create('foto.gif', 100, 'image/gif')],
+    ])->assertSessionHasErrors('fotos.0');
+
+    expect(GaleriaFoto::count())->toBe(0);
+});
+
+test('upload rejeita imagem abaixo das dimensões mínimas', function () {
+    $this->actingAs($this->dono)->post('/dono/galeria', [
+        'fotos' => [UploadedFile::fake()->image('miniatura.jpg', 50, 50)],
+    ])->assertSessionHasErrors('fotos.0');
+
+    expect(GaleriaFoto::count())->toBe(0);
+});
+
+test('upload rejeita imagem acima das dimensões máximas', function () {
+    $this->actingAs($this->dono)->post('/dono/galeria', [
+        'fotos' => [UploadedFile::fake()->image('gigante.jpg', 8100, 200)],
+    ])->assertSessionHasErrors('fotos.0');
+
+    expect(GaleriaFoto::count())->toBe(0);
+});
+
+test('upload aceita imagem nos limites de dimensão e mime', function () {
+    $this->actingAs($this->dono)->post('/dono/galeria', [
+        'fotos' => [UploadedFile::fake()->image('ok.jpg', 200, 200)],
+    ])->assertRedirect('/dono/galeria')->assertSessionHasNoErrors();
+
+    expect(GaleriaFoto::count())->toBe(1);
+    Storage::disk('public')->assertExists(GaleriaFoto::first()->caminho);
+});
+
+test('página pública da galeria usa lazy-load nas thumbs', function () {
+    novaFoto($this->salao->id, ['titulo' => 'Lazy thumb', 'publicar' => true]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('loading="lazy"', false)
+        ->assertSee('decoding="async"', false);
 });
 
 test('toggle publicar alterna a visibilidade', function () {
@@ -74,7 +116,7 @@ test('dono edita título e profissional da foto', function () {
 });
 
 test('remover foto apaga registro e arquivo', function () {
-    $path = UploadedFile::fake()->image('x.jpg')->store('galeria/' . $this->salao->id, 'public');
+    $path = UploadedFile::fake()->image('x.jpg', 400, 400)->store('galeria/' . $this->salao->id, 'public');
     $foto = novaFoto($this->salao->id, ['caminho' => $path]);
     Storage::disk('public')->assertExists($path);
 

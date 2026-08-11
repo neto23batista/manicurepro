@@ -23,6 +23,7 @@ class ClienteFactory extends Factory
             'total_visitas'    => 0,
             'total_gasto'      => 0,
             'pontos_fidelidade'=> 0,
+            'total_faltas'     => 0,
             'ativo'            => true,
         ];
     }

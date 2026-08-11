@@ -106,3 +106,77 @@ test('criar agendamento libera reservas sobrepostas', function () {
 
     expect(SlotHold::count())->toBe(0);
 });
+
+test('hold ativo bloqueia segundo hold no mesmo horário', function () {
+    $data = Carbon::now()->addDay()->setTime(14, 0);
+
+    $primeiro = $this->agendaService->criarHold($this->manicure->id, $data, 30, 'token-A');
+    $segundo = $this->agendaService->criarHold($this->manicure->id, $data, 30, 'token-B');
+
+    expect($primeiro)->not->toBeNull();
+    expect($segundo)->toBeNull();
+    expect(SlotHold::ativos()->count())->toBe(1);
+});
+
+test('endpoint de hold retorna 409 quando outro hold está ativo', function () {
+    $data = Carbon::now()->addDay()->setTime(15, 0);
+
+    $this->agendaService->criarHold($this->manicure->id, $data, 30, 'token-ocupado');
+
+    $this->postJson(route('public.slots.hold'), [
+        'manicure_id' => $this->manicure->id,
+        'data_hora_inicio' => $data->toDateTimeString(),
+        'duracao' => 30,
+        'token' => 'token-outro',
+    ])->assertStatus(409);
+});
+
+test('comando limpar-expirados remove holds vencidos e preserva ativos', function () {
+    $data = Carbon::now()->addDay()->setTime(16, 0);
+
+    SlotHold::create([
+        'manicure_id' => $this->manicure->id,
+        'data_hora_inicio' => $data,
+        'data_hora_fim' => $data->copy()->addMinutes(30),
+        'token' => 'expirado',
+        'expires_at' => Carbon::now()->subMinute(),
+    ]);
+    SlotHold::create([
+        'manicure_id' => $this->manicure->id,
+        'data_hora_inicio' => $data->copy()->addHour(),
+        'data_hora_fim' => $data->copy()->addHour()->addMinutes(30),
+        'token' => 'ativo',
+        'expires_at' => Carbon::now()->addMinutes(10),
+    ]);
+
+    $this->artisan('manicure:limpar-expirados')
+        ->expectsOutputToContain('Reservas temporárias expiradas removidas: 1')
+        ->assertSuccessful();
+
+    expect(SlotHold::count())->toBe(1);
+    expect(SlotHold::first()->token)->toBe('ativo');
+});
+
+test('segundo agendamento no mesmo horário é rejeitado sob lock', function () {
+    $data = Carbon::now()->addDay()->setTime(10, 30);
+
+    $this->agendaService->criarAgendamento([
+        'salao_id' => $this->salao->id,
+        'manicure_id' => $this->manicure->id,
+        'servico_ids' => [$this->servico->id],
+        'data_hora_inicio' => $data->toDateTimeString(),
+        'origem' => 'web',
+        'status' => 'aguardando',
+    ]);
+
+    expect(fn () => $this->agendaService->criarAgendamento([
+        'salao_id' => $this->salao->id,
+        'manicure_id' => $this->manicure->id,
+        'servico_ids' => [$this->servico->id],
+        'data_hora_inicio' => $data->toDateTimeString(),
+        'origem' => 'web',
+        'status' => 'aguardando',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect(Agendamento::where('manicure_id', $this->manicure->id)->count())->toBe(1);
+});

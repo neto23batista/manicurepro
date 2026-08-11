@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Manicure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin Manicure */
 class ManicureResource extends JsonResource
 {
     public function toArray(Request $request): array

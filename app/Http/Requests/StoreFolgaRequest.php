@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Folga;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreFolgaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->salao_id !== null;
+        return $this->user()?->can('create', Folga::class) ?? false;
     }
 
     public function rules(): array

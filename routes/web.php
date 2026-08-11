@@ -21,7 +21,9 @@ use App\Http\Controllers\Dono\FolgaController as DonoFolga;
 use App\Http\Controllers\Dono\ProdutoController as DonoProduto;
 use App\Http\Controllers\Dono\GaleriaController as DonoGaleria;
 use App\Http\Controllers\Dono\FinanceiroController as DonoFinanceiro;
+use App\Http\Controllers\Dono\NotaFiscalController as DonoNotaFiscal;
 use App\Http\Controllers\Dono\ValePresenteController as DonoVale;
+use App\Http\Controllers\Dono\PacoteController as DonoPacote;
 use App\Http\Controllers\Manicure\DashboardController as ManicureDashboard;
 use App\Http\Controllers\Manicure\AgendaController;
 use App\Http\Controllers\Manicure\FolgaController as ManicureFolga;
@@ -31,6 +33,7 @@ use App\Http\Controllers\Cliente\ListaEsperaController as ClienteListaEspera;
 use App\Http\Controllers\Cliente\FidelidadeController as ClienteFidelidade;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\PushSubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 // ========================
@@ -43,6 +46,13 @@ Route::get('/salao/{salao:slug}', [PublicController::class, 'salao'])
 Route::get('/salao/{salao:slug}/agendar', [PublicController::class, 'agendar'])
     ->where('salao', '[a-zA-Z0-9-]+')
     ->name('public.agendar');
+Route::post('/salao/{salao:slug}/agendar', [PublicController::class, 'storeAgendamento'])
+    ->where('salao', '[a-zA-Z0-9-]+')
+    ->middleware('throttle:8,1')
+    ->name('public.agendar.store');
+Route::get('/salao/{salao:slug}/agendar/sucesso', [PublicController::class, 'agendamentoSucesso'])
+    ->where('salao', '[a-zA-Z0-9-]+')
+    ->name('public.agendar.sucesso');
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/api/slots', [PublicController::class, 'getSlots'])->name('public.slots');
     Route::get('/api/datas-disponiveis', [PublicController::class, 'getDatasDisponiveis'])->name('public.datas');
@@ -107,12 +117,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/perfil/2fa', [TwoFactorController::class, 'setup'])->name('2fa.setup');
     Route::post('/perfil/2fa', [TwoFactorController::class, 'enable'])->name('2fa.enable');
     Route::delete('/perfil/2fa', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+
+    // Web Push — subscription do service worker (opcional; exige VAPID no .env)
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])
+        ->middleware('throttle:30,1')
+        ->name('push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])
+        ->middleware('throttle:30,1')
+        ->name('push-subscriptions.destroy');
 });
 
 // ========================
 // ADMIN
 // ========================
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('/dashboard', [AdminDashboard::class, 'index'])->name('dashboard');
 
     // Single-tenant: não se cria nem exclui salão — apenas visualiza/edita o único.
@@ -138,12 +156,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 });
 
 // ========================
-// DONO / ATENDENTE
+// DONO / ATENDENTE (operação)
 // ========================
-Route::prefix('dono')->name('dono.')->middleware(['auth', 'role:dono,atendente', 'check.salao'])->group(function () {
+Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono,atendente', 'check.salao'])->group(function () {
     Route::get('/dashboard', [DonoDashboard::class, 'index'])->name('dashboard');
 
     Route::resource('agendamentos', DonoAgendamento::class)->except(['edit', 'update']);
+    Route::get('agendamentos-ical', [DonoAgendamento::class, 'ical'])->name('agendamentos.ical');
     Route::patch('agendamentos/{agendamento}/status', [DonoAgendamento::class, 'updateStatus'])->name('agendamentos.status');
     Route::get('agendamentos/{agendamento}/reagendar', [DonoAgendamento::class, 'reagendarForm'])->name('agendamentos.reagendar.form');
     Route::post('agendamentos/{agendamento}/reagendar', [DonoAgendamento::class, 'reagendar'])->name('agendamentos.reagendar');
@@ -160,6 +179,10 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'role:dono,atendente',
     Route::resource('cupons', DonoCupom::class)->except(['show'])
         ->parameters(['cupons' => 'cupom']);
 
+    // Pacotes / combos vendáveis
+    Route::resource('pacotes', DonoPacote::class)->except(['show']);
+    Route::post('pacotes/{pacote}/atribuir', [DonoPacote::class, 'atribuir'])->name('pacotes.atribuir');
+
     // Produtos / Estoque
     Route::resource('produtos', DonoProduto::class)->except(['show']);
     Route::post('produtos/{produto}/estoque', [DonoProduto::class, 'movimentar'])->name('produtos.estoque');
@@ -169,21 +192,28 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'role:dono,atendente',
         ->parameters(['galeria' => 'foto']);
     Route::patch('galeria/{foto}/publicar', [DonoGaleria::class, 'togglePublicar'])->name('galeria.publicar');
 
-    // Caixa / financeiro + comissões
-    Route::get('/financeiro', [DonoFinanceiro::class, 'index'])->name('financeiro.index');
+    // Folgas
+    Route::get('/folgas', [DonoFolga::class, 'index'])->name('folgas.index');
+    Route::post('/folgas', [DonoFolga::class, 'store'])->name('folgas.store');
+    Route::delete('/folgas/{folga}', [DonoFolga::class, 'destroy'])->name('folgas.destroy');
+});
 
-    // Vales-presente (gift cards)
+// Caixa, vales, fiscal stub e config — apenas dono (admin herda via RoleMiddleware)
+Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono', 'check.salao'])->group(function () {
+    Route::get('/financeiro', [DonoFinanceiro::class, 'index'])->name('financeiro.index');
+    Route::post('/financeiro/comissoes', [DonoFinanceiro::class, 'storePagamento'])->name('financeiro.comissoes.store');
+    Route::delete('/financeiro/comissoes/{pagamento}', [DonoFinanceiro::class, 'destroyPagamento'])->name('financeiro.comissoes.destroy');
+
+    // Stub NF-e — NÃO emite SEFAZ (gate: manicure.fiscal.enabled)
+    Route::get('notas-fiscais', [DonoNotaFiscal::class, 'index'])->name('notas-fiscais.index');
+    Route::post('notas-fiscais', [DonoNotaFiscal::class, 'store'])->name('notas-fiscais.store');
+    Route::get('notas-fiscais/{notaFiscal}', [DonoNotaFiscal::class, 'show'])->name('notas-fiscais.show');
+
     Route::get('vales', [DonoVale::class, 'index'])->name('vales.index');
     Route::post('vales', [DonoVale::class, 'store'])->name('vales.store');
     Route::get('vales/{vale}', [DonoVale::class, 'show'])->name('vales.show');
     Route::delete('vales/{vale}', [DonoVale::class, 'cancelar'])->name('vales.cancelar');
 
-    // Folgas
-    Route::get('/folgas', [DonoFolga::class, 'index'])->name('folgas.index');
-    Route::post('/folgas', [DonoFolga::class, 'store'])->name('folgas.store');
-    Route::delete('/folgas/{folga}', [DonoFolga::class, 'destroy'])->name('folgas.destroy');
-
-    // Configurações
     Route::get('/configuracao',          [DonoConfig::class, 'edit'])->name('config.edit');
     Route::put('/configuracao/dados',    [DonoConfig::class, 'updateDados'])->name('config.dados');
     Route::put('/configuracao/horarios', [DonoConfig::class, 'updateHorarios'])->name('config.horarios');
@@ -195,12 +225,14 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'role:dono,atendente',
 // ========================
 // MANICURE
 // ========================
-Route::prefix('manicure')->name('manicure.')->middleware(['auth', 'role:manicure', 'check.salao'])->group(function () {
+Route::prefix('manicure')->name('manicure.')->middleware(['auth', 'verified', 'role:manicure', 'check.salao'])->group(function () {
     Route::get('/dashboard', [ManicureDashboard::class, 'index'])->name('dashboard');
 
     Route::get('/agenda', [AgendaController::class, 'index'])->name('agenda.index');
+    Route::get('/agenda/ical', [AgendaController::class, 'ical'])->name('agenda.ical');
     Route::get('/agenda/{agendamento}', [AgendaController::class, 'show'])->name('agenda.show');
     Route::patch('/agenda/{agendamento}/status', [AgendaController::class, 'updateStatus'])->name('agenda.status');
+    Route::patch('/agenda/{agendamento}/ficha', [AgendaController::class, 'updateFicha'])->name('agenda.ficha');
 
     // Folgas próprias
     Route::get('/folgas', [ManicureFolga::class, 'index'])->name('folgas.index');
@@ -211,7 +243,7 @@ Route::prefix('manicure')->name('manicure.')->middleware(['auth', 'role:manicure
 // ========================
 // CLIENTE
 // ========================
-Route::prefix('cliente')->name('cliente.')->middleware(['auth', 'role:cliente'])->group(function () {
+Route::prefix('cliente')->name('cliente.')->middleware(['auth', 'verified', 'role:cliente'])->group(function () {
     Route::get('/dashboard', [ClienteDashboard::class, 'index'])->name('dashboard');
 
     Route::get('/agendamentos', [ClienteAgendamento::class, 'index'])->name('agendamentos.index');
@@ -226,6 +258,9 @@ Route::prefix('cliente')->name('cliente.')->middleware(['auth', 'role:cliente'])
     Route::get('/agendamentos/{agendamento}/sinal', [ClienteAgendamento::class, 'sinal'])->name('agendamentos.sinal');
     Route::post('/agendamentos/{agendamento}/sinal/status', [ClienteAgendamento::class, 'sinalStatus'])
         ->middleware('throttle:30,1')->name('agendamentos.sinal.status');
+    Route::get('/agendamentos/{agendamento}/pagamento', [ClienteAgendamento::class, 'pagamento'])->name('agendamentos.pagamento');
+    Route::post('/agendamentos/{agendamento}/pagamento/status', [ClienteAgendamento::class, 'pagamentoStatus'])
+        ->middleware('throttle:30,1')->name('agendamentos.pagamento.status');
 
     // Lista de espera
     Route::get('/lista-espera', [ClienteListaEspera::class, 'index'])->name('lista-espera.index');

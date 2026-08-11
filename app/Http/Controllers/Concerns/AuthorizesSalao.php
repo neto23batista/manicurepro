@@ -7,28 +7,31 @@ use App\Models\Agendamento;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Trait reutilizável para verificar se o usuário autenticado
- * pertence ao mesmo salão do recurso acessado (ou é admin global).
+ * Trait reutilizável com helpers de ownership por salão / cliente / manicure.
  *
- * Usado em Dono/Manicure/Cliente controllers para evitar
- * acesso cruzado entre salões.
+ * Preferir `$this->authorize()` + Policies para view/update/cancel.
+ * Estes helpers permanecem para checks pontuais quando a Policy não cobre o caso.
  */
 trait AuthorizesSalao
 {
     /**
      * Garante que qualquer Model com coluna `salao_id` pertence ao salão do usuário.
-     * Admin (super) ignora a verificação. Usar como ponto único de autorização.
+     * Admin (super) ignora a verificação.
      */
     protected function authorizeSalaoOwnership(Model $resource): void
     {
         $user = auth()->user();
 
-        if ($user?->roleEnum() === UserRole::Admin) {
+        if ($user === null) {
+            abort(403, 'Você não tem acesso a este recurso.');
+        }
+
+        if ($user->roleEnum() === UserRole::Admin) {
             return;
         }
 
         $resourceSalaoId = (int) ($resource->salao_id ?? 0);
-        $userSalaoId     = (int) ($user?->salao_id ?? 0);
+        $userSalaoId = (int) ($user->salao_id ?? 0);
 
         if ($resourceSalaoId === 0 || $resourceSalaoId !== $userSalaoId) {
             abort(403, 'Você não tem acesso a este recurso.');
@@ -57,7 +60,7 @@ trait AuthorizesSalao
         $isOwner = ($clienteId !== null && $agendamento->cliente_id === $clienteId)
                 || ($user !== null && $agendamento->user_id === $user->id);
 
-        if (!$isOwner) {
+        if (! $isOwner) {
             abort(403, 'Você não tem acesso a este agendamento.');
         }
     }
@@ -69,7 +72,7 @@ trait AuthorizesSalao
     {
         $manicureId = auth()->user()?->manicure?->id;
 
-        if (!$manicureId || $agendamento->manicure_id !== $manicureId) {
+        if (! $manicureId || $agendamento->manicure_id !== $manicureId) {
             abort(403, 'Este agendamento não é seu.');
         }
     }

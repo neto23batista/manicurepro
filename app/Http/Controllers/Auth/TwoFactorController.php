@@ -18,18 +18,23 @@ class TwoFactorController extends Controller
         $user = auth()->user();
 
         if ($user->hasTwoFactorEnabled()) {
-            return view('perfil.two-factor', ['ativo' => true, 'secret' => null, 'uri' => null]);
+            return view('perfil.two-factor', [
+                'ativo'         => true,
+                'secret'        => null,
+                'uri'           => null,
+                'recoveryCodes' => $request->session()->get('2fa_recovery_codes'),
+            ]);
         }
 
         $secret = $request->session()->get('2fa:setup_secret');
-        if (!$secret) {
+        if (! $secret) {
             $secret = $this->totp->generateSecret();
             $request->session()->put('2fa:setup_secret', $secret);
         }
 
         $uri = $this->totp->otpauthUri($secret, $user->email, config('app.name', 'Fernanda Silva Nails'));
 
-        return view('perfil.two-factor', ['ativo' => false, 'secret' => $secret, 'uri' => $uri]);
+        return view('perfil.two-factor', ['ativo' => false, 'secret' => $secret, 'uri' => $uri, 'recoveryCodes' => null]);
     }
 
     public function enable(Request $request)
@@ -39,28 +44,48 @@ class TwoFactorController extends Controller
         $user = auth()->user();
         $secret = $request->session()->get('2fa:setup_secret');
 
-        if (!$secret || !$this->totp->verify($secret, $request->code)) {
+        if (! $secret || ! $this->totp->verify($secret, $request->code)) {
             return back()->withErrors(['code' => 'Código inválido. Confira o relógio do app e tente de novo.']);
         }
 
-        $user->update(['two_factor_secret' => $secret, 'two_factor_confirmed_at' => now()]);
+        $payload = [
+            'two_factor_secret'       => $secret,
+            'two_factor_confirmed_at' => now(),
+        ];
+
+        $plainRecoveryCodes = null;
+        if (empty($user->two_factor_recovery_codes)) {
+            $plainRecoveryCodes = $this->totp->generateRecoveryCodes();
+            $payload['two_factor_recovery_codes'] = $this->totp->hashRecoveryCodes($plainRecoveryCodes);
+        }
+
+        $user->update($payload);
         $request->session()->forget('2fa:setup_secret');
 
-        return redirect()->route('2fa.setup')->with('success', 'Verificação em duas etapas ativada! 🔒');
+        $redirect = redirect()->route('2fa.setup')->with('success', 'Verificação em duas etapas ativada! 🔒');
+        if ($plainRecoveryCodes !== null) {
+            $redirect->with('2fa_recovery_codes', $plainRecoveryCodes);
+        }
+
+        return $redirect;
     }
 
     public function disable(Request $request)
     {
         $request->validate(['password' => 'required|current_password']);
 
-        auth()->user()->update(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+        auth()->user()->update([
+            'two_factor_secret'         => null,
+            'two_factor_confirmed_at'   => null,
+            'two_factor_recovery_codes' => null,
+        ]);
 
         return redirect()->route('2fa.setup')->with('success', 'Verificação em duas etapas desativada.');
     }
 
     public function challenge(Request $request)
     {
-        if (!$request->session()->has('2fa:user')) {
+        if (! $request->session()->has('2fa:user')) {
             return redirect()->route('login');
         }
 
@@ -72,14 +97,30 @@ class TwoFactorController extends Controller
         $request->validate(['code' => 'required|string']);
 
         $userId = $request->session()->get('2fa:user');
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('login');
         }
 
         $user = User::find($userId);
 
-        if (!$user || !$user->hasTwoFactorEnabled() || !$this->totp->verify($user->two_factor_secret, $request->code)) {
+        if (! $user || ! $user->hasTwoFactorEnabled()) {
             return back()->withErrors(['code' => 'Código inválido.']);
+        }
+
+        $code = $request->code;
+        $verified = $this->totp->verify($user->two_factor_secret, $code);
+
+        if (! $verified) {
+            $remaining = $this->totp->consumeRecoveryCode(
+                $user->two_factor_recovery_codes ?? [],
+                $code,
+            );
+
+            if ($remaining === null) {
+                return back()->withErrors(['code' => 'Código inválido.']);
+            }
+
+            $user->update(['two_factor_recovery_codes' => $remaining]);
         }
 
         $remember = (bool) $request->session()->pull('2fa:remember', false);
@@ -88,8 +129,6 @@ class TwoFactorController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
-        $role = UserRole::tryFrom($user->role);
-
-        return redirect($role ? route($role->dashboardRoute()) : '/');
+        return redirect(route(UserRole::from((string) $user->role)->dashboardRoute()));
     }
 }

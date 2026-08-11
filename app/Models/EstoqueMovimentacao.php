@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EstoqueMovimentacao extends Model
 {
@@ -14,16 +15,18 @@ class EstoqueMovimentacao extends Model
     ];
 
     protected $casts = [
-        'quantidade' => 'decimal:3',
+        'quantidade'     => 'decimal:3',
         'preco_unitario' => 'decimal:2',
     ];
 
-    public function produto()
+    /** @return BelongsTo<Produto, $this> */
+    public function produto(): BelongsTo
     {
         return $this->belongsTo(Produto::class);
     }
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

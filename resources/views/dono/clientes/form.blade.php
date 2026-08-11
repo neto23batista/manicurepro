@@ -57,6 +57,35 @@
                   placeholder="Preferências, anotações...">{{ old('observacoes', $cliente->observacoes ?? '') }}</textarea>
     </div>
 
+    <div class="col-12">
+        <hr class="my-1">
+        <h6 class="fw-bold text-muted mb-0"><i class="fas fa-hand-sparkles text-pink me-1"></i>Ficha de unhas</h6>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Notas das unhas</label>
+        <textarea name="notas_unhas" rows="2" maxlength="2000" class="form-control"
+                  placeholder="Formato, comprimento, estado das unhas...">{{ old('notas_unhas', $cliente->notas_unhas ?? '') }}</textarea>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Cores preferidas</label>
+        <textarea name="cores_preferidas" rows="2" maxlength="500" class="form-control"
+                  placeholder="Ex: nude, vermelho clássico, glitter discreto">{{ old('cores_preferidas', $cliente->cores_preferidas ?? '') }}</textarea>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Contraindicações</label>
+        <textarea name="contraindicacoes" rows="2" maxlength="1000" class="form-control"
+                  placeholder="Ex: evitar gel, sem lixa agressiva">{{ old('contraindicacoes', $cliente->contraindicacoes ?? '') }}</textarea>
+    </div>
+
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">Última fórmula / produto</label>
+        <textarea name="ultima_formula" rows="2" maxlength="2000" class="form-control"
+                  placeholder="Marca, cor, base usada na última visita...">{{ old('ultima_formula', $cliente->ultima_formula ?? '') }}</textarea>
+    </div>
+
     @isset($cliente)
     <div class="col-12">
         <div class="form-check form-switch">

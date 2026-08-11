@@ -47,6 +47,35 @@ test('fila sync gera aviso', function () {
     expect(checkItem('Fila')['nivel'])->toBe(ProducaoChecker::AVISO);
 });
 
+test('em produção, MP_ENABLED sem webhook secret é erro crítico', function () {
+    $this->app['env'] = 'production';
+    config([
+        'manicure.pagamento.mercadopago.enabled' => true,
+        'manicure.pagamento.mercadopago.webhook_secret' => '',
+    ]);
+
+    expect(checkItem('MercadoPago')['nivel'])->toBe(ProducaoChecker::ERRO);
+    expect(app(ProducaoChecker::class)->temErroCritico())->toBeTrue();
+});
+
+test('fora de produção, MP_ENABLED sem webhook secret é aviso', function () {
+    config([
+        'manicure.pagamento.mercadopago.enabled' => true,
+        'manicure.pagamento.mercadopago.webhook_secret' => '',
+    ]);
+
+    expect(checkItem('MercadoPago')['nivel'])->toBe(ProducaoChecker::AVISO);
+});
+
+test('MP_ENABLED com webhook secret fica OK', function () {
+    config([
+        'manicure.pagamento.mercadopago.enabled' => true,
+        'manicure.pagamento.mercadopago.webhook_secret' => 'segredo',
+    ]);
+
+    expect(checkItem('MercadoPago')['nivel'])->toBe(ProducaoChecker::OK);
+});
+
 test('o comando de verificação roda com sucesso fora de produção', function () {
     $this->artisan('manicure:verificar-producao')->assertSuccessful();
 });

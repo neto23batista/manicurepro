@@ -16,17 +16,29 @@ class AgendamentoPolicy
         return $user->isSuperAdmin() ? true : null;
     }
 
+    public function create(User $user): bool
+    {
+        return $user->isCliente()
+            || $user->isDono()
+            || $user->isAtendente();
+    }
+
     public function view(User $user, Agendamento $agendamento): bool
     {
-        // Cliente: dono via cliente_id OU user_id
+        // Cliente: dono via cliente_id OU user_id.
+        // Nunca deixar null === null casar (cliente sem cadastro x agendamento de balcão).
         if ($user->isCliente()) {
-            return $agendamento->cliente_id === $user->cliente?->id
+            $clienteId = $user->cliente?->id;
+
+            return ($clienteId !== null && $agendamento->cliente_id === $clienteId)
                 || $agendamento->user_id === $user->id;
         }
 
         // Manicure: só os próprios agendamentos
         if ($user->isManicure()) {
-            return $agendamento->manicure_id === $user->manicure?->id;
+            $manicureId = $user->manicure?->id;
+
+            return $manicureId !== null && $agendamento->manicure_id === $manicureId;
         }
 
         // Dono / Atendente: salão correspondente
@@ -36,17 +48,21 @@ class AgendamentoPolicy
     public function update(User $user, Agendamento $agendamento): bool
     {
         if ($user->isManicure()) {
-            return $agendamento->manicure_id === $user->manicure?->id;
+            $manicureId = $user->manicure?->id;
+
+            return $manicureId !== null && $agendamento->manicure_id === $manicureId;
         }
+
         return $agendamento->salao_id === $user->salao_id
             && in_array($user->roleEnum(), [UserRole::Dono, UserRole::Atendente], true);
     }
 
     public function cancel(User $user, Agendamento $agendamento): bool
     {
-        if (!$agendamento->podeSerCancelado()) {
+        if (! $agendamento->podeSerCancelado()) {
             return false;
         }
+
         return $this->view($user, $agendamento);
     }
 

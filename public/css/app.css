@@ -981,6 +981,86 @@ a:hover { color: var(--pink-700); }
 }
 .agenda-item:hover { background: var(--pink-50); }
 .agenda-item:hover::before { opacity: 1; }
+.agenda-item.is-risco-no-show {
+    background: var(--warning-soft);
+}
+.agenda-item.is-risco-no-show::before {
+    opacity: 1;
+    background: var(--warning);
+}
+.agenda-item.is-risco-no-show:hover {
+    background: #fde68a;
+}
+.badge-risco-no-show {
+    background: #92400e;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.01em;
+}
+
+/* ============ QUICK ACTIONS (dashboard) ============ */
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.quick-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--ink-100);
+    background: var(--surface, #fff);
+    color: var(--ink-700);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
+    cursor: pointer;
+}
+.quick-action:hover {
+    background: var(--pink-50);
+    border-color: var(--pink-200);
+    color: var(--pink-700);
+    transform: translateY(-1px);
+}
+.quick-action.is-primary {
+    background: var(--gradient-pink);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: var(--shadow-pink);
+}
+.quick-action.is-primary:hover {
+    color: #fff;
+    filter: brightness(1.05);
+}
+.quick-action i { color: var(--pink-500); }
+.quick-action.is-primary i { color: #fff; }
+.quick-action-kbd {
+    font-size: 0.65rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--ink-100);
+    color: var(--ink-500);
+    font-weight: 600;
+}
+[data-theme="dark"] .quick-action {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+    color: var(--ink-200);
+}
+[data-theme="dark"] .quick-action:hover {
+    background: rgba(244,63,140,0.12);
+    border-color: rgba(244,63,140,0.35);
+}
+[data-theme="dark"] .agenda-item.is-risco-no-show {
+    background: rgba(245, 158, 11, 0.15);
+}
+[data-theme="dark"] .agenda-item.is-risco-no-show:hover {
+    background: rgba(245, 158, 11, 0.22);
+}
 
 /* ============ RANKING / LIST ITEM ============ */
 .rank-badge {

@@ -14,9 +14,12 @@
                     {{ strtoupper(substr($cliente->nome, 0, 2)) }}
                 </div>
                 <h5 class="fw-bold mb-1">{{ $cliente->nome }}</h5>
-                <span class="badge {{ $cliente->ativo ? 'bg-success' : 'bg-secondary' }} mb-3">
-                    {{ $cliente->ativo ? 'Ativo' : 'Inativo' }}
-                </span>
+                <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+                    <span class="badge {{ $cliente->ativo ? 'bg-success' : 'bg-secondary' }}">
+                        {{ $cliente->ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                    <x-badge-no-show :cliente="$cliente" />
+                </div>
                 <a href="{{ route('dono.clientes.edit', $cliente) }}" class="btn btn-pink btn-sm w-100">
                     <i class="fas fa-edit me-1"></i>Editar
                 </a>
@@ -53,18 +56,68 @@
                         <strong><i class="fas fa-exclamation-triangle me-1"></i>Alergias:</strong> {{ $cliente->alergias }}
                     </div>
                 @endif
+                @if($cliente->contraindicacoes)
+                    <hr>
+                    <div class="alert alert-warning small mb-0">
+                        <strong><i class="fas fa-ban me-1"></i>Contraindicações:</strong> {{ $cliente->contraindicacoes }}
+                    </div>
+                @endif
                 @if($cliente->observacoes)
                     <hr>
                     <small class="text-muted">{{ $cliente->observacoes }}</small>
                 @endif
             </div>
         </div>
+
+        @if($cliente->notas_unhas || $cliente->cores_preferidas || $cliente->ultima_formula || $cliente->fichaHistorico->isNotEmpty())
+        <div class="card mt-3">
+            <div class="card-header"><h6 class="mb-0 fw-bold"><i class="fas fa-hand-sparkles text-pink me-2"></i>Ficha de unhas</h6></div>
+            <div class="card-body">
+                @if($cliente->cores_preferidas)
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Cores preferidas</small>
+                        {{ $cliente->cores_preferidas }}
+                    </div>
+                @endif
+                @if($cliente->notas_unhas)
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Notas</small>
+                        {{ $cliente->notas_unhas }}
+                    </div>
+                @endif
+                @if($cliente->ultima_formula)
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Última fórmula</small>
+                        {{ $cliente->ultima_formula }}
+                    </div>
+                @endif
+
+                @if($cliente->fichaHistorico->isNotEmpty())
+                    <hr>
+                    <small class="text-muted fw-semibold d-block mb-2">Histórico recente</small>
+                    @foreach($cliente->fichaHistorico as $entrada)
+                        <div class="small {{ !$loop->last ? 'mb-2 pb-2 border-bottom' : '' }}">
+                            <div class="text-muted">
+                                {{ $entrada->created_at->format('d/m/Y H:i') }}
+                                @if($entrada->user)
+                                    · {{ $entrada->user->name }}
+                                @endif
+                            </div>
+                            @if($entrada->cores)<div><strong>Cores:</strong> {{ $entrada->cores }}</div>@endif
+                            @if($entrada->formula)<div><strong>Fórmula:</strong> {{ $entrada->formula }}</div>@endif
+                            @if($entrada->notas)<div>{{ $entrada->notas }}</div>@endif
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 
     {{-- Estatísticas + histórico --}}
     <div class="col-lg-8">
         <div class="row g-3 mb-4">
-            <div class="col-sm-4">
+            <div class="col-sm-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue-light"><i class="fas fa-calendar-check"></i></div>
                     <div class="stat-info">
@@ -73,7 +126,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-4">
+            <div class="col-sm-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-green-light"><i class="fas fa-money-bill"></i></div>
                     <div class="stat-info">
@@ -82,12 +135,21 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-4">
+            <div class="col-sm-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-yellow-light"><i class="fas fa-star"></i></div>
                     <div class="stat-info">
                         <div class="stat-value">{{ $cliente->pontos_fidelidade }}</div>
                         <div class="stat-label">Pontos fidelidade</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="stat-card">
+                    <div class="stat-icon {{ $cliente->eh_risco_no_show ? 'bg-yellow-light' : 'bg-blue-light' }}"><i class="fas fa-user-xmark"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value">{{ $cliente->total_faltas }}</div>
+                        <div class="stat-label">Faltas</div>
                     </div>
                 </div>
             </div>

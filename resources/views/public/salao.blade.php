@@ -5,67 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $salao->nome }}</title>
     <meta name="app-env" content="{{ app()->environment() }}">
+    <x-theme-vars />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <meta name="theme-color" content="#ec4899">
     <meta property="og:title" content="{{ $salao->nome }}">
     <meta property="og:description" content="{{ $salao->descricao ?? 'Salão de manicure e pedicure profissional' }}">
 </head>
 <body class="public-body">
 
-<x-public-navbar />
+@php
+    $heroImage = null;
+    if ($salao->foto_capa && file_exists(public_path('storage/' . $salao->foto_capa))) {
+        $heroImage = asset('storage/' . $salao->foto_capa);
+    } elseif ($salao->galeria->isNotEmpty()) {
+        $heroImage = $salao->galeria->first()->foto_url;
+    }
 
-{{-- Hero do salão --}}
-<section class="salao-hero">
-    <div class="container">
-        <div class="row align-items-center g-4">
-            <div class="col-md-2 text-center">
-                <div class="rounded-4 bg-white d-inline-flex align-items-center justify-content-center shadow-lg salao-logo-frame">
-                    <img src="{{ $salao->logo_url }}" alt="{{ $salao->nome }}" class="rounded-3 salao-logo-img">
-                </div>
-            </div>
-            <div class="col-md-10">
-                <div class="d-flex flex-wrap gap-2 mb-2">
-                    @if($salao->estaAberto())
-                        <span class="badge bg-success px-3 py-2">
-                            <i class="fas fa-circle me-1 dot-pulse" aria-hidden="true"></i> Aberto agora
-                        </span>
-                    @else
-                        <span class="badge bg-secondary px-3 py-2"><i class="fas fa-moon me-1" aria-hidden="true"></i> Fechado</span>
-                    @endif
-                    @if($salao->nota_media > 0)
-                        <span class="badge bg-warning px-3 py-2">
-                            <i class="fas fa-star me-1" aria-hidden="true"></i> {{ $salao->nota_media }} · {{ $salao->avaliacoes->count() }} avaliações
-                        </span>
-                    @endif
-                    <span class="badge bg-pink px-3 py-2"><i class="fas fa-check-circle me-1" aria-hidden="true"></i> Verificado</span>
-                </div>
-                <h1 class="fw-bold mb-2 salao-name">{{ $salao->nome }}</h1>
-                @if($salao->descricao)
-                    <p class="mb-3 text-muted">{{ $salao->descricao }}</p>
+    $instagramUrl = null;
+    if ($salao->instagram) {
+        $instagramUrl = str_starts_with($salao->instagram, 'http')
+            ? $salao->instagram
+            : 'https://instagram.com/' . ltrim($salao->instagram, '@');
+    }
+    $facebookUrl = null;
+    if ($salao->facebook) {
+        $facebookUrl = str_starts_with($salao->facebook, 'http')
+            ? $salao->facebook
+            : 'https://facebook.com/' . ltrim($salao->facebook, '@/');
+    }
+@endphp
+
+<x-skip-link />
+<x-public-navbar :show-auth-buttons="true" />
+
+<main id="mainContent" tabindex="-1">
+{{-- Hero brand-first: nome do salão + CTA; full-bleed quando há imagem --}}
+<section class="salao-hero {{ $heroImage ? 'salao-hero--bleed' : 'salao-hero--plain' }}" @if($heroImage) style="--hero-image: url('{{ $heroImage }}')" @endif>
+    @if($heroImage)
+        <div class="salao-hero-media" aria-hidden="true"></div>
+        <div class="salao-hero-veil" aria-hidden="true"></div>
+    @endif
+
+    <div class="container salao-hero-content">
+        <div class="salao-hero-copy">
+            <p class="salao-hero-status">
+                @if($salao->estaAberto())
+                    <span class="salao-status-dot" aria-hidden="true"></span> Aberto agora
+                @else
+                    Fechado no momento
                 @endif
-                <div class="d-flex flex-wrap gap-3 small text-muted">
-                    @if($salao->endereco_completo)
-                        <span><i class="fas fa-location-dot text-pink me-1" aria-hidden="true"></i> {{ $salao->endereco_completo }}</span>
-                    @endif
-                    @if($salao->telefone)
-                        <span><i class="fas fa-phone text-pink me-1" aria-hidden="true"></i> {{ $salao->telefone }}</span>
-                    @endif
-                    @if($salao->whatsapp)
-                        <a href="https://wa.me/{{ preg_replace('/\D/', '', $salao->whatsapp) }}" class="text-success text-decoration-none" target="_blank" rel="noopener">
-                            <i class="fab fa-whatsapp me-1" aria-hidden="true"></i> WhatsApp
-                        </a>
-                    @endif
-                </div>
-                <div class="mt-4">
-                    <a href="{{ route('public.agendar', $salao->slug) }}" class="btn btn-pink btn-lg">
-                        <i class="fas fa-calendar-plus me-2" aria-hidden="true"></i> Agendar agora
+                @if($salao->nota_media > 0)
+                    <span class="salao-hero-sep" aria-hidden="true">·</span>
+                    <span><i class="fas fa-star" aria-hidden="true"></i> {{ $salao->nota_media }}</span>
+                @endif
+            </p>
+
+            <h1 class="salao-name">{{ $salao->nome }}</h1>
+
+            <p class="salao-hero-lead">
+                {{ $salao->descricao ? Str::limit($salao->descricao, 120) : 'Manicure e pedicure com agendamento online.' }}
+            </p>
+
+            <div class="salao-hero-cta">
+                <a href="{{ route('public.agendar', $salao->slug) }}" class="btn btn-pink btn-lg salao-cta-primary">
+                    Agendar horário
+                </a>
+                @if($salao->whatsapp)
+                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $salao->whatsapp) }}"
+                       class="btn btn-lg salao-cta-secondary"
+                       target="_blank" rel="noopener">
+                        WhatsApp
                     </a>
-                    @if($salao->whatsapp)
-                        <a href="https://wa.me/{{ preg_replace('/\D/', '', $salao->whatsapp) }}" class="btn btn-outline-pink btn-lg ms-2" target="_blank" rel="noopener">
-                            <i class="fab fa-whatsapp me-1" aria-hidden="true"></i> Conversar
-                        </a>
-                    @endif
-                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -140,7 +150,8 @@
                                         title="{{ $foto->titulo ?: 'Ampliar' }}">
                                     <div class="ratio ratio-1x1">
                                         <img src="{{ $foto->foto_url }}" alt="{{ $foto->titulo ?: 'Trabalho do salão' }}"
-                                             loading="lazy" class="object-fit-cover rounded-3 shadow-sm w-100 h-100">
+                                             loading="lazy" decoding="async"
+                                             class="object-fit-cover rounded-3 shadow-sm w-100 h-100">
                                     </div>
                                 </button>
                             </div>
@@ -200,17 +211,53 @@
 
         {{-- ===== Coluna Direita ===== --}}
         <div class="col-lg-4">
-            {{-- Card destaque agendamento --}}
+            {{-- CTA agendamento (interação) --}}
             <div class="card border-0 mb-4 cta-card">
                 <div class="card-body p-4 text-center">
-                    <i class="fas fa-hand-sparkles fs-1 mb-3 opacity-75" aria-hidden="true"></i>
-                    <h5 class="fw-bold">Pronto para o glow?</h5>
-                    <p class="small mb-3 opacity-90">Agende online em segundos, sem complicação.</p>
+                    <h5 class="fw-bold mb-2">Reserve seu horário</h5>
+                    <p class="small mb-3 opacity-90">Agende online em segundos — sem fila, sem ligação.</p>
                     <a href="{{ route('public.agendar', $salao->slug) }}" class="btn btn-light text-pink fw-bold w-100">
-                        <i class="fas fa-calendar-plus me-1" aria-hidden="true"></i> Reservar horário
+                        Agendar agora
                     </a>
                 </div>
             </div>
+
+            {{-- Contato / redes --}}
+            @if($salao->endereco_completo || $salao->telefone || $salao->whatsapp || $instagramUrl || $facebookUrl)
+            <div class="mb-4 salao-contact-block">
+                @if($salao->endereco_completo)
+                    <p class="small mb-2">
+                        <i class="fas fa-location-dot text-pink me-2" aria-hidden="true"></i>{{ $salao->endereco_completo }}
+                    </p>
+                @endif
+                @if($salao->telefone)
+                    <p class="small mb-2">
+                        <i class="fas fa-phone text-pink me-2" aria-hidden="true"></i>{{ $salao->telefone }}
+                    </p>
+                @endif
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    @if($salao->whatsapp)
+                        <a href="https://wa.me/{{ preg_replace('/\D/', '', $salao->whatsapp) }}"
+                           class="btn btn-sm btn-outline-pink" target="_blank" rel="noopener"
+                           aria-label="WhatsApp">
+                            <i class="fab fa-whatsapp me-1" aria-hidden="true"></i> WhatsApp
+                        </a>
+                    @endif
+                    @if($instagramUrl)
+                        <a href="{{ $instagramUrl }}" class="btn btn-sm btn-outline-pink" target="_blank" rel="noopener"
+                           aria-label="Instagram">
+                            <i class="fab fa-instagram me-1" aria-hidden="true"></i> Instagram
+                        </a>
+                    @endif
+                    @if($facebookUrl)
+                        <a href="{{ $facebookUrl }}" class="btn btn-sm btn-outline-pink" target="_blank" rel="noopener"
+                           aria-label="Facebook">
+                            <i class="fab fa-facebook-f me-1" aria-hidden="true"></i> Facebook
+                        </a>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             {{-- Horários --}}
             <div class="card border-0 shadow-sm mb-4">
@@ -255,11 +302,12 @@
     </div>
 </div>
 
-<x-public-footer compact />
+<x-public-footer compact :salao="$salao" />
+</main>
 
 {{-- Lightbox da galeria (preenchido via JS delegado — CSP-safe) --}}
 @if($salao->galeria->isNotEmpty())
-<div class="modal fade" id="galeriaLightbox" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="galeriaLightbox" tabindex="-1" aria-hidden="true" aria-label="Foto ampliada" role="dialog">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content bg-transparent border-0">
             <div class="position-relative text-center">

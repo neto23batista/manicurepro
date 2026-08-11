@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('status', ['aguardando', 'confirmado', 'em_andamento', 'concluido', 'cancelado', 'nao_compareceu'])->default('aguardando');
             $table->text('observacoes')->nullable();
             $table->text('observacoes_internas')->nullable();
-            $table->enum('origem', ['web', 'app', 'balcao', 'telefone'])->default('web');
+            $table->enum('origem', ['web', 'app', 'balcao', 'telefone', 'guest'])->default('web');
             $table->decimal('valor_total', 10, 2)->default(0);
             $table->decimal('valor_desconto', 10, 2)->default(0);
             $table->unsignedBigInteger('cupom_id')->nullable();

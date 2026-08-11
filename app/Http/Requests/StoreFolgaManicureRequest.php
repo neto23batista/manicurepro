@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\FolgaManicure;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreFolgaManicureRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->manicure !== null;
+        return $this->user()?->can('create', FolgaManicure::class) ?? false;
     }
 
     public function rules(): array

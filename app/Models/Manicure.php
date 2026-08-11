@@ -6,11 +6,13 @@ use App\Models\Concerns\HasAvatar;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Manicure extends Model
 {
-    use HasFactory, HasAvatar, SoftDeletes;
+    use HasAvatar, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id', 'salao_id', 'nome', 'email', 'telefone',
@@ -19,36 +21,48 @@ class Manicure extends Model
 
     protected $casts = [
         'especialidades' => 'array',
-        'ativo' => 'boolean',
-        'comissao' => 'decimal:2',
+        'ativo'          => 'boolean',
+        'comissao'       => 'decimal:2',
     ];
 
-    public function user()
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function agendamentos()
+    /** @return HasMany<Agendamento, $this> */
+    public function agendamentos(): HasMany
     {
         return $this->hasMany(Agendamento::class);
     }
 
-    public function disponibilidades()
+    /** @return HasMany<ComissaoPagamento, $this> */
+    public function comissaoPagamentos(): HasMany
+    {
+        return $this->hasMany(ComissaoPagamento::class);
+    }
+
+    /** @return HasMany<DisponibilidadeManicure, $this> */
+    public function disponibilidades(): HasMany
     {
         return $this->hasMany(DisponibilidadeManicure::class)->orderBy('dia_semana');
     }
 
-    public function folgas()
+    /** @return HasMany<FolgaManicure, $this> */
+    public function folgas(): HasMany
     {
         return $this->hasMany(FolgaManicure::class);
     }
 
-    public function avaliacoes()
+    /** @return HasMany<Avaliacao, $this> */
+    public function avaliacoes(): HasMany
     {
         return $this->hasMany(Avaliacao::class);
     }
@@ -58,10 +72,12 @@ class Manicure extends Model
         if (array_key_exists('nota_media_calc', $this->attributes)) {
             return round((float) $this->attributes['nota_media_calc'], 1);
         }
+
         return round($this->avaliacoes()->avg('nota') ?? 0, 1);
     }
 
-    public function agendamentosHoje()
+    /** @return HasMany<Agendamento, $this> */
+    public function agendamentosHoje(): HasMany
     {
         return $this->agendamentos()
             ->whereDate('data_hora_inicio', today())

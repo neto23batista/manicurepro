@@ -67,13 +67,13 @@ class SalaoController extends Controller
         ]);
 
         Salao::where('slug', $slug)->where('ativo', true)->firstOrFail();
-        $manicure = Manicure::with(['salao.configuracao', 'disponibilidades', 'folgas'])
+        $manicure = Manicure::with(['salao.configuracao', 'salao.horarios', 'disponibilidades', 'folgas'])
             ->findOrFail($request->manicure_id);
 
         $slots = $this->agendaService->getSlotsDisponiveis(
             $manicure,
             Carbon::parse($request->data),
-            (int) $request->duracao
+            (int) $request->duracao,
         );
 
         return response()->json(['slots' => $slots]);

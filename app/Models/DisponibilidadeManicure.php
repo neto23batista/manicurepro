@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DisponibilidadeManicure extends Model
 {
@@ -12,7 +13,8 @@ class DisponibilidadeManicure extends Model
 
     protected $casts = ['ativo' => 'boolean'];
 
-    public function manicure()
+    /** @return BelongsTo<Manicure, $this> */
+    public function manicure(): BelongsTo
     {
         return $this->belongsTo(Manicure::class);
     }

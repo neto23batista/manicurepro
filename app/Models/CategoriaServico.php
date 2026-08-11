@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CategoriaServico extends Model
 {
@@ -15,12 +17,14 @@ class CategoriaServico extends Model
 
     protected $casts = ['ativo' => 'boolean'];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function servicos()
+    /** @return HasMany<Servico, $this> */
+    public function servicos(): HasMany
     {
         return $this->hasMany(Servico::class, 'categoria_id')->where('ativo', true);
     }

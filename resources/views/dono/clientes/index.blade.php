@@ -42,7 +42,10 @@
                                         {{ strtoupper(substr($c->nome, 0, 2)) }}
                                     </div>
                                     <div>
-                                        <div class="fw-semibold">{{ $c->nome }}</div>
+                                        <div class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                                            {{ $c->nome }}
+                                            <x-badge-no-show :cliente="$c" />
+                                        </div>
                                         @if($c->aniversario_hoje)
                                             <small class="text-pink"><i class="fas fa-cake-candles"></i> Aniversariante hoje!</small>
                                         @endif

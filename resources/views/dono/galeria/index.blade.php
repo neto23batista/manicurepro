@@ -14,7 +14,7 @@
             @csrf
             <div class="row g-3">
                 <div class="col-md-12">
-                    <label class="form-label fw-semibold">Fotos <small class="text-muted">(JPG, PNG ou WEBP — até 5 MB cada, várias de uma vez)</small></label>
+                    <label class="form-label fw-semibold">Fotos <small class="text-muted">(JPG, PNG ou WEBP — 200×200 a 8000×8000 px, até 5 MB cada)</small></label>
                     <input type="file" name="fotos[]" class="form-control @error('fotos') is-invalid @enderror @error('fotos.*') is-invalid @enderror"
                            accept="image/jpeg,image/png,image/webp" multiple required>
                     @error('fotos')<div class="invalid-feedback">{{ $message }}</div>@enderror

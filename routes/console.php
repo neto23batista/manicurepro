@@ -8,7 +8,19 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-Schedule::command('manicure:enviar-lembretes 24h')->dailyAt('08:00');
-Schedule::command('manicure:enviar-lembretes 2h')->hourly();
-Schedule::command('manicure:limpar-expirados')->dailyAt('03:00');
-Schedule::command('manicure:enviar-aniversarios')->dailyAt('09:00');
+// withoutOverlapping: evita corrida se um run atrasar e o cron disparar de novo.
+Schedule::command('manicure:enviar-lembretes 24h')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();
+
+Schedule::command('manicure:enviar-lembretes 2h')
+    ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('manicure:limpar-expirados')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();
+
+Schedule::command('manicure:enviar-aniversarios')
+    ->dailyAt('09:00')
+    ->withoutOverlapping();

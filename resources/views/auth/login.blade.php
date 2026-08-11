@@ -6,6 +6,7 @@
 @section('content')
 <form method="POST" action="{{ route('login.post') }}">
     @csrf
+    <x-honeypot />
 
     <div class="mb-3">
         <label for="email" class="form-label fw-semibold">

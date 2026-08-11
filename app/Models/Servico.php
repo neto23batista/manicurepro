@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Servico extends Model
 {
@@ -15,24 +17,27 @@ class Servico extends Model
     ];
 
     protected $casts = [
-        'preco' => 'decimal:2',
+        'preco'               => 'decimal:2',
         'comissao_percentual' => 'decimal:2',
-        'combo' => 'boolean',
-        'disponivel_online' => 'boolean',
-        'ativo' => 'boolean',
+        'combo'               => 'boolean',
+        'disponivel_online'   => 'boolean',
+        'ativo'               => 'boolean',
     ];
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
-    public function categoria()
+    /** @return BelongsTo<CategoriaServico, $this> */
+    public function categoria(): BelongsTo
     {
         return $this->belongsTo(CategoriaServico::class, 'categoria_id');
     }
 
-    public function agendamentos()
+    /** @return BelongsToMany<Agendamento, $this> */
+    public function agendamentos(): BelongsToMany
     {
         return $this->belongsToMany(Agendamento::class, 'agendamento_servicos')
             ->withPivot('preco', 'duracao')
@@ -43,12 +48,15 @@ class Servico extends Model
     {
         $h = intdiv($this->duracao, 60);
         $m = $this->duracao % 60;
-        if ($h > 0) return "{$h}h" . ($m > 0 ? " {$m}min" : '');
+        if ($h > 0) {
+            return "{$h}h".($m > 0 ? " {$m}min" : '');
+        }
+
         return "{$m}min";
     }
 
     public function getPrecoFormatadoAttribute(): string
     {
-        return 'R$ ' . number_format($this->preco, 2, ',', '.');
+        return 'R$ '.number_format((float) $this->preco, 2, ',', '.');
     }
 }

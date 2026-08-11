@@ -12,16 +12,21 @@ class FolgaController extends Controller
 {
     public function index()
     {
+        $this->authorize('viewAny', Folga::class);
+
         $salao = auth()->user()->salao;
         $folgas = $salao->folgas()
             ->where('data', '>=', today()->subDays(30))
             ->orderBy('data')
             ->paginate(20);
+
         return view('dono.folgas.index', compact('folgas'));
     }
 
     public function store(StoreFolgaRequest $request)
     {
+        $this->authorize('create', Folga::class);
+
         $salao = auth()->user()->salao;
         $data = $request->validated();
 
@@ -53,8 +58,9 @@ class FolgaController extends Controller
 
     public function destroy(Folga $folga)
     {
-        if ($folga->salao_id !== auth()->user()->salao_id) abort(403);
+        $this->authorize('delete', $folga);
         $folga->delete();
+
         return back()->with('success', 'Folga removida.');
     }
 }

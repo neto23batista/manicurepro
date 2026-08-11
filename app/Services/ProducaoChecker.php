@@ -8,9 +8,11 @@ namespace App\Services;
  */
 class ProducaoChecker
 {
-    public const OK    = 'ok';
+    public const OK = 'ok';
+
     public const AVISO = 'aviso';
-    public const ERRO  = 'erro';
+
+    public const ERRO = 'erro';
 
     /**
      * @return array<int, array{nivel:string, item:string, msg:string}>
@@ -23,7 +25,7 @@ class ProducaoChecker
         // Ambiente
         $checks[] = $ehProducao
             ? $this->ok('Ambiente', 'APP_ENV=production')
-            : $this->aviso('Ambiente', 'APP_ENV=' . app()->environment() . ' (use "production" no servidor).');
+            : $this->aviso('Ambiente', 'APP_ENV='.app()->environment().' (use "production" no servidor).');
 
         // Debug
         $debug = (bool) config('app.debug');
@@ -71,6 +73,19 @@ class ProducaoChecker
             ? $this->ok('Storage', 'Link público de storage existe.')
             : $this->erro('Storage', 'Falta o link de storage. Rode "php artisan storage:link" (galeria/logos não aparecem sem ele).');
 
+        // Mercado Pago: se habilitado, exige secret de webhook (fail-closed)
+        $mpEnabled = (bool) config('manicure.pagamento.mercadopago.enabled');
+        $mpSecret = (string) config('manicure.pagamento.mercadopago.webhook_secret');
+        if ($mpEnabled) {
+            $checks[] = $mpSecret !== ''
+                ? $this->ok('MercadoPago', 'MP habilitado com MP_WEBHOOK_SECRET.')
+                : ($ehProducao
+                    ? $this->erro('MercadoPago', 'MP_ENABLED=true sem MP_WEBHOOK_SECRET. Webhooks serão rejeitados.')
+                    : $this->aviso('MercadoPago', 'MP habilitado sem webhook secret (obrigatório em produção).'));
+        } else {
+            $checks[] = $this->ok('MercadoPago', 'Pagamento online desabilitado (MP_ENABLED=false).');
+        }
+
         return $checks;
     }
 
@@ -78,7 +93,7 @@ class ProducaoChecker
      * Há algum erro crítico? Aceita a lista já calculada para não repetir
      * verificar() — fonte única da definição de "crítico" (usada pelo command).
      *
-     * @param array<int, array{nivel:string, item:string, msg:string}>|null $checks
+     * @param  array<int, array{nivel:string, item:string, msg:string}>|null  $checks
      */
     public function temErroCritico(?array $checks = null): bool
     {
@@ -87,6 +102,7 @@ class ProducaoChecker
                 return true;
             }
         }
+
         return false;
     }
 

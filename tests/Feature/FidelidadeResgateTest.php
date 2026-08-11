@@ -41,7 +41,7 @@ test('resgate sem pontos suficientes lança exceção', function () {
     $this->cliente->update(['pontos_fidelidade' => 50]);
 
     expect(fn() => $this->fidelidade->resgatar($this->cliente, 1))
-        ->toThrow(\RuntimeException::class);
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
 test('cliente resgata pela rota e recebe o código do cupom', function () {

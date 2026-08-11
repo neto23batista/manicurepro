@@ -61,3 +61,83 @@ test('visitante não autenticado é redirecionado ao login', function () {
     $this->get(route('cliente.agendamentos.ical', $this->agendamento))
         ->assertRedirect(route('login'));
 });
+
+test('cliente vê link do Google Calendar no detalhe do agendamento', function () {
+    $this->actingAs($this->user)
+        ->get(route('cliente.agendamentos.show', $this->agendamento))
+        ->assertOk()
+        ->assertSee('calendar.google.com/calendar/render', false)
+        ->assertSee('Google Calendar', false)
+        ->assertSee('Baixar .ics', false);
+});
+
+test('link Google Calendar usa template com datas em UTC', function () {
+    $url = app(\App\Services\ICalService::class)->linkGoogleCalendar($this->agendamento);
+
+    expect($url)->toStartWith('https://calendar.google.com/calendar/render?');
+    expect($url)->toContain('action=TEMPLATE');
+    expect($url)->toContain('dates=');
+
+    $inicioUtc = $this->agendamento->data_hora_inicio->copy()->utc()->format('Ymd\THis\Z');
+    expect(urldecode($url))->toContain($inicioUtc);
+});
+
+test('dono exporta agenda .ics do dia', function () {
+    $dono = User::factory()->create([
+        'role' => 'dono',
+        'ativo' => true,
+        'salao_id' => $this->salao->id,
+    ]);
+
+    $dia = $this->agendamento->data_hora_inicio->toDateString();
+
+    $resp = $this->actingAs($dono)->get(route('dono.agendamentos.ical', ['data' => $dia]));
+
+    $resp->assertOk();
+    $resp->assertHeader('content-type', 'text/calendar; charset=utf-8');
+    expect($resp->headers->get('content-disposition'))->toContain("agenda-{$dia}.ics");
+    expect($resp->getContent())->toContain('UID:agendamento-'.$this->agendamento->id.'@');
+    expect($resp->getContent())->toContain('Cliente:');
+});
+
+test('dono exporta agenda .ics por intervalo', function () {
+    $dono = User::factory()->create([
+        'role' => 'dono',
+        'ativo' => true,
+        'salao_id' => $this->salao->id,
+    ]);
+
+    $de = $this->agendamento->data_hora_inicio->copy()->subDay()->toDateString();
+    $ate = $this->agendamento->data_hora_inicio->copy()->addDay()->toDateString();
+
+    $resp = $this->actingAs($dono)->get(route('dono.agendamentos.ical', [
+        'de' => $de,
+        'ate' => $ate,
+    ]));
+
+    $resp->assertOk();
+    expect($resp->getContent())->toContain('BEGIN:VEVENT');
+    expect($resp->headers->get('content-disposition'))->toContain("agenda-{$de}-a-{$ate}.ics");
+});
+
+test('manicure exporta a própria agenda .ics do dia', function () {
+    $userManicure = User::factory()->create([
+        'role' => 'manicure',
+        'ativo' => true,
+        'salao_id' => $this->salao->id,
+    ]);
+    $this->manicure->update(['user_id' => $userManicure->id]);
+
+    $dia = $this->agendamento->data_hora_inicio->toDateString();
+
+    $resp = $this->actingAs($userManicure)->get(route('manicure.agenda.ical', ['data' => $dia]));
+
+    $resp->assertOk();
+    expect($resp->getContent())->toContain('UID:agendamento-'.$this->agendamento->id.'@');
+});
+
+test('cliente não acessa export ICS do dono', function () {
+    $this->actingAs($this->user)
+        ->get(route('dono.agendamentos.ical', ['data' => today()->toDateString()]))
+        ->assertForbidden();
+});

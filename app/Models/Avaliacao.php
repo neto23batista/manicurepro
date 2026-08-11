@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Avaliacao extends Model
 {
@@ -15,31 +16,35 @@ class Avaliacao extends Model
 
     protected $casts = [
         'respondido_em' => 'datetime',
-        'publicar' => 'boolean',
+        'publicar'      => 'boolean',
     ];
 
-    public function agendamento()
+    /** @return BelongsTo<Agendamento, $this> */
+    public function agendamento(): BelongsTo
     {
         return $this->belongsTo(Agendamento::class);
     }
 
-    public function cliente()
+    /** @return BelongsTo<Cliente, $this> */
+    public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
     }
 
-    public function manicure()
+    /** @return BelongsTo<Manicure, $this> */
+    public function manicure(): BelongsTo
     {
         return $this->belongsTo(Manicure::class);
     }
 
-    public function salao()
+    /** @return BelongsTo<Salao, $this> */
+    public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
     }
 
     public function getEstrelasAttribute(): string
     {
-        return str_repeat('★', $this->nota) . str_repeat('☆', 5 - $this->nota);
+        return str_repeat('★', $this->nota).str_repeat('☆', 5 - $this->nota);
     }
 }

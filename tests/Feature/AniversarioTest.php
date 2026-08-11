@@ -142,3 +142,61 @@ test('respeita a flag de desativado', function () {
 
     Notification::assertNothingSent();
 });
+
+test('ignora cliente inativo', function () {
+    Cliente::factory()->create([
+        'salao_id'        => $this->salao->id,
+        'ativo'           => false,
+        'email'           => 'inativo@example.com',
+        'data_nascimento' => now()->subYears(22),
+    ]);
+
+    $this->artisan('manicure:enviar-aniversarios')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});
+
+test('ignora cliente sem e-mail e sem telefone', function () {
+    Cliente::factory()->create([
+        'salao_id'        => $this->salao->id,
+        'ativo'           => true,
+        'email'           => null,
+        'telefone'        => null,
+        'data_nascimento' => now()->subYears(31),
+    ]);
+
+    $this->artisan('manicure:enviar-aniversarios')->assertSuccessful();
+
+    Notification::assertNothingSent();
+    expect(Cliente::whereNotNull('aniversario_enviado_em')->count())->toBe(0);
+});
+
+test('em ano bissexto felicita 29/02 no próprio dia', function () {
+    $this->travelTo('2024-02-29 09:00:00');
+
+    Cliente::factory()->create([
+        'salao_id'        => $this->salao->id,
+        'ativo'           => true,
+        'email'           => 'bissexto@example.com',
+        'data_nascimento' => '2000-02-29',
+    ]);
+
+    $this->artisan('manicure:enviar-aniversarios')->assertSuccessful();
+
+    Notification::assertSentOnDemand(AniversarioCliente::class);
+});
+
+test('em 28/02 de ano bissexto não antecipa o 29/02', function () {
+    $this->travelTo('2024-02-28 09:00:00');
+
+    Cliente::factory()->create([
+        'salao_id'        => $this->salao->id,
+        'ativo'           => true,
+        'email'           => 'bissexto@example.com',
+        'data_nascimento' => '2000-02-29',
+    ]);
+
+    $this->artisan('manicure:enviar-aniversarios')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});

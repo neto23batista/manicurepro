@@ -109,10 +109,10 @@
 
                         @if($usuario->id !== auth()->id())
                         <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" class="ms-auto"
-                              data-confirm="Excluir usuário?" data-confirm-message="Esta ação é permanente e não pode ser desfeita." data-confirm-ok="Excluir">
+                              data-confirm="Desativar usuário?" data-confirm-message="O usuário será desativado e poderá ser reativado depois." data-confirm-ok="Desativar">
                             @csrf @method('DELETE')
                             <button type="submit" class="btn btn-outline-danger">
-                                <i class="fa-solid fa-trash me-1"></i>Excluir
+                                <i class="fa-solid fa-user-slash me-1"></i>Desativar
                             </button>
                         </form>
                         @endif

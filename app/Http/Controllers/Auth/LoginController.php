@@ -66,11 +66,7 @@ class LoginController extends Controller
 
     private function redirectAfterLogin(User $user): string
     {
-        $role = UserRole::tryFrom($user->role);
-
-        return $role
-            ? route($role->dashboardRoute())
-            : '/';
+        return route(UserRole::from((string) $user->role)->dashboardRoute());
     }
 
     public function logout(Request $request)

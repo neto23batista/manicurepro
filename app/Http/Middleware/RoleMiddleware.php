@@ -11,12 +11,13 @@ class RoleMiddleware
 {
     /**
      * Hierarquia de roles: cada chave herda automaticamente as permissões dos valores.
-     * 'admin' engloba todos os perfis subordinados.
+     * Admin/dono cobrem operação do salão; NÃO herdam cliente/manicure (rotas isoladas).
+     * Atendente NÃO herda cliente.
      */
     private const HIERARCHY = [
-        'admin'     => [UserRole::Admin, UserRole::Dono, UserRole::Atendente, UserRole::Manicure, UserRole::Cliente],
-        'dono'      => [UserRole::Dono, UserRole::Atendente, UserRole::Manicure, UserRole::Cliente],
-        'atendente' => [UserRole::Atendente, UserRole::Cliente],
+        'admin'     => [UserRole::Admin, UserRole::Dono, UserRole::Atendente],
+        'dono'      => [UserRole::Dono, UserRole::Atendente],
+        'atendente' => [UserRole::Atendente],
         'manicure'  => [UserRole::Manicure],
         'cliente'   => [UserRole::Cliente],
     ];
@@ -25,16 +26,16 @@ class RoleMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         $userRole = $user->roleEnum();
-        if (!$userRole) {
+        if (! $userRole) {
             abort(403, 'Acesso não autorizado.');
         }
 
-        $allowed = self::HIERARCHY[$userRole->value] ?? [$userRole];
+        $allowed = self::HIERARCHY[$userRole->value];
 
         foreach ($roles as $required) {
             $requiredEnum = UserRole::tryFrom($required);

@@ -7,8 +7,12 @@ use App\Models\Manicure;
 use App\Models\Pagamento;
 use App\Models\Salao;
 use App\Models\User;
+use App\Services\ComandaService;
 use App\Services\FinanceiroService;
+use App\Services\ValePresenteService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -18,9 +22,10 @@ beforeEach(function () {
     $this->financeiro = app(FinanceiroService::class);
 });
 
-function agendamentoConcluido(int $salaoId, int $manicureId, float $valor, float $desconto = 0, ?\Carbon\Carbon $quando = null): Agendamento
+function agendamentoConcluido(int $salaoId, int $manicureId, float $valor, float $desconto = 0, ?Carbon $quando = null): Agendamento
 {
     $quando ??= now();
+
     return Agendamento::factory()->create([
         'salao_id'         => $salaoId,
         'manicure_id'      => $manicureId,
@@ -73,7 +78,7 @@ test('apenas atendimentos concluídos do salão entram na comissão', function (
     agendamentoConcluido($this->salao->id, $manicure->id, 100);
     // cancelado não conta
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id, 'manicure_id' => $manicure->id, 'status' => 'cancelado',
+        'salao_id'    => $this->salao->id, 'manicure_id' => $manicure->id, 'status' => 'cancelado',
         'valor_total' => 500, 'data_hora_inicio' => now(), 'data_hora_fim' => now()->addHour(),
     ]);
     // outro salão não conta
@@ -95,7 +100,7 @@ test('período fora da janela não é contabilizado', function () {
 });
 
 test('venda de vale entra no caixa na forma escolhida e o resgate não soma', function () {
-    $vales = app(\App\Services\ValePresenteService::class);
+    $vales = app(ValePresenteService::class);
     $vale = $vales->criar($this->salao->id, ['valor' => 150, 'forma' => 'pix']);
 
     // A venda registrou entrada de R$150 em pix.
@@ -106,7 +111,7 @@ test('venda de vale entra no caixa na forma escolhida e o resgate não soma', fu
     // Resgate de R$100 num atendimento: NÃO soma de novo — aparece à parte.
     $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id]);
     $ag = agendamentoConcluido($this->salao->id, $manicure->id, 100);
-    app(\App\Services\ComandaService::class)->aplicarVale($ag, $vale, $vales);
+    app(ComandaService::class)->aplicarVale($ag, $vale, $vales);
 
     $caixa = $this->financeiro->caixa($this->salao->id, now()->startOfDay(), now()->endOfDay());
     expect($caixa['total'])->toBe(150.0);
@@ -127,4 +132,105 @@ test('dono abre a página de financeiro', function () {
 test('cliente não acessa o financeiro', function () {
     $cliente = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->actingAs($cliente)->get('/dono/financeiro')->assertForbidden();
+});
+
+test('marcar comissão como paga registra repasse do período', function () {
+    $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 50]);
+    agendamentoConcluido($this->salao->id, $manicure->id, 200);
+
+    $inicio = now()->startOfDay();
+    $fim = now()->endOfDay();
+
+    $pagamento = $this->financeiro->marcarPago(
+        $this->salao->id,
+        $manicure->id,
+        $inicio,
+        $fim,
+        $this->dono->id,
+        'Repasse semanal',
+    );
+
+    expect((float) $pagamento->valor)->toBe(100.0);
+    expect($pagamento->observacao)->toBe('Repasse semanal');
+    expect($pagamento->user_id)->toBe($this->dono->id);
+    expect($pagamento->periodo_inicio->toDateString())->toBe($inicio->toDateString());
+    expect($pagamento->periodo_fim->toDateString())->toBe($fim->toDateString());
+
+    $comissoes = $this->financeiro->comissoes($this->salao->id, $inicio, $fim);
+    $linha = $comissoes->first();
+    expect($linha['pago'])->toBeTrue();
+    expect($linha['a_pagar'])->toBe(0.0);
+    expect($linha['valor_pago'])->toBe(100.0);
+});
+
+test('não permite marcar o mesmo período duas vezes', function () {
+    $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 40]);
+    agendamentoConcluido($this->salao->id, $manicure->id, 100);
+
+    $inicio = now()->startOfDay();
+    $fim = now()->endOfDay();
+
+    $this->financeiro->marcarPago($this->salao->id, $manicure->id, $inicio, $fim, $this->dono->id);
+
+    $this->financeiro->marcarPago($this->salao->id, $manicure->id, $inicio, $fim, $this->dono->id);
+})->throws(ValidationException::class);
+
+test('desfazer pagamento volta comissão a pagar', function () {
+    $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 50]);
+    agendamentoConcluido($this->salao->id, $manicure->id, 80);
+
+    $inicio = now()->startOfDay();
+    $fim = now()->endOfDay();
+    $pagamento = $this->financeiro->marcarPago($this->salao->id, $manicure->id, $inicio, $fim, $this->dono->id);
+
+    $this->financeiro->desfazerPagamento($pagamento, $this->salao->id);
+
+    $comissoes = $this->financeiro->comissoes($this->salao->id, $inicio, $fim);
+    expect($comissoes->first()['pago'])->toBeFalse();
+    expect($comissoes->first()['a_pagar'])->toBe(40.0);
+    expect($this->financeiro->pagamentosDoPeriodo($this->salao->id, $inicio, $fim))->toHaveCount(0);
+});
+
+test('dono marca comissão como paga pela UI', function () {
+    $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 50]);
+    agendamentoConcluido($this->salao->id, $manicure->id, 100);
+
+    $this->actingAs($this->dono)
+        ->post('/dono/financeiro/comissoes', [
+            'manicure_id' => $manicure->id,
+            'data_inicio' => now()->toDateString(),
+            'data_fim'    => now()->toDateString(),
+            'periodo'     => 'hoje',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('comissao_pagamentos', [
+        'salao_id'    => $this->salao->id,
+        'manicure_id' => $manicure->id,
+        'valor'       => 50.00,
+        'user_id'     => $this->dono->id,
+    ]);
+
+    $this->actingAs($this->dono)->get('/dono/financeiro?periodo=hoje')
+        ->assertOk()
+        ->assertSee('Pago')
+        ->assertSee('Repasses neste período');
+});
+
+test('atendente não pode marcar comissão como paga', function () {
+    $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 50]);
+    agendamentoConcluido($this->salao->id, $manicure->id, 100);
+    $atendente = User::factory()->create([
+        'role'     => 'atendente',
+        'salao_id' => $this->salao->id,
+        'ativo'    => true,
+    ]);
+
+    $this->actingAs($atendente)
+        ->post('/dono/financeiro/comissoes', [
+            'manicure_id' => $manicure->id,
+            'data_inicio' => now()->toDateString(),
+            'data_fim'    => now()->toDateString(),
+        ])
+        ->assertForbidden();
 });

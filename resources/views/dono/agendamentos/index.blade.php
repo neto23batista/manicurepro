@@ -39,9 +39,15 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <button type="submit" class="btn btn-pink w-100">
-                    <i class="fas fa-filter me-1"></i> Filtrar
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-pink flex-grow-1">
+                        <i class="fas fa-filter me-1"></i> Filtrar
+                    </button>
+                    <a href="{{ route('dono.agendamentos.ical', request()->only(['data', 'de', 'ate', 'manicure_id', 'status'])) }}"
+                       class="btn btn-outline-pink" title="Exportar .ics (dia filtrado ou hoje)">
+                        <i class="fas fa-calendar-plus"></i>
+                    </a>
+                </div>
             </div>
         </form>
     </div>
@@ -65,7 +71,12 @@
                     @forelse($agendamentos as $ag)
                         <tr>
                             <td>{{ $ag->id }}</td>
-                            <td>{{ $ag->nome_cliente_exibido }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span>{{ $ag->nome_cliente_exibido }}</span>
+                                    <x-badge-no-show :cliente="$ag->cliente" />
+                                </div>
+                            </td>
                             <td>{{ $ag->manicure?->nome }}</td>
                             <td>
                                 <small>{{ $ag->servicos->pluck('nome')->implode(', ') }}</small>

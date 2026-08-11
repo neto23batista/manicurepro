@@ -10,19 +10,19 @@ namespace App\Notifications\Messages;
  *  - template     → ->template($nome, $params)  (necessário para mensagens
  *    iniciadas pelo negócio, ex. lembretes — template precisa estar aprovado)
  */
-class WhatsAppMessage
+final class WhatsAppMessage
 {
     public ?string $body = null;
     public ?string $templateName = null;
     public string $templateLanguage = 'pt_BR';
     public array $templateParams = [];
 
-    public static function create(string $body = ''): static
+    public static function create(string $body = ''): self
     {
-        return (new static)->text($body);
+        return (new self)->text($body);
     }
 
-    public function text(string $body): static
+    public function text(string $body): self
     {
         $this->body = $body;
         $this->templateName = null;
@@ -30,7 +30,7 @@ class WhatsAppMessage
         return $this;
     }
 
-    public function template(string $name, array $params = [], string $language = 'pt_BR'): static
+    public function template(string $name, array $params = [], string $language = 'pt_BR'): self
     {
         $this->templateName = $name;
         $this->templateParams = $params;

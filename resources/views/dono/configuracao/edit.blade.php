@@ -4,9 +4,13 @@
 @section('page-title', 'Configurações do salão')
 
 @section('content')
+@php
+    $corPrimaria = old('cor_primaria', $config->cor_primaria ?: config('manicure.tema.cor_primaria', '#e91e8c'));
+@endphp
 <ul class="nav nav-pills gap-2 mb-4" style="background:white;padding:6px;border-radius:14px;box-shadow:var(--shadow-sm);display:inline-flex">
     <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#dados">Dados</a></li>
     <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#horarios">Horários</a></li>
+    <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#aparencia">Aparência</a></li>
     <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#agendamento">Agendamento</a></li>
     <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#fidelidade">Fidelidade</a></li>
     <li class="nav-item"><a class="nav-link text-dark" data-bs-toggle="pill" href="#notificacoes">Notificações</a></li>
@@ -148,6 +152,67 @@
         </div>
     </div>
 
+    {{-- Aparência --}}
+    <div class="tab-pane fade" id="aparencia">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-palette text-pink me-2"></i>Aparência do salão</h5></div>
+            <div class="card-body p-4">
+                <form action="{{ route('dono.config.config') }}" method="POST">
+                    @csrf @method('PUT')
+                    <div class="row g-4 align-items-start">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="corPrimariaInput">Cor primária</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" id="corPrimariaPicker" value="{{ $corPrimaria }}"
+                                       class="form-control form-control-color" style="width:56px;height:40px;padding:2px"
+                                       aria-label="Selecionar cor primária">
+                                <input type="text" name="cor_primaria" id="corPrimariaInput" value="{{ $corPrimaria }}"
+                                       maxlength="7" pattern="^#[0-9A-Fa-f]{6}$" required
+                                       class="form-control @error('cor_primaria') is-invalid @enderror"
+                                       style="max-width:140px;font-family:ui-monospace,monospace"
+                                       placeholder="#e91e8c" autocomplete="off">
+                                @error('cor_primaria') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <small class="text-muted d-block mt-2">Usada no tema do salão (botões, destaques). Fallback: <code>manicure.tema.cor_primaria</code>.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Pré-visualização</label>
+                            <div id="corPrimariaPreview" class="rounded-3 border p-3"
+                                 style="background:{{ $corPrimaria }}15;border-color:{{ $corPrimaria }}!important">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <span id="corPrimariaSwatch" class="rounded-circle border"
+                                          style="width:40px;height:40px;background:{{ $corPrimaria }};display:inline-block"></span>
+                                    <div>
+                                        <div class="fw-semibold" id="corPrimariaLabel" style="color:{{ $corPrimaria }}">{{ strtoupper($corPrimaria) }}</div>
+                                        <small class="text-muted">Cor de destaque</small>
+                                    </div>
+                                </div>
+                                <button type="button" id="corPrimariaBtnPreview" class="btn btn-sm text-white"
+                                        style="background:{{ $corPrimaria }};border-color:{{ $corPrimaria }}" disabled>
+                                    Botão de exemplo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="permitir_agendamento_online" value="{{ $config->permitir_agendamento_online ? 1 : 0 }}">
+                    <input type="hidden" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}">
+                    <input type="hidden" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}">
+                    <input type="hidden" name="antecedencia_maxima" value="{{ $config->antecedencia_maxima }}">
+                    <input type="hidden" name="cancelamento_prazo" value="{{ $config->cancelamento_prazo }}">
+                    <input type="hidden" name="fidelidade_ativo" value="{{ $config->fidelidade_ativo ? 1 : 0 }}">
+                    <input type="hidden" name="pontos_por_real" value="{{ $config->pontos_por_real }}">
+                    <input type="hidden" name="pontos_para_desconto" value="{{ $config->pontos_para_desconto }}">
+                    <input type="hidden" name="valor_desconto_pontos" value="{{ $config->valor_desconto_pontos }}">
+                    <input type="hidden" name="notificar_email" value="{{ $config->notificar_email ? 1 : 0 }}">
+                    <input type="hidden" name="notificar_whatsapp" value="{{ $config->notificar_whatsapp ? 1 : 0 }}">
+                    <input type="hidden" name="lembrete_horas" value="{{ $config->lembrete_horas }}">
+                    <input type="hidden" name="limite_alerta_no_show" value="{{ $config->limite_alerta_no_show ?? config('manicure.no_show.limite_alerta', 2) }}">
+                    <button type="submit" class="btn btn-pink mt-4"><i class="fas fa-save me-1"></i>Salvar aparência</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {{-- Agendamento --}}
     <div class="tab-pane fade" id="agendamento">
         <div class="card">
@@ -172,7 +237,16 @@
                             <input type="number" name="antecedencia_maxima" value="{{ $config->antecedencia_maxima }}" min="1" max="365" class="form-control" required></div>
                         <div class="col-md-6"><label class="form-label fw-semibold">Prazo p/ cancelamento (horas)</label>
                             <input type="number" name="cancelamento_prazo" value="{{ $config->cancelamento_prazo }}" min="0" max="72" class="form-control" required></div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold" for="limiteAlertaNoShow">Limite de faltas p/ alerta</label>
+                            <input type="number" name="limite_alerta_no_show" id="limiteAlertaNoShow"
+                                   value="{{ old('limite_alerta_no_show', $config->limite_alerta_no_show ?? config('manicure.no_show.limite_alerta', 2)) }}"
+                                   min="1" max="20" class="form-control @error('limite_alerta_no_show') is-invalid @enderror" required>
+                            @error('limite_alerta_no_show') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="text-muted">Cliente com este número de faltas (ou mais) aparece com alerta de risco de no-show. Padrão global: {{ config('manicure.no_show.limite_alerta', 2) }}.</small>
+                        </div>
                     </div>
+                    <input type="hidden" name="cor_primaria" value="{{ $corPrimaria }}">
                     <input type="hidden" name="fidelidade_ativo" value="{{ $config->fidelidade_ativo ? 1 : 0 }}">
                     <input type="hidden" name="pontos_por_real" value="{{ $config->pontos_por_real }}">
                     <input type="hidden" name="pontos_para_desconto" value="{{ $config->pontos_para_desconto }}">
@@ -207,6 +281,7 @@
                         <div class="col-md-4"><label class="form-label fw-semibold">Valor desconto (R$)</label>
                             <input type="number" step="0.01" name="valor_desconto_pontos" min="0" value="{{ $config->valor_desconto_pontos }}" class="form-control"></div>
                     </div>
+                    <input type="hidden" name="cor_primaria" value="{{ $corPrimaria }}">
                     <input type="hidden" name="permitir_agendamento_online" value="{{ $config->permitir_agendamento_online ? 1 : 0 }}">
                     <input type="hidden" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}">
                     <input type="hidden" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}">
@@ -215,6 +290,7 @@
                     <input type="hidden" name="notificar_email" value="{{ $config->notificar_email ? 1 : 0 }}">
                     <input type="hidden" name="notificar_whatsapp" value="{{ $config->notificar_whatsapp ? 1 : 0 }}">
                     <input type="hidden" name="lembrete_horas" value="{{ $config->lembrete_horas }}">
+                    <input type="hidden" name="limite_alerta_no_show" value="{{ $config->limite_alerta_no_show ?? config('manicure.no_show.limite_alerta', 2) }}">
                     <button type="submit" class="btn btn-pink mt-4"><i class="fas fa-save me-1"></i>Salvar fidelidade</button>
                 </form>
             </div>
@@ -244,6 +320,7 @@
                         <label class="form-label fw-semibold">Enviar lembrete X horas antes</label>
                         <input type="number" name="lembrete_horas" min="1" max="168" value="{{ $config->lembrete_horas }}" class="form-control" style="max-width:200px">
                     </div>
+                    <input type="hidden" name="cor_primaria" value="{{ $corPrimaria }}">
                     <input type="hidden" name="permitir_agendamento_online" value="{{ $config->permitir_agendamento_online ? 1 : 0 }}">
                     <input type="hidden" name="intervalo_agendamento" value="{{ $config->intervalo_agendamento }}">
                     <input type="hidden" name="antecedencia_minima" value="{{ $config->antecedencia_minima }}">
@@ -253,6 +330,7 @@
                     <input type="hidden" name="pontos_por_real" value="{{ $config->pontos_por_real }}">
                     <input type="hidden" name="pontos_para_desconto" value="{{ $config->pontos_para_desconto }}">
                     <input type="hidden" name="valor_desconto_pontos" value="{{ $config->valor_desconto_pontos }}">
+                    <input type="hidden" name="limite_alerta_no_show" value="{{ $config->limite_alerta_no_show ?? config('manicure.no_show.limite_alerta', 2) }}">
                     <button type="submit" class="btn btn-pink mt-3"><i class="fas fa-save me-1"></i>Salvar notificações</button>
                 </form>
             </div>
@@ -288,6 +366,48 @@ document.getElementById('capaInput')?.addEventListener('change', function(e) {
         r.readAsDataURL(f);
     }
 });
+
+// Preview da cor primária
+(function () {
+    const picker = document.getElementById('corPrimariaPicker');
+    const input = document.getElementById('corPrimariaInput');
+    const swatch = document.getElementById('corPrimariaSwatch');
+    const label = document.getElementById('corPrimariaLabel');
+    const btn = document.getElementById('corPrimariaBtnPreview');
+    const box = document.getElementById('corPrimariaPreview');
+    if (!picker || !input) return;
+
+    const hexOk = (v) => /^#[0-9A-Fa-f]{6}$/.test(v);
+
+    function applyPreview(color) {
+        if (!hexOk(color)) return;
+        swatch && (swatch.style.background = color);
+        label && (label.textContent = color.toUpperCase(), label.style.color = color);
+        if (btn) {
+            btn.style.background = color;
+            btn.style.borderColor = color;
+        }
+        if (box) {
+            box.style.background = color + '15';
+            box.style.borderColor = color;
+        }
+    }
+
+    picker.addEventListener('input', function () {
+        input.value = this.value;
+        applyPreview(this.value);
+    });
+
+    input.addEventListener('input', function () {
+        let v = this.value.trim();
+        if (v && !v.startsWith('#')) v = '#' + v;
+        this.value = v;
+        if (hexOk(v)) {
+            picker.value = v;
+            applyPreview(v);
+        }
+    });
+})();
 </script>
 @endpush
 @endsection

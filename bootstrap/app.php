@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckSalao;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -15,14 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'role'        => RoleMiddleware::class,
-            'check.salao' => CheckSalao::class,
+            'role'         => RoleMiddleware::class,
+            'check.salao'  => CheckSalao::class,
+            'user.active'  => EnsureUserIsActive::class,
         ]);
 
         $middleware->web(append: [
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\ContentSecurityPolicy::class,
+            \App\Http\Middleware\ProtectPublicForms::class,
         ]);
 
         // Webhooks externos não enviam token CSRF

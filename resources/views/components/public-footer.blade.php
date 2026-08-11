@@ -1,4 +1,45 @@
-@props(['compact' => false])
+@props(['compact' => false, 'salao' => null])
+
+@php
+    /** @var \App\Models\Salao|null $salao */
+    $socialRaw = [
+        'instagram' => config('manicure.social.instagram') ?: $salao?->instagram,
+        'facebook'  => config('manicure.social.facebook') ?: $salao?->facebook,
+        'tiktok'    => config('manicure.social.tiktok'),
+        'whatsapp'  => config('manicure.social.whatsapp') ?: $salao?->whatsapp,
+    ];
+
+    $normalizeSocialUrl = static function (?string $value, string $rede): ?string {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+
+        return match ($rede) {
+            'instagram' => 'https://instagram.com/' . ltrim($value, '@'),
+            'facebook'  => 'https://facebook.com/' . ltrim($value, '@/'),
+            'tiktok'    => 'https://www.tiktok.com/@' . ltrim($value, '@'),
+            'whatsapp'  => 'https://wa.me/' . preg_replace('/\D/', '', $value),
+            default     => null,
+        };
+    };
+
+    $social = collect($socialRaw)
+        ->map(fn ($value, $rede) => $normalizeSocialUrl($value, $rede))
+        ->filter()
+        ->all();
+
+    $icons = [
+        'instagram' => 'fa-instagram',
+        'facebook'  => 'fa-facebook-f',
+        'tiktok'    => 'fa-tiktok',
+        'whatsapp'  => 'fa-whatsapp',
+    ];
+@endphp
 
 @if($compact)
     <footer class="public-footer-compact">
@@ -16,12 +57,19 @@
                         <span class="fw-bold text-white fs-5">{{ config('app.name') }}</span>
                     </div>
                     <p class="small text-white-50">Cuidado, capricho e beleza para as suas unhas — com agendamento online rápido e fácil.</p>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" aria-label="Instagram"><i class="fab fa-instagram" aria-hidden="true"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" aria-label="Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" aria-label="TikTok"><i class="fab fa-tiktok" aria-hidden="true"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle" aria-label="WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i></a>
-                    </div>
+                    @if(count($social) > 0)
+                        <div class="d-flex gap-2 mt-3">
+                            @foreach($social as $rede => $url)
+                                <a href="{{ $url }}"
+                                   class="btn btn-outline-light btn-sm rounded-circle"
+                                   aria-label="{{ ucfirst($rede) }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer">
+                                    <i class="fab {{ $icons[$rede] }}" aria-hidden="true"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
                 <div class="col-md-4">
                     <h6 class="fw-bold text-white mb-3">Navegação</h6>

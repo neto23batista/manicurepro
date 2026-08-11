@@ -35,6 +35,47 @@ test('cliente sem cadastro não acessa agendamento de balcão (cliente_id null)'
         ->assertForbidden();
 });
 
+test('dono de outro salão não acessa agendamento (policy)', function () {
+    $salaoA = Salao::factory()->create(['ativo' => true]);
+    $salaoB = Salao::factory()->create(['ativo' => true]);
+    $manicure = Manicure::factory()->create(['salao_id' => $salaoA->id, 'ativo' => true]);
+    $donoB = User::factory()->create(['role' => 'dono', 'salao_id' => $salaoB->id]);
+
+    $inicio = Carbon::now()->addDay()->setTime(10, 0);
+    $ag = Agendamento::factory()->create([
+        'salao_id' => $salaoA->id,
+        'manicure_id' => $manicure->id,
+        'data_hora_inicio' => $inicio,
+        'data_hora_fim' => $inicio->copy()->addMinutes(30),
+        'status' => 'confirmado',
+    ]);
+
+    $this->actingAs($donoB)
+        ->get(route('dono.agendamentos.show', $ag))
+        ->assertForbidden();
+});
+
+test('manicure não acessa agendamento de outra profissional (policy)', function () {
+    $salao = Salao::factory()->create(['ativo' => true]);
+    $userA = User::factory()->create(['role' => 'manicure', 'salao_id' => $salao->id]);
+    $userB = User::factory()->create(['role' => 'manicure', 'salao_id' => $salao->id]);
+    $manicureA = Manicure::factory()->create(['salao_id' => $salao->id, 'user_id' => $userA->id, 'ativo' => true]);
+    Manicure::factory()->create(['salao_id' => $salao->id, 'user_id' => $userB->id, 'ativo' => true]);
+
+    $inicio = Carbon::now()->addDay()->setTime(10, 0);
+    $ag = Agendamento::factory()->create([
+        'salao_id' => $salao->id,
+        'manicure_id' => $manicureA->id,
+        'data_hora_inicio' => $inicio,
+        'data_hora_fim' => $inicio->copy()->addMinutes(30),
+        'status' => 'confirmado',
+    ]);
+
+    $this->actingAs($userB)
+        ->get(route('manicure.agenda.show', $ag))
+        ->assertForbidden();
+});
+
 // ---------- Brute force no login ----------
 test('login bloqueia após tentativas excessivas (mesmo com senha correta depois)', function () {
     $user = User::factory()->create(['password' => bcrypt('senhacerta'), 'ativo' => true]);
@@ -63,6 +104,13 @@ test('respostas web trazem headers de segurança', function () {
 // ---------- Webhook: assinatura ----------
 test('webhook rejeita requisição sem assinatura quando o secret está configurado', function () {
     config(['manicure.pagamento.mercadopago.webhook_secret' => 'segredo-teste']);
+
+    $this->postJson(route('webhooks.mercadopago'), ['type' => 'payment', 'data' => ['id' => '123']])
+        ->assertStatus(401);
+});
+
+test('webhook rejeita quando o secret não está configurado (fail-closed)', function () {
+    config(['manicure.pagamento.mercadopago.webhook_secret' => null]);
 
     $this->postJson(route('webhooks.mercadopago'), ['type' => 'payment', 'data' => ['id' => '123']])
         ->assertStatus(401);

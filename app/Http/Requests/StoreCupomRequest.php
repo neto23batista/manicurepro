@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Cupom;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -9,17 +10,17 @@ class StoreCupomRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->salao_id !== null;
+        return $this->user()?->can('create', Cupom::class) ?? false;
     }
 
     public function rules(): array
     {
-        $salaoId = $this->user()->salao_id;
+        $salaoId = $this->user()?->salao_id;
 
         return [
             'codigo' => [
                 'required', 'string', 'max:30',
-                Rule::unique('cupons', 'codigo')->where(fn($q) => $q->where('salao_id', $salaoId)),
+                Rule::unique('cupons', 'codigo')->where(fn ($q) => $q->where('salao_id', $salaoId)),
             ],
             'tipo'            => ['required', 'in:percentual,fixo'],
             'valor'           => ['required', 'numeric', 'min:0'],

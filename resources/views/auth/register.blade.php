@@ -6,6 +6,7 @@
 @section('content')
 <form method="POST" action="{{ route('register.post') }}">
     @csrf
+    <x-honeypot />
 
     @if($salao ?? null)
         <div class="alert alert-pink mb-4">
@@ -46,6 +47,22 @@
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
     </div>
+
+    @if(config('manicure.indicacao.enabled', true))
+    <div class="mb-3">
+        <label for="codigo_indicacao" class="form-label fw-semibold">
+            <i class="fas fa-gift me-1 text-pink"></i> Código de indicação
+            <span class="text-muted fw-normal">(opcional)</span>
+        </label>
+        <input type="text" class="form-control form-control-lg @error('codigo_indicacao') is-invalid @enderror"
+               id="codigo_indicacao" name="codigo_indicacao"
+               value="{{ old('codigo_indicacao', request('ref')) }}"
+               placeholder="Código da amiga" maxlength="16" autocomplete="off">
+        @error('codigo_indicacao')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+    @endif
 
     <div class="mb-3">
         <label for="password" class="form-label fw-semibold">

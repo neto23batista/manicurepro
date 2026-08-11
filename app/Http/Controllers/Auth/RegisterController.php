@@ -38,12 +38,22 @@ class RegisterController extends Controller
         ]);
 
         if ($salaoId) {
+            $indicadoPorId = null;
+            if (config('manicure.indicacao.enabled', true) && ! empty($data['codigo_indicacao'])) {
+                $indicador = Cliente::query()
+                    ->where('salao_id', $salaoId)
+                    ->where('codigo_indicacao', strtoupper(trim($data['codigo_indicacao'])))
+                    ->first();
+                $indicadoPorId = $indicador?->id;
+            }
+
             Cliente::create([
-                'user_id'  => $user->id,
-                'salao_id' => $salaoId,
-                'nome'     => $user->name,
-                'email'    => $user->email,
-                'telefone' => $user->phone,
+                'user_id'                 => $user->id,
+                'salao_id'                => $salaoId,
+                'nome'                    => $user->name,
+                'email'                   => $user->email,
+                'telefone'                => $user->phone,
+                'indicado_por_cliente_id' => $indicadoPorId,
             ]);
         }
 

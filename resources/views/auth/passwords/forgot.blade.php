@@ -6,6 +6,7 @@
 @section('content')
 <form method="POST" action="{{ route('password.email') }}">
     @csrf
+    <x-honeypot />
 
     <div class="text-center mb-4">
         <div class="mx-auto mb-3 d-flex align-items-center justify-content-center"
