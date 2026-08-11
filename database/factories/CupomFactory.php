@@ -18,8 +18,14 @@ class CupomFactory extends Factory
             'maximo_desconto' => null,
             'uso_maximo'      => fake()->optional()->numberBetween(10, 100),
             'uso_atual'       => 0,
+            'uso_maximo_por_cliente' => null,
             'validade'        => now()->addMonths(2),
             'ativo'           => true,
+            'origem'          => 'manual',
+            'primeira_compra' => false,
+            'anti_stacking_fidelidade' => false,
+            'cliente_id'      => null,
+            'servico_id'      => null,
         ];
     }
 }

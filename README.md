@@ -4,10 +4,15 @@ Aplicação **single-tenant** Laravel 11 para o salão **Fernanda Silva Nails**:
 
 Não é um SaaS multi-salão. A home pública é a página do próprio salão (`Salao::principal()`).
 
-Produção: ver **[docs/PRODUCAO.md](docs/PRODUCAO.md)** (`php artisan manicure:verificar-producao`).  
-Docker / Sail (opcional): **[docs/DOCKER.md](docs/DOCKER.md)**.
-
-Backlog restante: **[MELHORIAS.md](MELHORIAS.md)**.
+| Doc | Conteúdo |
+|-----|----------|
+| **[docs/AUDITORIA.md](docs/AUDITORIA.md)** | Mapa honesto por módulo (FULL / PARCIAL / STUB) |
+| **[docs/ARQUITETURA.md](docs/ARQUITETURA.md)** | Single-tenant hoje + estratégia futura multi-empresa (sem migrar) |
+| **[docs/SEGURANCA.md](docs/SEGURANCA.md)** | Postura atual + gaps |
+| **[docs/ROADMAP.md](docs/ROADMAP.md)** | P0–P3 com problema / solução / status |
+| **[MELHORIAS.md](MELHORIAS.md)** | Backlog IMPLEMENTADO / PARCIAL / FUTURO |
+| **[docs/PRODUCAO.md](docs/PRODUCAO.md)** | Deploy (`php artisan manicure:verificar-producao`) |
+| **[docs/DOCKER.md](docs/DOCKER.md)** | Sail / Compose (opcional) |
 
 ---
 
@@ -25,30 +30,56 @@ Backlog restante: **[MELHORIAS.md](MELHORIAS.md)**.
 | Gráficos | ApexCharts (via Vite) |
 | Ícones | Font Awesome 6 (via Vite) |
 | Testes | Pest 2.x |
+| CI | Pest + Pint + PHPStan + build frontend (`.github/workflows/ci.yml`) |
 
 ---
 
-## O que existe hoje
+## O que existe hoje (fiél ao código)
 
-- **Perfis:** `admin`, `dono`, `atendente`, `manicure`, `cliente`
-- **Agendamento online** (exige conta): manicure, serviços, slots, hold temporário de horário
-- **Agenda** com conflito, folgas, recorrência (pelo painel do dono), reagendamento, confirmação por link assinado
-- **Calendário:** download `.ics` (cliente e export da agenda dono/manicure) + link template do Google Calendar no detalhe do cliente; sync OAuth ainda no backlog
-- **Comandas / caixa** (dono): finalização, venda de produto na comanda, cupom, vale-presente
-- **Estoque** de produtos + movimentações
-- **Fidelidade** com pontos e resgate
-- **Cupons**, **lista de espera**, **avaliações**, **galeria** de trabalhos
-- **Sinal Pix** opcional (Mercado Pago) + webhook; **WhatsApp Cloud API** opcional (lembretes/confirmações)
-- **Relatórios PDF**, dashboard com gráficos
-- **Perfil** (avatar, senha), verificação de e-mail, reset de senha, **2FA TOTP**, exportação/exclusão LGPD
-- **PWA** (`manifest.json`, service worker, `offline.html`)
-- **API `/api/v1`** — ver seção abaixo
+Categorias alinhadas a [MELHORIAS.md](MELHORIAS.md) e [AUDITORIA.md](docs/AUDITORIA.md).
+
+### IMPLEMENTADO
+
+- **Perfis:** `admin`, `dono`, `atendente`, `manicure`, `cliente` (+ grants JSON leves)
+- **Agendamento** (conta ou **guest**): manicure, serviços/variações, slots, hold, recorrência (dono), reagendar, confirmação assinada, no-show, feriados, pausas, encaixe, visão semanal
+- **Comandas:** finalização, produto na comanda, cupom, vale-presente, gorjeta presencial
+- **Financeiro dono:** entradas + **caixa diário** + **despesas** + fluxo + **repasse/comissões** (regras por serviço + ajustes)
+- **Estoque** avançado: fornecedor, inventário, perda/consumo/devolução, giro/margem/CSV
+- **CRM** segmentação + marketing (reativar/sugerir retorno)
+- **Fidelidade** (níveis + expiração) + **indicação**
+- **Cupons** avançados, **pacotes**, lista de espera, galeria, ficha de unhas
+- **Sinal Pix** + **Pix total** (Mercado Pago) + webhook fail-closed + idempotente
+- **WhatsApp Cloud API** opcional
+- Relatórios PDF/CSV, dashboards com KPIs/alertas, onboarding, auditoria UI
+- Perfil, e-mail verify, reset, **2FA TOTP**, LGPD
+- **PWA**, iCal + template Google (sem OAuth), cache de slots
+- Ops: backup (`manicure:backup`), `/admin/saude`, Docker Sail, CI
+- **API `/api/v1`** (auth + salão/slots + agendamentos + fidelidade + erros JSON)
+- Tema `cor_primaria` do salão no CSS; auth/erros via Vite; skip-link básico
+
+### PARCIAL
+
+- **Web Push:** UI subscribe **escondida**; `sendToUser` é **stub** (sem minishlink)
+- **NF-e:** rascunho local — **não emite SEFAZ**
+- **Avaliações:** cliente/API escrevem; sem moderação admin / média pública
+- **API:** sem paridade financeira/estoque/caixa
+- **Estorno Pix:** service existe; UI dono limitada
+- **A11y:** skip-link + foco modal básicos; auditoria completa pendente
+
+### FUTURO
+
+- Sync OAuth de calendário (Google/Outlook)
+- Emissor fiscal real (SEFAZ / provedor)
+- Multi-empresa / filiais ([ARQUITETURA.md](docs/ARQUITETURA.md) — estratégia apenas)
+- UI única de booking; API mobile completa; pipeline de deploy; Sentry
+- Gorjeta / tip via Mercado Pago
+- Spatie Permission full; app nativo
 
 ### Atendente ≠ dono (financeiro)
 
-Rotas sob `role:dono,atendente` cobrem operação (agenda, clientes, cupons, produtos, galeria, folgas).
+Rotas sob `role:dono,atendente` cobrem operação (agenda, clientes, cupons, pacotes, produtos, galeria, folgas).
 
-**Somente `dono` (admin herda via `RoleMiddleware`):** financeiro, vales-presente e configuração do salão. Atendente recebe **403** nessas rotas.
+**Somente `dono` (admin herda via `RoleMiddleware`):** financeiro, caixa operacional, despesas, vales-presente, NF-e stub e configuração do salão. Atendente recebe **403** nessas rotas.
 
 ---
 
@@ -69,13 +100,13 @@ Acesse `http://localhost:8000`.
 
 ### Docker / Sail (opcional)
 
-Alternativa ao stack nativo — não substitui a instalação acima. Compose Sail (`docker-compose.yml`: MySQL, Redis, app PHP, Mailpit). Ver **[docs/DOCKER.md](docs/DOCKER.md)**.
+Compose versionado (`docker-compose.yml`: MySQL, Redis, app PHP, Mailpit). Ver **[docs/DOCKER.md](docs/DOCKER.md)**.
 
 ---
 
 ## Credenciais do seeder
 
-Seeders em `database/seeders/` (`Demo*Seeder`) são **idempotentes** (podem rodar de novo com `php artisan db:seed`). Agendamentos demo só são criados uma vez (marcador interno).
+Seeders em `database/seeders/` (`Demo*Seeder`) são **idempotentes**. Agendamentos demo só são criados uma vez (marcador interno).
 
 | Perfil | E-mail | Senha |
 |--------|--------|-------|
@@ -116,9 +147,9 @@ Cupons demo: `BEMVINDA`, `FIDELIDADE10`, `DESCONTO20`, `ANIVERSARIO`.
 | Perfil | Acesso |
 |--------|--------|
 | **admin** | Painel admin (salão único, manicures, serviços, categorias, usuários, relatórios). Herda operação de dono/atendente; **não** herda rotas de cliente/manicure. |
-| **dono** | Operação + financeiro + vales + configuração do salão |
-| **atendente** | Operação do salão **sem** financeiro, vales nem config |
-| **manicure** | Dashboard, agenda própria, folgas próprias |
+| **dono** | Operação + financeiro + caixa/despesas (UI parcial) + vales + NF stub + config |
+| **atendente** | Operação do salão **sem** financeiro, caixa, despesas, vales nem config |
+| **manicure** | Dashboard, agenda própria, folgas, ficha de unhas no atendimento |
 | **cliente** | Agendar, histórico, iCal, sinal, lista de espera, fidelidade, avaliações |
 
 Painéis autenticados usam middleware `verified` (e-mail confirmado).
@@ -150,6 +181,7 @@ POST /api/v1/agendamentos
 GET  /api/v1/agendamentos/slots
 GET  /api/v1/agendamentos/{id}
 POST /api/v1/agendamentos/{id}/cancelar
+POST /api/v1/agendamentos/{id}/avaliar
 ```
 
 Login:
@@ -160,7 +192,7 @@ POST /api/v1/login
 # → { "token": "..." }
 ```
 
-Não há endpoint público de “agendar sem login” nem “avaliar” na API v1 atual.
+Agendamento **guest** existe na web (`/salao/{slug}/agendar`), não como endpoint dedicado na API v1.
 
 ---
 
@@ -185,7 +217,7 @@ php artisan test
 ./vendor/bin/pest
 ```
 
-Cobertura inclui auth, agendamento, segurança (IDOR API, headers/CSP, webhook MP), acesso do atendente, financeiro, fidelidade, Mercado Pago, etc.
+Base sólida pré-onda: ~470 Pest verdes (auth, agenda, segurança IDOR/CSP/webhook, atendente, financeiro, fidelidade, MP sinal, etc.). Suite atual inclui também guest, pacotes, ficha, NF stub, push subscription, honeypot/audit.
 
 ---
 
@@ -195,14 +227,13 @@ Cobertura inclui auth, agendamento, segurança (IDOR API, headers/CSP, webhook M
 app/
   Console/Commands/     # lembretes, aniversários, limpeza, verificar-producao
   Http/Controllers/     # Admin, Dono, Manicure, Cliente, Api, Auth, Public
-  Models/               # salão, agenda, comanda, fidelidade, galeria, vales…
-  Policies/             # Agendamento, Cliente, Cupom (cobertura ainda parcial)
-  Services/             # Agenda, Comanda, Estoque, Fidelidade, MercadoPago, …
+  Models/               # salão, agenda, comanda, caixa, despesa, fidelidade, …
+  Policies/             # Agendamento, Cliente, Cupom, Produto, Folga*, Galeria, Caixa, Despesa
+  Services/             # Agenda, Comanda, Caixa, Estoque, Financeiro, MP, NF stub, WebPush stub, …
 resources/views/        # Blade por perfil + público
 routes/web.php          # site + painéis
 routes/api.php          # /api/v1
-docs/PRODUCAO.md        # deploy e checklist
-docs/DOCKER.md          # Sail / Compose (dev local opcional)
+docs/                   # AUDITORIA, ARQUITETURA, SEGURANCA, ROADMAP, PRODUCAO, DOCKER
 ```
 
 ---

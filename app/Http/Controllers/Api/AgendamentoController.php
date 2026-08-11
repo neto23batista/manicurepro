@@ -23,6 +23,15 @@ class AgendamentoController extends Controller
 
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'status'      => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_column(AgendamentoStatus::cases(), 'value'))],
+            'manicure_id' => ['sometimes', 'nullable', 'integer', 'exists:manicures,id'],
+            'de'          => ['sometimes', 'nullable', 'date'],
+            'ate'         => ['sometimes', 'nullable', 'date', 'after_or_equal:de'],
+            'per_page'    => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'page'        => ['sometimes', 'integer', 'min:1'],
+        ]);
+
         $user = $request->user();
         $query = Agendamento::with(['manicure', 'servicos', 'salao', 'cliente']);
 
@@ -37,7 +46,25 @@ class AgendamentoController extends Controller
             $query->where('salao_id', $user->salao_id);
         }
 
-        $agendamentos = $query->orderByDesc('data_hora_inicio')->paginate(20);
+        if (! empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
+
+        if (! empty($validated['manicure_id'])) {
+            $query->where('manicure_id', (int) $validated['manicure_id']);
+        }
+
+        if (! empty($validated['de'])) {
+            $query->where('data_hora_inicio', '>=', Carbon::parse($validated['de'])->startOfDay());
+        }
+
+        if (! empty($validated['ate'])) {
+            $query->where('data_hora_inicio', '<=', Carbon::parse($validated['ate'])->endOfDay());
+        }
+
+        $perPage = (int) ($validated['per_page'] ?? 20);
+
+        $agendamentos = $query->orderByDesc('data_hora_inicio')->paginate($perPage);
 
         return AgendamentoResource::collection($agendamentos);
     }
@@ -52,6 +79,7 @@ class AgendamentoController extends Controller
                 'salao_id'         => $validated['salao_id'],
                 'manicure_id'      => $validated['manicure_id'],
                 'servico_ids'      => $validated['servico_ids'],
+                'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
                 'data_hora_inicio' => $validated['data_hora_inicio'],
                 'cliente_id'       => $user->cliente?->id,
                 'user_id'          => $user->id,
@@ -92,7 +120,7 @@ class AgendamentoController extends Controller
         $this->authorize('cancel', $agendamento);
 
         if (! $agendamento->podeSerCancelado()) {
-            return response()->json(['message' => 'Agendamento não pode ser cancelado.'], 422);
+            return \App\Support\ApiError::make('Agendamento não pode ser cancelado.', 422, 'cannot_cancel');
         }
 
         $agendamento->update(['status' => AgendamentoStatus::Cancelado->value]);
@@ -115,11 +143,11 @@ class AgendamentoController extends Controller
         $this->authorize('view', $agendamento);
 
         if ($agendamento->status !== AgendamentoStatus::Concluido->value) {
-            return response()->json(['message' => 'Só é possível avaliar agendamentos concluídos.'], 422);
+            return \App\Support\ApiError::make('Só é possível avaliar agendamentos concluídos.', 422, 'cannot_review');
         }
 
         if ($agendamento->avaliacao) {
-            return response()->json(['message' => 'Você já avaliou este atendimento.'], 422);
+            return \App\Support\ApiError::make('Você já avaliou este atendimento.', 422, 'already_reviewed');
         }
 
         $request->validate([

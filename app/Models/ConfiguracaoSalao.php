@@ -17,6 +17,7 @@ class ConfiguracaoSalao extends Model
         'pontos_por_real', 'pontos_para_desconto', 'valor_desconto_pontos',
         'notificar_email', 'notificar_whatsapp', 'mensagem_confirmacao',
         'mensagem_lembrete', 'lembrete_horas', 'limite_alerta_no_show',
+        'role_permissions', 'onboarding_completed_at', 'onboarding_dismissed_at',
     ];
 
     protected $casts = [
@@ -34,8 +35,10 @@ class ConfiguracaoSalao extends Model
         'limite_alerta_no_show'       => 'integer',
         'taxa_cancelamento'           => 'decimal:2',
         'valor_desconto_pontos'       => 'decimal:2',
+        'role_permissions'            => 'array',
+        'onboarding_completed_at'     => 'datetime',
+        'onboarding_dismissed_at'     => 'datetime',
     ];
-
     protected static function booted(): void
     {
         $invalidate = fn (ConfiguracaoSalao $c) => self::esquecerCache((int) $c->salao_id);

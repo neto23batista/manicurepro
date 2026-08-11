@@ -9,9 +9,14 @@
         <h5 class="card-title mb-0">
             <i class="fas fa-calendar-check text-pink me-2"></i> Todos os Agendamentos
         </h5>
-        <a href="{{ route('dono.agendamentos.create') }}" class="btn btn-pink">
-            <i class="fas fa-plus me-1"></i> Novo Agendamento
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('dono.agendamentos.semana') }}" class="btn btn-outline-pink">
+                <i class="fas fa-calendar-week me-1"></i> Semana
+            </a>
+            <a href="{{ route('dono.agendamentos.create') }}" class="btn btn-pink">
+                <i class="fas fa-plus me-1"></i> Novo Agendamento
+            </a>
+        </div>
     </div>
 
     <div class="card-body border-bottom">

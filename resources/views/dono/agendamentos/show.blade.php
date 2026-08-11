@@ -53,6 +53,9 @@
                             <i class="fas fa-calendar text-pink me-1"></i>
                             {{ $agendamento->data_hora_inicio->format('d/m/Y H:i') }} -
                             {{ $agendamento->data_hora_fim->format('H:i') }}
+                            @if($agendamento->encaixe)
+                                <span class="badge bg-warning text-dark ms-1">Encaixe</span>
+                            @endif
                         </p>
                     </div>
                     <div class="col-md-6">

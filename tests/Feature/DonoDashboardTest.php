@@ -109,3 +109,56 @@ test('dashboard sem estoque baixo não mostra alerta de estoque', function () {
         ->assertOk()
         ->assertDontSee('Estoque baixo');
 });
+
+test('dashboard mostra KPIs com comparação vs mês anterior', function () {
+    Agendamento::factory()->create([
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'status'           => 'concluido',
+        'valor_total'      => 200,
+        'data_hora_inicio' => now()->startOfMonth()->addDay()->setTime(10, 0),
+        'data_hora_fim'    => now()->startOfMonth()->addDay()->setTime(11, 0),
+    ]);
+
+    Agendamento::factory()->create([
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'status'           => 'concluido',
+        'valor_total'      => 100,
+        'data_hora_inicio' => now()->subMonthNoOverflow()->startOfMonth()->addDay()->setTime(10, 0),
+        'data_hora_fim'    => now()->subMonthNoOverflow()->startOfMonth()->addDay()->setTime(11, 0),
+    ]);
+
+    $this->actingAs($this->dono)
+        ->get(route('dono.dashboard'))
+        ->assertOk()
+        ->assertSee('Faturamento do Mês')
+        ->assertSee('vs mês anterior')
+        ->assertSee('Novos Clientes no Mês');
+});
+
+test('dashboard alerta clientes inativos', function () {
+    config(['manicure.crm.inativo_dias' => 60]);
+
+    $cliente = Cliente::factory()->create([
+        'salao_id'      => $this->salao->id,
+        'nome'          => 'Cliente Inativo Dash',
+        'ativo'         => true,
+        'total_visitas' => 2,
+    ]);
+
+    Agendamento::factory()->create([
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'cliente_id'       => $cliente->id,
+        'status'           => 'concluido',
+        'data_hora_inicio' => now()->subDays(90),
+        'data_hora_fim'    => now()->subDays(90)->addHour(),
+    ]);
+
+    $this->actingAs($this->dono)
+        ->get(route('dono.dashboard'))
+        ->assertOk()
+        ->assertSee('Clientes inativos')
+        ->assertSee('Ver inativos');
+});

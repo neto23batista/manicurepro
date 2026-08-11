@@ -19,10 +19,20 @@
                         {{ $cliente->ativo ? 'Ativo' : 'Inativo' }}
                     </span>
                     <x-badge-no-show :cliente="$cliente" />
+                    <x-badge-crm :segmentos="$metricas['segmentos']" />
                 </div>
                 <a href="{{ route('dono.clientes.edit', $cliente) }}" class="btn btn-pink btn-sm w-100">
                     <i class="fas fa-edit me-1"></i>Editar
                 </a>
+                @if(in_array('inativo', $metricas['segmentos'], true))
+                    <form method="POST" action="{{ route('dono.clientes.reativar', $cliente) }}" class="mt-2">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-pink btn-sm w-100"
+                                onclick="return confirm('Gerar cupom de reativação para este cliente?')">
+                            <i class="fas fa-gift me-1"></i>Cupom de reativação
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
 
@@ -117,39 +127,70 @@
     {{-- Estatísticas + histórico --}}
     <div class="col-lg-8">
         <div class="row g-3 mb-4">
-            <div class="col-sm-3">
+            <div class="col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-blue-light"><i class="fas fa-calendar-check"></i></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $cliente->total_visitas }}</div>
+                        <div class="stat-value">{{ $metricas['visitas_concluidas'] }}</div>
                         <div class="stat-label">Visitas</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon bg-green-light"><i class="fas fa-money-bill"></i></div>
                     <div class="stat-info">
-                        <div class="stat-value">R$ {{ number_format($cliente->total_gasto, 0) }}</div>
-                        <div class="stat-label">Total gasto</div>
+                        <div class="stat-value">R$ {{ number_format($metricas['ltv'], 0, ',', '.') }}</div>
+                        <div class="stat-label">LTV</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-6 col-lg-3">
                 <div class="stat-card">
-                    <div class="stat-icon bg-yellow-light"><i class="fas fa-star"></i></div>
+                    <div class="stat-icon bg-yellow-light"><i class="fas fa-receipt"></i></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $cliente->pontos_fidelidade }}</div>
-                        <div class="stat-label">Pontos fidelidade</div>
+                        <div class="stat-value">R$ {{ number_format($metricas['ticket_medio'], 0, ',', '.') }}</div>
+                        <div class="stat-label">Ticket médio</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-6 col-lg-3">
                 <div class="stat-card">
                     <div class="stat-icon {{ $cliente->eh_risco_no_show ? 'bg-yellow-light' : 'bg-blue-light' }}"><i class="fas fa-user-xmark"></i></div>
                     <div class="stat-info">
                         <div class="stat-value">{{ $cliente->total_faltas }}</div>
                         <div class="stat-label">Faltas</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue-light"><i class="fas fa-clock-rotate-left"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" style="font-size:1rem">
+                            {{ $metricas['ultima_visita']?->format('d/m/Y') ?? '—' }}
+                        </div>
+                        <div class="stat-label">Última visita</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-green-light"><i class="fas fa-calendar-plus"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value" style="font-size:1rem">
+                            {{ $metricas['proxima_visita']?->format('d/m/Y H:i') ?? '—' }}
+                        </div>
+                        <div class="stat-label">Próxima visita</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon bg-yellow-light"><i class="fas fa-star"></i></div>
+                    <div class="stat-info">
+                        <div class="stat-value">{{ $cliente->pontos_fidelidade }}</div>
+                        <div class="stat-label">Pontos fidelidade</div>
                     </div>
                 </div>
             </div>

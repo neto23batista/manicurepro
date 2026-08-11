@@ -141,10 +141,22 @@ class Salao extends Model
         return $this->hasMany(Folga::class);
     }
 
+    /** @return HasMany<Feriado, $this> */
+    public function feriados(): HasMany
+    {
+        return $this->hasMany(Feriado::class);
+    }
+
     /** @return HasMany<Produto, $this> */
     public function produtos(): HasMany
     {
         return $this->hasMany(Produto::class)->where('ativo', true);
+    }
+
+    /** @return HasMany<Fornecedor, $this> */
+    public function fornecedores(): HasMany
+    {
+        return $this->hasMany(Fornecedor::class);
     }
 
     /** @return HasMany<GaleriaFoto, $this> */
@@ -169,6 +181,18 @@ class Salao extends Model
     public function avaliacoes(): HasMany
     {
         return $this->hasMany(Avaliacao::class);
+    }
+
+    /** @return HasMany<Caixa, $this> */
+    public function caixas(): HasMany
+    {
+        return $this->hasMany(Caixa::class);
+    }
+
+    /** @return HasMany<Despesa, $this> */
+    public function despesas(): HasMany
+    {
+        return $this->hasMany(Despesa::class);
     }
 
     public function getLogoUrlAttribute(): string

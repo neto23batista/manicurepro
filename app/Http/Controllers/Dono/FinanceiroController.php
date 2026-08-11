@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Dono;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreComissaoAjusteRequest;
 use App\Http\Requests\StoreComissaoPagamentoRequest;
+use App\Models\ComissaoAjuste;
 use App\Models\ComissaoPagamento;
+use App\Models\Manicure;
 use App\Models\Salao;
 use App\Services\FinanceiroService;
 use Carbon\Carbon;
@@ -26,6 +29,9 @@ class FinanceiroController extends Controller
         $comissoes = $this->financeiro->comissoes($salao->id, $inicio, $fim);
         $repasses = $this->financeiro->pagamentosDoPeriodo($salao->id, $inicio, $fim);
         $historico = $this->financeiro->historicoPagamentos($salao->id);
+        $fluxo = $this->financeiro->fluxoCaixa($salao->id, $inicio, $fim);
+        $ajustes = $this->financeiro->ajustesDoPeriodo($salao->id, $inicio, $fim);
+        $manicures = Manicure::where('salao_id', $salao->id)->where('ativo', true)->orderBy('nome')->get();
 
         $totalComissoes = (float) $comissoes->sum('comissao');
         $totalServicos = (float) $comissoes->sum('base');
@@ -34,7 +40,8 @@ class FinanceiroController extends Controller
 
         return view('dono.financeiro.index', compact(
             'salao', 'inicio', 'fim', 'periodo',
-            'caixa', 'comissoes', 'repasses', 'historico',
+            'caixa', 'comissoes', 'repasses', 'historico', 'fluxo',
+            'ajustes', 'manicures',
             'totalComissoes', 'totalServicos', 'totalAPagar', 'totalPago',
         ));
     }
@@ -77,6 +84,47 @@ class FinanceiroController extends Controller
                 'data_fim'    => $fim->toDateString(),
             ])
             ->with('success', 'Repasse desfeito. Comissão voltou a constar como a pagar.');
+    }
+
+    public function storeAjuste(StoreComissaoAjusteRequest $request)
+    {
+        $salao = auth()->user()->salao ?? Salao::principal();
+        abort_if($salao === null, 404, 'Nenhum salão configurado.');
+
+        $inicio = Carbon::parse($request->data_inicio)->startOfDay();
+        $fim = Carbon::parse($request->data_fim)->endOfDay();
+
+        $this->financeiro->registrarAjuste(
+            $salao->id,
+            (int) $request->manicure_id,
+            $inicio,
+            $fim,
+            (float) $request->valor,
+            $request->motivo,
+            auth()->id(),
+        );
+
+        return redirect()
+            ->route('dono.financeiro.index', $this->queryPeriodo($request, $inicio, $fim))
+            ->with('success', 'Ajuste de comissão registrado.');
+    }
+
+    public function destroyAjuste(ComissaoAjuste $ajuste)
+    {
+        $salao = auth()->user()->salao ?? Salao::principal();
+        abort_if($salao === null, 404, 'Nenhum salão configurado.');
+
+        $inicio = $ajuste->periodo_inicio->copy()->startOfDay();
+        $fim = $ajuste->periodo_fim->copy()->endOfDay();
+
+        $this->financeiro->removerAjuste($ajuste, $salao->id);
+
+        return redirect()
+            ->route('dono.financeiro.index', [
+                'data_inicio' => $inicio->toDateString(),
+                'data_fim'    => $fim->toDateString(),
+            ])
+            ->with('success', 'Ajuste removido.');
     }
 
     /**

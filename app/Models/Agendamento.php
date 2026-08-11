@@ -18,7 +18,7 @@ class Agendamento extends Model
     protected $fillable = [
         'salao_id', 'cliente_id', 'manicure_id', 'user_id',
         'data_hora_inicio', 'data_hora_fim', 'status', 'observacoes',
-        'observacoes_internas', 'origem', 'valor_total', 'valor_desconto',
+        'observacoes_internas', 'origem', 'encaixe', 'valor_total', 'valor_desconto',
         'cupom_id', 'nome_cliente', 'telefone_cliente',
         'confirmado_em', 'lembrete_24h_em', 'lembrete_2h_em',
         'mp_payment_id', 'sinal_status', 'sinal_valor',
@@ -28,6 +28,7 @@ class Agendamento extends Model
     protected $casts = [
         'data_hora_inicio' => 'datetime',
         'data_hora_fim'    => 'datetime',
+        'encaixe'          => 'boolean',
         'valor_total'      => 'decimal:2',
         'valor_desconto'   => 'decimal:2',
         'confirmado_em'    => 'datetime',
@@ -113,7 +114,7 @@ class Agendamento extends Model
     public function servicos(): BelongsToMany
     {
         return $this->belongsToMany(Servico::class, 'agendamento_servicos')
-            ->withPivot('preco', 'duracao')
+            ->withPivot('preco', 'duracao', 'servico_variacao_id')
             ->withTimestamps();
     }
 

@@ -48,6 +48,38 @@ class AgendamentoController extends Controller
     }
 
     /**
+     * Visão semanal do salão (grade simples por manicure × dia).
+     */
+    public function semana(Request $request)
+    {
+        $salao = auth()->user()->salao;
+        $ref = $request->data ? Carbon::parse($request->data) : today();
+        $inicio = $ref->copy()->startOfWeek(Carbon::SUNDAY);
+        $fim = $inicio->copy()->addDays(6);
+
+        $manicureId = $request->manicure_id;
+        $manicures = $salao->manicures()
+            ->when($manicureId, fn ($q) => $q->where('id', $manicureId))
+            ->orderBy('nome')
+            ->get();
+
+        $agendamentos = $salao->agendamentos()
+            ->with(['manicure', 'servicos', 'cliente'])
+            ->ativos()
+            ->entre($inicio->copy()->startOfDay(), $fim->copy()->endOfDay())
+            ->when($manicureId, fn ($q) => $q->where('manicure_id', $manicureId))
+            ->orderBy('data_hora_inicio')
+            ->get()
+            ->groupBy(fn ($a) => $a->manicure_id.'|'.$a->data_hora_inicio->toDateString());
+
+        $dias = collect(range(0, 6))->map(fn ($i) => $inicio->copy()->addDays($i));
+
+        return view('dono.agendamentos.semana', compact(
+            'salao', 'manicures', 'dias', 'agendamentos', 'inicio', 'fim', 'manicureId'
+        ));
+    }
+
+    /**
      * Exporta a agenda do salão em .ics (um dia via ?data= ou intervalo ?de=&ate=).
      */
     public function ical(Request $request, ICalService $ical)
@@ -88,7 +120,7 @@ class AgendamentoController extends Controller
     {
         $salao = auth()->user()->salao;
         $manicures = $salao->manicures;
-        $servicos = $salao->servicos;
+        $servicos = $salao->servicos()->with('variacoesAtivas')->get();
         $clientes = $salao->clientes;
 
         return view('dono.agendamentos.create', compact('salao', 'manicures', 'servicos', 'clientes'));
@@ -103,6 +135,7 @@ class AgendamentoController extends Controller
             'salao_id'         => $salao->id,
             'manicure_id'      => $validated['manicure_id'],
             'servico_ids'      => $validated['servico_ids'],
+            'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
             'data_hora_inicio' => $validated['data_hora_inicio'],
             'cliente_id'       => $validated['cliente_id'] ?? null,
             'nome_cliente'     => $validated['nome_cliente'] ?? null,
@@ -111,7 +144,13 @@ class AgendamentoController extends Controller
             'origem'           => 'balcao',
             'status'           => 'confirmado',
             'user_id'          => auth()->id(),
+            'encaixe'          => (bool) ($validated['encaixe'] ?? false),
         ];
+
+        // Encaixe: só dono/atendente; força horário informado (conflito duro no service).
+        if ($dados['encaixe'] && empty($validated['data_hora_inicio'])) {
+            return back()->withInput()->withErrors(['data_hora_inicio' => 'Informe data e hora do encaixe.']);
+        }
 
         $recorrencia = $validated['recorrencia'] ?? 'nenhuma';
         $ocorrencias = (int) ($validated['ocorrencias'] ?? 1);

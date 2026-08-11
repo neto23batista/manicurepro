@@ -196,22 +196,27 @@ class MercadoPagoService
 
         $novo = $this->mapearStatus($response->json('status'));
         $this->aplicarStatus($agendamento, $tipo, $novo);
+        $agendamento->refresh();
 
-        if ($novo === 'pago' && $agendamento->statusEnum() === AgendamentoStatus::Aguardando) {
+        $statusEfetivo = $tipo === 'total'
+            ? $agendamento->mp_total_status
+            : $agendamento->sinal_status;
+
+        if ($statusEfetivo === 'pago' && $agendamento->statusEnum() === AgendamentoStatus::Aguardando) {
             $agendamento->update([
                 'status'        => AgendamentoStatus::Confirmado->value,
                 'confirmado_em' => now(),
             ]);
         }
 
-        if ($novo === 'pago') {
+        if ($statusEfetivo === 'pago') {
             $this->registrarPagamentoOnline($agendamento->fresh(), $tipo);
         }
 
         $poi = $response->json('point_of_interaction.transaction_data') ?? [];
 
         return [
-            'status'         => $novo,
+            'status'         => $statusEfetivo,
             'qr_code'        => $poi['qr_code'] ?? null,
             'qr_code_base64' => $poi['qr_code_base64'] ?? null,
             'ticket_url'     => $poi['ticket_url'] ?? null,
@@ -326,11 +331,15 @@ class MercadoPagoService
 
     private function aplicarStatus(Agendamento $agendamento, string $tipo, string $status): void
     {
-        if ($tipo === 'total') {
-            $agendamento->update(['mp_total_status' => $status]);
-        } else {
-            $agendamento->update(['sinal_status' => $status]);
+        $campo = $tipo === 'total' ? 'mp_total_status' : 'sinal_status';
+        $atual = $agendamento->{$campo};
+
+        // Não regredir pagamento aprovado → pendente (webhook/consulta atrasada).
+        if ($atual === 'pago' && $status === 'pendente') {
+            return;
         }
+
+        $agendamento->update([$campo => $status]);
     }
 
     private function registrarPagamentoOnline(Agendamento $agendamento, string $tipo): void

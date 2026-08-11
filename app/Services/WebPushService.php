@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Log;
 /**
  * Fundação Web Push — opcional.
  *
- * Sem VAPID no .env (ou sem pacote minishlink/web-push), sendToUser
- * apenas registra intent e retorna 0. Não exige chaves em produção.
+ * Sem o pacote minishlink/web-push NÃO há envio real. A UI de subscribe
+ * fica desligada (ver manicure.webpush.subscribe_ui / envioDisponivel()).
+ * Não inventar send falso: sendToUser só loga e retorna 0.
  */
 class WebPushService
 {
@@ -21,14 +22,31 @@ class WebPushService
     }
 
     /**
+     * true somente quando houver send real (minishlink) + VAPID.
+     * Usado para expor meta tags / pedir permissão no browser.
+     */
+    public function envioDisponivel(): bool
+    {
+        if (! (bool) config('manicure.webpush.subscribe_ui', false)) {
+            return false;
+        }
+
+        if (! $this->configurado()) {
+            return false;
+        }
+
+        return class_exists(\Minishlink\WebPush\WebPush::class);
+    }
+
+    /**
      * Envia notificação push para todas as subscriptions do usuário.
      *
      * @param  array<string, mixed>  $data  Payload extra (ex.: url)
-     * @return int Quantidade de envios bem-sucedidos (0 no stub / sem config)
+     * @return int Quantidade de envios bem-sucedidos (0 sem minishlink / sem config)
      */
     public function sendToUser(User $user, string $title, string $body, array $data = []): int
     {
-        if (! $this->configurado()) {
+        if (! $this->envioDisponivel()) {
             return 0;
         }
 
@@ -40,9 +58,9 @@ class WebPushService
             return 0;
         }
 
-        // Stub: integração real (minishlink/web-push) fica para um passo seguinte.
-        // Aqui só documentamos a intenção sem falhar o fluxo da aplicação.
-        Log::debug('WebPush: sendToUser (stub)', [
+        // Stub honesto: pacote detectado, mas integração de send ainda não implementada.
+        // Não retornar count falso — 0 até haver envio real.
+        Log::debug('WebPush: sendToUser ainda não implementado (minishlink presente)', [
             'user_id' => $user->id,
             'title'   => $title,
             'body'    => $body,

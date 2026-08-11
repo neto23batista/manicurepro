@@ -20,13 +20,10 @@ class PacoteController extends Controller
         return (int) (auth()->user()->salao_id ?? Salao::principalId());
     }
 
-    private function autoriza(Pacote $pacote): void
-    {
-        abort_unless((int) $pacote->salao_id === $this->salaoId(), 403);
-    }
-
     public function index()
     {
+        $this->authorize('viewAny', Pacote::class);
+
         $pacotes = Pacote::where('salao_id', $this->salaoId())
             ->orderByDesc('created_at')
             ->paginate(20);
@@ -36,11 +33,15 @@ class PacoteController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Pacote::class);
+
         return view('dono.pacotes.create');
     }
 
     public function store(StorePacoteRequest $request)
     {
+        $this->authorize('create', Pacote::class);
+
         $data = $request->validated();
         $data['salao_id'] = $this->salaoId();
         $data['ativo'] = $request->boolean('ativo', true);
@@ -55,14 +56,14 @@ class PacoteController extends Controller
 
     public function edit(Pacote $pacote)
     {
-        $this->autoriza($pacote);
+        $this->authorize('update', $pacote);
 
         return view('dono.pacotes.edit', compact('pacote'));
     }
 
     public function update(UpdatePacoteRequest $request, Pacote $pacote)
     {
-        $this->autoriza($pacote);
+        $this->authorize('update', $pacote);
 
         $data = $request->validated();
         $data['ativo'] = $request->boolean('ativo');
@@ -77,7 +78,7 @@ class PacoteController extends Controller
 
     public function destroy(Pacote $pacote)
     {
-        $this->autoriza($pacote);
+        $this->authorize('delete', $pacote);
         $pacote->delete();
 
         return back()->with('success', 'Pacote excluído.');
@@ -85,7 +86,7 @@ class PacoteController extends Controller
 
     public function atribuir(Request $request, Pacote $pacote)
     {
-        $this->autoriza($pacote);
+        $this->authorize('atribuir', $pacote);
 
         $data = $request->validate([
             'cliente_id' => ['required', 'integer', 'exists:clientes,id'],

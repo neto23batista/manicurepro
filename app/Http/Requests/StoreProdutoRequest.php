@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Produto;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProdutoRequest extends FormRequest
 {
@@ -14,6 +15,8 @@ class StoreProdutoRequest extends FormRequest
 
     public function rules(): array
     {
+        $salaoId = (int) ($this->user()?->salao_id ?? 0);
+
         return [
             'nome'           => ['required', 'string', 'max:255'],
             'codigo'         => ['nullable', 'string', 'max:50'],
@@ -25,6 +28,10 @@ class StoreProdutoRequest extends FormRequest
             'estoque_minimo' => ['nullable', 'numeric', 'min:0', 'max:999999'],
             'unidade'        => ['nullable', 'string', 'max:20'],
             'ativo'          => ['sometimes', 'boolean'],
+            'fornecedor_id'  => [
+                'nullable',
+                Rule::exists('fornecedores', 'id')->where(fn ($q) => $q->where('salao_id', $salaoId)->where('ativo', true)),
+            ],
         ];
     }
 
@@ -34,6 +41,10 @@ class StoreProdutoRequest extends FormRequest
             $this->merge([
                 'estoque_minimo' => config('manicure.estoque.minimo_padrao', 1),
             ]);
+        }
+
+        if (! $this->filled('fornecedor_id')) {
+            $this->merge(['fornecedor_id' => null]);
         }
     }
 

@@ -43,7 +43,7 @@ class AgendamentoController extends Controller
         $salao = Salao::principal();
         $manicures = $salao ? $salao->manicures : collect();
         $servicos = $salao
-            ? $salao->servicos()->where('disponivel_online', true)->get()
+            ? $salao->servicos()->where('disponivel_online', true)->with('variacoesAtivas')->get()
             : collect();
 
         return view('cliente.agendamentos.create', compact('salao', 'manicures', 'servicos'));
@@ -71,6 +71,7 @@ class AgendamentoController extends Controller
                 'salao_id'         => $validated['salao_id'],
                 'manicure_id'      => $validated['manicure_id'],
                 'servico_ids'      => $validated['servico_ids'],
+                'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
                 'data_hora_inicio' => $validated['data_hora_inicio'],
                 'cliente_id'       => $cliente->id,
                 'user_id'          => $user->id,
@@ -201,6 +202,55 @@ class AgendamentoController extends Controller
     }
 
     public function sinalStatus(Agendamento $agendamento)
+    {
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
+
+        $pix = $mp->consultarPix($agendamento);
+        $pago = ($pix['status'] ?? null) === 'pago';
+
+        return response()->json([
+            'status'   => $pix['status'],
+            'pago'     => $pago,
+            'redirect' => $pago ? route('cliente.agendamentos.show', $agendamento) : null,
+        ]);
+    }
+
+    public function pagamento(Agendamento $agendamento)
+    {
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
+
+        if (! $mp->totalHabilitado()) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->withErrors(['error' => 'Pagamento Pix do valor total não está disponível no momento.']);
+        }
+
+        if ($agendamento->pagamentoTotalPago()) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->with('success', 'O pagamento deste agendamento já está confirmado. 💚');
+        }
+
+        if (! $agendamento->precisaPagamentoTotal() && ! $agendamento->mp_payment_id) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->withErrors(['error' => 'Não há valor pendente para pagar neste agendamento.']);
+        }
+
+        $pix = ($agendamento->mp_cobranca_tipo === 'total' && $agendamento->mp_payment_id)
+            ? $mp->consultarPix($agendamento)
+            : $mp->criarPixTotal($agendamento);
+
+        if (($pix['status'] ?? null) === 'pago') {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->with('success', 'Pagamento confirmado! 💚');
+        }
+
+        $agendamento->load(['manicure', 'salao']);
+
+        return view('cliente.agendamentos.pagamento', compact('agendamento', 'pix'));
+    }
+
+    public function pagamentoStatus(Agendamento $agendamento)
     {
         $this->authorize('view', $agendamento);
         $mp = app(MercadoPagoService::class);

@@ -3,21 +3,48 @@
 namespace App\Http\Controllers\Dono;
 
 use App\Http\Controllers\Controller;
+use App\Models\ConfiguracaoSalao;
 use App\Repositories\DashboardRepository;
+use App\Services\ClienteSegmentacao;
+use App\Services\OnboardingService;
 
 class DashboardController extends Controller
 {
-    public function __construct(private DashboardRepository $repo) {}
+    public function __construct(
+        private DashboardRepository $repo,
+        private ClienteSegmentacao $crm,
+        private OnboardingService $onboarding,
+    ) {}
 
     public function index()
     {
-        $salao = auth()->user()->salao;
+        $user = auth()->user();
+        $salao = $user->salao;
 
         if (! $salao) {
             return view('dono.dashboard', [
                 'salao'        => null,
                 'quickActions' => $this->quickActions(),
                 'baixoEstoque' => 0,
+                'alertas'      => [],
+                'onboarding'   => null,
+            ]);
+        }
+
+        $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
+
+        // Wizard de 1º acesso — só dono/admin
+        if (($user->isDono() || $user->isSuperAdmin())
+            && $this->onboarding->shouldForceWizard($salao, $config)
+            && ! request()->boolean('skip_onboarding')) {
+            return redirect()->route('dono.onboarding.show');
+        }
+
+        $onboardingPayload = null;
+        if ($user->isDono() || $user->isSuperAdmin()) {
+            $progress = $this->onboarding->progress($salao);
+            $onboardingPayload = array_merge($progress, [
+                'show' => $this->onboarding->shouldShowChecklist($salao, $config),
             ]);
         }
 
@@ -25,6 +52,7 @@ class DashboardController extends Controller
             [
                 'salao'        => $salao,
                 'quickActions' => $this->quickActions(),
+                'onboarding'   => $onboardingPayload,
             ],
             $this->repo->donoResumoHoje($salao),
             $this->repo->donoResumoMes($salao),
@@ -34,6 +62,7 @@ class DashboardController extends Controller
                 'dadosSemana'          => $this->repo->donoDadosSemana($salao),
                 'servicosPopulares'    => $this->repo->donoServicosPopulares($salao),
                 'baixoEstoque'         => $this->repo->donoBaixoEstoque($salao),
+                'alertas'              => $this->repo->donoAlertasNegocio($salao, $this->crm),
             ],
         ));
     }

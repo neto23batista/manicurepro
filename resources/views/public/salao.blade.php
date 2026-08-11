@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $salao->nome }}</title>
     <meta name="app-env" content="{{ app()->environment() }}">
-    <x-theme-vars />
+    <x-theme-vars :salao="$salao" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <meta property="og:title" content="{{ $salao->nome }}">
     <meta property="og:description" content="{{ $salao->descricao ?? 'Salão de manicure e pedicure profissional' }}">
@@ -108,6 +108,10 @@
                             @foreach($grupoServicos as $servico)
                             <div class="col-md-6">
                                 <div class="card border-0 shadow-sm h-100">
+                                    @if($servico->imagem_url)
+                                        <img src="{{ $servico->imagem_url }}" alt="{{ $servico->nome }}"
+                                             class="card-img-top" style="height:140px;object-fit:cover">
+                                    @endif
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <div class="flex-grow-1 me-3">
@@ -120,12 +124,22 @@
                                                 <div class="text-muted small mb-2">
                                                     <i class="fas fa-clock text-pink me-1" aria-hidden="true"></i> {{ $servico->duracao }} min
                                                 </div>
+                                                @if($servico->variacoesAtivas->isNotEmpty())
+                                                    <div class="small text-muted mb-2">
+                                                        @foreach($servico->variacoesAtivas as $v)
+                                                            <span class="badge bg-light text-dark border me-1">{{ $v->nome }} · {{ $v->preco_formatado }}</span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
                                                 @if($servico->descricao)
                                                     <p class="text-muted small mb-0">{{ Str::limit($servico->descricao, 70) }}</p>
                                                 @endif
+                                                @if($servico->custo_estimado !== null)
+                                                    <p class="text-muted small mb-0 mt-1">Custo est.: {{ $servico->custo_estimado_formatado }}</p>
+                                                @endif
                                             </div>
                                             <div class="text-end">
-                                                <div class="fw-bold fs-5 text-gradient">{{ $servico->preco_formatado }}</div>
+                                                <div class="fw-bold fs-5 text-gradient">{{ $servico->preco_exibicao }}</div>
                                             </div>
                                         </div>
                                     </div>

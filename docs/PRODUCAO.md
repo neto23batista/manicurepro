@@ -147,7 +147,46 @@ php artisan manicure:verificar-producao
 
 Resolva todos os ✗ (críticos) e revise os ⚠ (avisos) antes de divulgar o site.
 
-## 9. Backup
+## 9. Backup e restore
 
-Agende backup diário do **banco** (`mysqldump`) e da pasta
-`storage/app/public` (imagens de galeria, logos e capas).
+### Backup automatizado
+
+O comando empacota banco + `storage/app/public` em um ZIP em
+`storage/app/backups/` (mantém os N mais recentes; padrão 14):
+
+```bash
+php artisan manicure:backup
+php artisan manicure:backup --keep=30
+```
+
+- **SQLite:** copia o arquivo do banco.
+- **MySQL:** usa `mysqldump` (precisa estar no `PATH` do sistema).
+- Requer extensão PHP `zip`.
+
+Agende no cron (além do `schedule:run`), por exemplo diário às 02:30:
+
+```cron
+30 2 * * * cd /var/www/manicurepro && php artisan manicure:backup --keep=14 >> /dev/null 2>&1
+```
+
+Guarde cópias dos ZIPs **fora do servidor** (S3, outro host, etc.).
+
+### Restore (manual)
+
+1. Coloque o app em manutenção: `php artisan down`.
+2. Pare o worker de fila (`supervisorctl stop manicure-worker`).
+3. Extraia o ZIP do backup (contém `database.sqlite` **ou** `database.sql`, e `storage_public/`).
+4. **Banco**
+   - SQLite: substitua `database/database.sqlite` (ou o path de `DB_DATABASE`) pelo `database.sqlite` do ZIP. Ajuste dono/permissões.
+   - MySQL: `mysql -u USER -p DBNAME < database.sql` (destrutivo — substitui os dados).
+5. **Arquivos públicos:** copie o conteúdo de `storage_public/` para `storage/app/public/` e confira `php artisan storage:link`.
+6. Limpe caches: `php artisan optimize:clear` (ou `config:cache` / `route:cache` / `view:cache` em produção).
+7. Suba de novo: `supervisorctl start manicure-worker` e `php artisan up`.
+
+Não há `manicure:restore` automático de propósito — restore é destrutivo e deve ser revisado.
+
+### Web Push (honesto)
+
+Envio **não** está implementado (falta `minishlink/web-push`). A UI de
+subscribe fica **desligada** (`WEBPUSH_SUBSCRIBE_UI=false`). NF-e continua
+stub local (`FISCAL_ENABLED`) — **não** emite na SEFAZ.

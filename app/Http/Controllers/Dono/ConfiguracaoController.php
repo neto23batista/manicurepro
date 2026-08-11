@@ -2,23 +2,44 @@
 
 namespace App\Http\Controllers\Dono;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateConfigSalaoRequest;
 use App\Http\Requests\UpdateDadosSalaoRequest;
 use App\Http\Requests\UpdateHorariosRequest;
 use App\Models\ConfiguracaoSalao;
 use App\Models\HorarioFuncionamento;
+use App\Services\PermissionService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ConfiguracaoController extends Controller
 {
+    public function __construct(private PermissionService $permissions) {}
+
     public function edit()
     {
         $salao = auth()->user()->salao;
         $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
         $horarios = $salao->horarios()->orderBy('dia_semana')->get()->keyBy('dia_semana');
+        $permissionCatalog = PermissionService::catalog();
+        $roles = UserRole::cases();
+        $rolePermissions = [];
+        foreach ($roles as $role) {
+            $rolePermissions[$role->value] = $this->permissions->normalizeRoleBucket(
+                $config->role_permissions,
+                $role->value
+            );
+        }
 
-        return view('dono.configuracao.edit', compact('salao', 'config', 'horarios'));
+        return view('dono.configuracao.edit', compact(
+            'salao',
+            'config',
+            'horarios',
+            'permissionCatalog',
+            'roles',
+            'rolePermissions'
+        ));
     }
 
     public function updateDados(UpdateDadosSalaoRequest $request)
@@ -46,6 +67,7 @@ class ConfiguracaoController extends Controller
         $salao = auth()->user()->salao;
         $this->deleteIfExists($salao->logo);
         $salao->update(['logo' => null]);
+
         return back()->with('success', 'Logo removida.');
     }
 
@@ -54,6 +76,7 @@ class ConfiguracaoController extends Controller
         $salao = auth()->user()->salao;
         $this->deleteIfExists($salao->foto_capa);
         $salao->update(['foto_capa' => null]);
+
         return back()->with('success', 'Capa removida.');
     }
 
@@ -91,6 +114,22 @@ class ConfiguracaoController extends Controller
         ConfiguracaoSalao::esquecerCache($salao->id);
 
         return back()->with('success', 'Configurações atualizadas!');
+    }
+
+    public function updatePermissoes(Request $request)
+    {
+        $salao = auth()->user()->salao;
+        abort_unless($salao && (auth()->user()->isDono() || auth()->user()->isSuperAdmin()), 403);
+
+        $payload = $this->permissions->sanitizePayload($request->input('roles', []));
+
+        $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
+        $config->update(['role_permissions' => $payload ?: null]);
+        ConfiguracaoSalao::esquecerCache($salao->id);
+
+        return redirect()
+            ->route('dono.config.edit', ['tab' => 'permissoes'])
+            ->with('success', 'Permissões extras atualizadas. Defaults das roles permanecem intactos.');
     }
 
     private function deleteIfExists(?string $path): void

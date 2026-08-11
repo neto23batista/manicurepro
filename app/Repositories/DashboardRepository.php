@@ -10,6 +10,7 @@ use App\Models\Produto;
 use App\Models\Salao;
 use App\Models\Servico;
 use App\Models\User;
+use App\Services\ClienteSegmentacao;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -128,14 +129,131 @@ class DashboardRepository
 
     public function donoResumoMes(Salao $salao): array
     {
+        $inicioMes = now()->startOfMonth();
+        $fimMes = now()->endOfMonth();
+        $inicioAnt = now()->subMonthNoOverflow()->startOfMonth();
+        $fimAnt = now()->subMonthNoOverflow()->endOfMonth();
+
+        $totalMes = $salao->agendamentos()
+            ->whereBetween('data_hora_inicio', [$inicioMes, $fimMes])
+            ->count();
+        $totalMesAnterior = $salao->agendamentos()
+            ->whereBetween('data_hora_inicio', [$inicioAnt, $fimAnt])
+            ->count();
+
+        $faturamentoMes = (float) $salao->agendamentos()
+            ->concluidos()
+            ->whereBetween('data_hora_inicio', [$inicioMes, $fimMes])
+            ->sum('valor_total');
+        $faturamentoMesAnterior = (float) $salao->agendamentos()
+            ->concluidos()
+            ->whereBetween('data_hora_inicio', [$inicioAnt, $fimAnt])
+            ->sum('valor_total');
+
+        $novosClientesMes = $salao->clientes()
+            ->whereBetween('created_at', [$inicioMes, $fimMes])
+            ->count();
+        $novosClientesMesAnterior = $salao->clientes()
+            ->whereBetween('created_at', [$inicioAnt, $fimAnt])
+            ->count();
+
         return [
-            'totalMes'       => $salao->agendamentos()->doMes()->count(),
-            'faturamentoMes' => (float) $salao->agendamentos()
-                ->concluidos()
-                ->doMes()
-                ->sum('valor_total'),
-            'totalClientes' => $salao->clientes()->count(),
+            'totalMes'                    => $totalMes,
+            'totalMesAnterior'            => $totalMesAnterior,
+            'deltaAgendamentosPct'        => $this->deltaPercentual($totalMes, $totalMesAnterior),
+            'faturamentoMes'              => $faturamentoMes,
+            'faturamentoMesAnterior'      => $faturamentoMesAnterior,
+            'deltaFaturamentoPct'         => $this->deltaPercentual($faturamentoMes, $faturamentoMesAnterior),
+            'totalClientes'               => $salao->clientes()->count(),
+            'novosClientesMes'            => $novosClientesMes,
+            'novosClientesMesAnterior'    => $novosClientesMesAnterior,
+            'deltaNovosClientesPct'       => $this->deltaPercentual($novosClientesMes, $novosClientesMesAnterior),
         ];
+    }
+
+    /**
+     * Alertas de negócio para o dashboard (além de no-show/estoque já exibidos).
+     *
+     * @return list<array{tipo: string, titulo: string, mensagem: string, url: ?string, url_label: ?string}>
+     */
+    public function donoAlertasNegocio(Salao $salao, ClienteSegmentacao $crm): array
+    {
+        $alertas = [];
+
+        $inativos = Cliente::query()
+            ->where('salao_id', $salao->id)
+            ->where('ativo', true);
+        $crm->aplicarFiltro($inativos, 'inativo');
+        $qtdInativos = $inativos->count();
+
+        if ($qtdInativos > 0) {
+            $alertas[] = [
+                'tipo'      => 'secondary',
+                'titulo'    => 'Clientes inativos',
+                'mensagem'  => $qtdInativos.' '
+                    .($qtdInativos === 1 ? 'cliente sem visita recente' : 'clientes sem visita recente')
+                    .'. Considere a campanha de reativação.',
+                'url'       => route('dono.clientes.index', ['segmento' => 'inativo']),
+                'url_label' => 'Ver inativos',
+            ];
+        }
+
+        $risco = Cliente::query()
+            ->where('salao_id', $salao->id)
+            ->where('ativo', true);
+        $crm->aplicarFiltro($risco, 'risco_churn');
+        $qtdRisco = $risco->count();
+
+        if ($qtdRisco > 0) {
+            $alertas[] = [
+                'tipo'      => 'danger',
+                'titulo'    => 'Risco de churn',
+                'mensagem'  => $qtdRisco.' '
+                    .($qtdRisco === 1 ? 'cliente esfriando' : 'clientes esfriando')
+                    .' (última visita na janela de risco).',
+                'url'       => route('dono.clientes.index', ['segmento' => 'risco_churn']),
+                'url_label' => 'Ver risco churn',
+            ];
+        }
+
+        $inicioSemana = now()->startOfWeek();
+        $fimSemana = now()->endOfWeek();
+        $inicioSemanaAnt = now()->subWeek()->startOfWeek();
+        $fimSemanaAnt = now()->subWeek()->endOfWeek();
+        $cancelado = AgendamentoStatus::Cancelado->value;
+
+        $cancelamentosSemana = $salao->agendamentos()
+            ->where('status', $cancelado)
+            ->whereBetween('data_hora_inicio', [$inicioSemana, $fimSemana])
+            ->count();
+        $cancelamentosSemanaAnt = $salao->agendamentos()
+            ->where('status', $cancelado)
+            ->whereBetween('data_hora_inicio', [$inicioSemanaAnt, $fimSemanaAnt])
+            ->count();
+
+        if ($cancelamentosSemana >= 3 && $cancelamentosSemana > $cancelamentosSemanaAnt) {
+            $alertas[] = [
+                'tipo'      => 'warning',
+                'titulo'    => 'Cancelamentos em alta',
+                'mensagem'  => $cancelamentosSemana.' cancelamentos nesta semana'
+                    .($cancelamentosSemanaAnt > 0
+                        ? ' ('.$cancelamentosSemanaAnt.' na semana anterior).'
+                        : '.'),
+                'url'       => route('dono.agendamentos.index'),
+                'url_label' => 'Ver agenda',
+            ];
+        }
+
+        return $alertas;
+    }
+
+    private function deltaPercentual(float|int $atual, float|int $anterior): ?float
+    {
+        if ((float) $anterior == 0.0) {
+            return (float) $atual > 0 ? 100.0 : null;
+        }
+
+        return round((((float) $atual - (float) $anterior) / (float) $anterior) * 100, 1);
     }
 
     public function donoManicures(Salao $salao)

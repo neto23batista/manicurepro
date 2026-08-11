@@ -1,4 +1,8 @@
 {{-- Partial reutilizada por create e edit --}}
+@php
+    $clientes = $clientes ?? collect();
+    $servicos = $servicos ?? collect();
+@endphp
 <div class="row g-3">
     <div class="col-md-6">
         <label class="form-label fw-semibold">Código *</label>
@@ -55,12 +59,46 @@
     </div>
 
     <div class="col-md-4">
-        <label class="form-label fw-semibold">Uso máximo</label>
+        <label class="form-label fw-semibold">Uso máximo (global)</label>
         <input type="number" name="uso_maximo" min="1"
                class="form-control"
                value="{{ old('uso_maximo', $cupom->uso_maximo ?? '') }}"
                placeholder="Ilimitado">
-        <small class="text-muted">Quantos clientes podem usar</small>
+        <small class="text-muted">Quantos usos no total</small>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Uso máx. por cliente</label>
+        <input type="number" name="uso_maximo_por_cliente" min="1"
+               class="form-control"
+               value="{{ old('uso_maximo_por_cliente', $cupom->uso_maximo_por_cliente ?? '') }}"
+               placeholder="Ilimitado">
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Cliente específico</label>
+        <select name="cliente_id" class="form-select">
+            <option value="">— Qualquer cliente —</option>
+            @foreach($clientes as $cli)
+                <option value="{{ $cli->id }}"
+                    {{ (string) old('cliente_id', $cupom->cliente_id ?? '') === (string) $cli->id ? 'selected' : '' }}>
+                    {{ $cli->nome }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Serviço específico</label>
+        <select name="servico_id" class="form-select">
+            <option value="">— Qualquer serviço —</option>
+            @foreach($servicos as $srv)
+                <option value="{{ $srv->id }}"
+                    {{ (string) old('servico_id', $cupom->servico_id ?? '') === (string) $srv->id ? 'selected' : '' }}>
+                    {{ $srv->nome }}
+                </option>
+            @endforeach
+        </select>
     </div>
 
     <div class="col-md-6">
@@ -73,12 +111,24 @@
         <small class="text-muted">Deixe em branco para sem validade</small>
     </div>
 
-    <div class="col-md-6 d-flex align-items-end pb-2">
+    <div class="col-md-6 d-flex flex-column justify-content-end gap-2 pb-2">
         <div class="form-check form-switch">
             <input type="hidden" name="ativo" value="0">
             <input class="form-check-input" type="checkbox" name="ativo" value="1" id="ativo"
                    {{ old('ativo', $cupom->ativo ?? true) ? 'checked' : '' }}>
             <label class="form-check-label fw-semibold" for="ativo">Cupom ativo</label>
+        </div>
+        <div class="form-check form-switch">
+            <input type="hidden" name="primeira_compra" value="0">
+            <input class="form-check-input" type="checkbox" name="primeira_compra" value="1" id="primeira"
+                   {{ old('primeira_compra', $cupom->primeira_compra ?? false) ? 'checked' : '' }}>
+            <label class="form-check-label fw-semibold" for="primeira">Só primeira compra</label>
+        </div>
+        <div class="form-check form-switch">
+            <input type="hidden" name="anti_stacking_fidelidade" value="0">
+            <input class="form-check-input" type="checkbox" name="anti_stacking_fidelidade" value="1" id="antiStack"
+                   {{ old('anti_stacking_fidelidade', $cupom->anti_stacking_fidelidade ?? false) ? 'checked' : '' }}>
+            <label class="form-check-label fw-semibold" for="antiStack">Não acumula com fidelidade (sem pontos neste atendimento)</label>
         </div>
     </div>
 </div>

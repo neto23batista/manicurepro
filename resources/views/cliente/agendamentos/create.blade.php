@@ -62,6 +62,7 @@
                                     <label class="cursor-pointer w-100">
                                         <input type="checkbox" name="servico_ids[]" value="{{ $s->id }}"
                                                data-preco="{{ $s->preco }}" data-duracao="{{ $s->duracao }}"
+                                               data-servico-id="{{ $s->id }}"
                                                class="servico-check visually-hidden">
                                         <div class="servico-option p-3 border rounded">
                                             <div class="d-flex justify-content-between align-items-start">
@@ -70,12 +71,27 @@
                                                     <span class="badge bg-pink">Combo</span>
                                                 @endif
                                             </div>
-                                            <div class="text-pink fw-bold">{{ $s->preco_formatado }}</div>
+                                            <div class="text-pink fw-bold servico-preco-label">{{ $s->preco_formatado }}</div>
                                             <small class="text-muted">
-                                                <i class="fas fa-clock me-1"></i>{{ $s->duracao_formatada }}
+                                                <i class="fas fa-clock me-1"></i><span class="servico-duracao-label">{{ $s->duracao_formatada }}</span>
                                             </small>
                                         </div>
                                     </label>
+                                    @if($s->variacoesAtivas->isNotEmpty())
+                                        <select name="servico_variacoes[{{ $s->id }}]"
+                                                class="form-select form-select-sm mt-1 variacao-select"
+                                                data-servico-id="{{ $s->id }}"
+                                                data-base-preco="{{ $s->preco }}"
+                                                data-base-duracao="{{ $s->duracao }}"
+                                                disabled>
+                                            <option value="" data-preco="{{ $s->preco }}" data-duracao="{{ $s->duracao }}">Padrão</option>
+                                            @foreach($s->variacoesAtivas as $v)
+                                                <option value="{{ $v->id }}" data-preco="{{ $v->preco }}" data-duracao="{{ $v->duracao }}">
+                                                    {{ $v->nome }} — {{ $v->preco_formatado }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -139,6 +155,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnSubmit = document.getElementById('btnSubmit');
     const resumoCard = document.getElementById('resumoCard');
 
+    function syncVariacao(select) {
+        const sid = select.dataset.servicoId;
+        const check = document.querySelector(`.servico-check[data-servico-id="${sid}"]`);
+        if (!check) return;
+        const opt = select.options[select.selectedIndex];
+        check.dataset.preco = opt.dataset.preco || select.dataset.basePreco;
+        check.dataset.duracao = opt.dataset.duracao || select.dataset.baseDuracao;
+    }
+
     function getDuracao() {
         return [...document.querySelectorAll('.servico-check:checked')]
             .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
@@ -182,9 +207,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.servico-check').forEach((c) => {
         c.addEventListener('change', function () {
             this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
+            const sel = document.querySelector(`.variacao-select[data-servico-id="${this.dataset.servicoId}"]`);
+            if (sel) { sel.disabled = !this.checked; if (this.checked) syncVariacao(sel); }
             atualizarResumo();
             picker?.load();
         });
+    });
+    document.querySelectorAll('.variacao-select').forEach((sel) => {
+        sel.addEventListener('change', () => { syncVariacao(sel); atualizarResumo(); picker?.load(); });
     });
 
     document.querySelectorAll('.manicure-radio').forEach((r) => {

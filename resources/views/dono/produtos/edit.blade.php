@@ -36,8 +36,8 @@
                 @forelse($movimentacoes as $m)
                     <div class="d-flex justify-content-between align-items-center py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
                         <div>
-                            <span class="badge {{ $m->tipo === 'entrada' ? 'bg-success' : ($m->tipo === 'saida' ? 'bg-danger' : 'bg-secondary') }}">
-                                {{ ucfirst($m->tipo) }}
+                            <span class="badge {{ in_array($m->tipo, ['entrada', 'devolucao'], true) ? 'bg-success' : (in_array($m->tipo, ['saida', 'perda', 'consumo_interno'], true) ? 'bg-danger' : 'bg-secondary') }}">
+                                {{ str_replace('_', ' ', ucfirst($m->tipo)) }}
                             </span>
                             <small class="text-muted ms-1">{{ $m->motivo ?: '—' }}</small>
                         </div>

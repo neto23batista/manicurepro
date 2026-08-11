@@ -12,21 +12,31 @@ use App\Http\Controllers\Admin\ManicureController as AdminManicure;
 use App\Http\Controllers\Admin\ServicoController;
 use App\Http\Controllers\Admin\RelatorioController as AdminRelatorio;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\Admin\SaudeController as AdminSaude;
 use App\Http\Controllers\Dono\DashboardController as DonoDashboard;
 use App\Http\Controllers\Dono\AgendamentoController as DonoAgendamento;
 use App\Http\Controllers\Dono\ClienteController as DonoCliente;
 use App\Http\Controllers\Dono\ConfiguracaoController as DonoConfig;
 use App\Http\Controllers\Dono\CupomController as DonoCupom;
 use App\Http\Controllers\Dono\FolgaController as DonoFolga;
+use App\Http\Controllers\Dono\DisponibilidadeController as DonoDisponibilidade;
 use App\Http\Controllers\Dono\ProdutoController as DonoProduto;
+use App\Http\Controllers\Dono\FornecedorController as DonoFornecedor;
+use App\Http\Controllers\Dono\InventarioController as DonoInventario;
+use App\Http\Controllers\Dono\EstoqueRelatorioController as DonoEstoqueRelatorio;
 use App\Http\Controllers\Dono\GaleriaController as DonoGaleria;
 use App\Http\Controllers\Dono\FinanceiroController as DonoFinanceiro;
+use App\Http\Controllers\Dono\CaixaController as DonoCaixa;
+use App\Http\Controllers\Dono\DespesaController as DonoDespesa;
 use App\Http\Controllers\Dono\NotaFiscalController as DonoNotaFiscal;
 use App\Http\Controllers\Dono\ValePresenteController as DonoVale;
 use App\Http\Controllers\Dono\PacoteController as DonoPacote;
+use App\Http\Controllers\Dono\AuditoriaController as DonoAuditoria;
+use App\Http\Controllers\Dono\OnboardingController as DonoOnboarding;
 use App\Http\Controllers\Manicure\DashboardController as ManicureDashboard;
 use App\Http\Controllers\Manicure\AgendaController;
 use App\Http\Controllers\Manicure\FolgaController as ManicureFolga;
+use App\Http\Controllers\Manicure\DisponibilidadeController as ManicureDisponibilidade;
 use App\Http\Controllers\Cliente\DashboardController as ClienteDashboard;
 use App\Http\Controllers\Cliente\AgendamentoController as ClienteAgendamento;
 use App\Http\Controllers\Cliente\ListaEsperaController as ClienteListaEspera;
@@ -151,6 +161,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'role:ad
 
     Route::get('/relatorios', [AdminRelatorio::class, 'index'])->name('relatorios.index');
     Route::get('/relatorios/pdf', [AdminRelatorio::class, 'exportPdf'])->name('relatorios.pdf');
+    Route::get('/relatorios/csv', [AdminRelatorio::class, 'exportCsv'])->name('relatorios.csv');
+
+    Route::get('/saude', [AdminSaude::class, 'index'])->name('saude');
 
     Route::resource('usuarios', UsuarioController::class);
 });
@@ -162,6 +175,7 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono
     Route::get('/dashboard', [DonoDashboard::class, 'index'])->name('dashboard');
 
     Route::resource('agendamentos', DonoAgendamento::class)->except(['edit', 'update']);
+    Route::get('agendamentos-semana', [DonoAgendamento::class, 'semana'])->name('agendamentos.semana');
     Route::get('agendamentos-ical', [DonoAgendamento::class, 'ical'])->name('agendamentos.ical');
     Route::patch('agendamentos/{agendamento}/status', [DonoAgendamento::class, 'updateStatus'])->name('agendamentos.status');
     Route::get('agendamentos/{agendamento}/reagendar', [DonoAgendamento::class, 'reagendarForm'])->name('agendamentos.reagendar.form');
@@ -172,8 +186,10 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono
     Route::delete('agendamentos/{agendamento}/item/{item}', [DonoAgendamento::class, 'removerItem'])->name('agendamentos.item.remover');
     Route::post('agendamentos/{agendamento}/vale', [DonoAgendamento::class, 'aplicarVale'])->name('agendamentos.vale');
 
-    // Clientes
+    // Clientes (CRM: filtros de segmento + cupom reativação)
     Route::resource('clientes', DonoCliente::class);
+    Route::post('clientes/{cliente}/reativar', [DonoCliente::class, 'reativar'])
+        ->name('clientes.reativar');
 
     // Cupons
     Route::resource('cupons', DonoCupom::class)->except(['show'])
@@ -186,40 +202,91 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono
     // Produtos / Estoque
     Route::resource('produtos', DonoProduto::class)->except(['show']);
     Route::post('produtos/{produto}/estoque', [DonoProduto::class, 'movimentar'])->name('produtos.estoque');
+    Route::resource('fornecedores', DonoFornecedor::class)->except(['show']);
+    Route::get('estoque/inventario', [DonoInventario::class, 'create'])->name('estoque.inventario.create');
+    Route::post('estoque/inventario', [DonoInventario::class, 'store'])->name('estoque.inventario.store');
+    Route::get('estoque/relatorio', [DonoEstoqueRelatorio::class, 'index'])->name('estoque.relatorio');
+    Route::get('estoque/relatorio/csv', [DonoEstoqueRelatorio::class, 'csv'])->name('estoque.relatorio.csv');
 
     // Galeria / portfólio de trabalhos
     Route::resource('galeria', DonoGaleria::class)->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['galeria' => 'foto']);
     Route::patch('galeria/{foto}/publicar', [DonoGaleria::class, 'togglePublicar'])->name('galeria.publicar');
 
-    // Folgas
+    // Folgas + feriados recorrentes anuais
     Route::get('/folgas', [DonoFolga::class, 'index'])->name('folgas.index');
     Route::post('/folgas', [DonoFolga::class, 'store'])->name('folgas.store');
     Route::delete('/folgas/{folga}', [DonoFolga::class, 'destroy'])->name('folgas.destroy');
+    Route::post('/feriados', [DonoFolga::class, 'storeFeriado'])->name('feriados.store');
+    Route::delete('/feriados/{feriado}', [DonoFolga::class, 'destroyFeriado'])->name('feriados.destroy');
+
+    // Disponibilidade / pausas das manicures
+    Route::get('/disponibilidades', [DonoDisponibilidade::class, 'index'])->name('disponibilidades.index');
+    Route::put('/disponibilidades/{manicure}', [DonoDisponibilidade::class, 'update'])->name('disponibilidades.update');
 });
 
-// Caixa, vales, fiscal stub e config — apenas dono (admin herda via RoleMiddleware)
-Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono', 'check.salao'])->group(function () {
-    Route::get('/financeiro', [DonoFinanceiro::class, 'index'])->name('financeiro.index');
-    Route::post('/financeiro/comissoes', [DonoFinanceiro::class, 'storePagamento'])->name('financeiro.comissoes.store');
-    Route::delete('/financeiro/comissoes/{pagamento}', [DonoFinanceiro::class, 'destroyPagamento'])->name('financeiro.comissoes.destroy');
+// Áreas sensíveis: default = role dono; grants extras via role_or_perm (JSON).
+// Sem grants, atendente continua 403 (AtendenteAcessoTest).
+// role_or_perm ANTES de check.salao → cliente/manicure recebem 403 (não 302 de salão).
+Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified'])->group(function () {
+    Route::middleware(['role_or_perm:dono,financeiro.view', 'check.salao'])->group(function () {
+        Route::get('/financeiro', [DonoFinanceiro::class, 'index'])->name('financeiro.index');
+        Route::post('/financeiro/comissoes', [DonoFinanceiro::class, 'storePagamento'])->name('financeiro.comissoes.store');
+        Route::delete('/financeiro/comissoes/{pagamento}', [DonoFinanceiro::class, 'destroyPagamento'])->name('financeiro.comissoes.destroy');
+        Route::post('/financeiro/comissoes/ajustes', [DonoFinanceiro::class, 'storeAjuste'])->name('financeiro.comissoes.ajustes.store');
+        Route::delete('/financeiro/comissoes/ajustes/{ajuste}', [DonoFinanceiro::class, 'destroyAjuste'])->name('financeiro.comissoes.ajustes.destroy');
+    });
+
+    Route::middleware(['role_or_perm:dono,financeiro.caixa', 'check.salao'])->group(function () {
+        Route::get('/financeiro/caixa', [DonoCaixa::class, 'index'])->name('financeiro.caixa.index');
+        Route::post('/financeiro/caixa/abrir', [DonoCaixa::class, 'abrir'])->name('financeiro.caixa.abrir');
+        Route::get('/financeiro/caixa/{caixa}', [DonoCaixa::class, 'show'])->name('financeiro.caixa.show');
+        Route::post('/financeiro/caixa/{caixa}/movimentar', [DonoCaixa::class, 'movimentar'])->name('financeiro.caixa.movimentar');
+        Route::post('/financeiro/caixa/{caixa}/fechar', [DonoCaixa::class, 'fechar'])->name('financeiro.caixa.fechar');
+    });
+
+    Route::middleware(['role_or_perm:dono,financeiro.despesas', 'check.salao'])->group(function () {
+        Route::get('/financeiro/despesas', [DonoDespesa::class, 'index'])->name('financeiro.despesas.index');
+        Route::post('/financeiro/despesas', [DonoDespesa::class, 'store'])->name('financeiro.despesas.store');
+        Route::put('/financeiro/despesas/{despesa}', [DonoDespesa::class, 'update'])->name('financeiro.despesas.update');
+        Route::post('/financeiro/despesas/{despesa}/pagar', [DonoDespesa::class, 'marcarPaga'])->name('financeiro.despesas.pagar');
+        Route::delete('/financeiro/despesas/{despesa}', [DonoDespesa::class, 'destroy'])->name('financeiro.despesas.destroy');
+    });
 
     // Stub NF-e — NÃO emite SEFAZ (gate: manicure.fiscal.enabled)
-    Route::get('notas-fiscais', [DonoNotaFiscal::class, 'index'])->name('notas-fiscais.index');
-    Route::post('notas-fiscais', [DonoNotaFiscal::class, 'store'])->name('notas-fiscais.store');
-    Route::get('notas-fiscais/{notaFiscal}', [DonoNotaFiscal::class, 'show'])->name('notas-fiscais.show');
+    Route::middleware(['role_or_perm:dono,notas_fiscais.manage', 'check.salao'])->group(function () {
+        Route::get('notas-fiscais', [DonoNotaFiscal::class, 'index'])->name('notas-fiscais.index');
+        Route::post('notas-fiscais', [DonoNotaFiscal::class, 'store'])->name('notas-fiscais.store');
+        Route::get('notas-fiscais/{notaFiscal}', [DonoNotaFiscal::class, 'show'])->name('notas-fiscais.show');
+    });
 
-    Route::get('vales', [DonoVale::class, 'index'])->name('vales.index');
-    Route::post('vales', [DonoVale::class, 'store'])->name('vales.store');
-    Route::get('vales/{vale}', [DonoVale::class, 'show'])->name('vales.show');
-    Route::delete('vales/{vale}', [DonoVale::class, 'cancelar'])->name('vales.cancelar');
+    Route::middleware(['role_or_perm:dono,vales.manage', 'check.salao'])->group(function () {
+        Route::get('vales', [DonoVale::class, 'index'])->name('vales.index');
+        Route::post('vales', [DonoVale::class, 'store'])->name('vales.store');
+        Route::get('vales/{vale}', [DonoVale::class, 'show'])->name('vales.show');
+        Route::delete('vales/{vale}', [DonoVale::class, 'cancelar'])->name('vales.cancelar');
+    });
 
-    Route::get('/configuracao',          [DonoConfig::class, 'edit'])->name('config.edit');
-    Route::put('/configuracao/dados',    [DonoConfig::class, 'updateDados'])->name('config.dados');
-    Route::put('/configuracao/horarios', [DonoConfig::class, 'updateHorarios'])->name('config.horarios');
-    Route::put('/configuracao/config',   [DonoConfig::class, 'updateConfig'])->name('config.config');
-    Route::delete('/configuracao/logo',  [DonoConfig::class, 'destroyLogo'])->name('config.logo.destroy');
-    Route::delete('/configuracao/capa',  [DonoConfig::class, 'destroyCapa'])->name('config.capa.destroy');
+    Route::middleware(['role_or_perm:dono,config.manage', 'check.salao'])->group(function () {
+        Route::get('/configuracao',          [DonoConfig::class, 'edit'])->name('config.edit');
+        Route::put('/configuracao/dados',    [DonoConfig::class, 'updateDados'])->name('config.dados');
+        Route::put('/configuracao/horarios', [DonoConfig::class, 'updateHorarios'])->name('config.horarios');
+        Route::put('/configuracao/config',   [DonoConfig::class, 'updateConfig'])->name('config.config');
+        Route::put('/configuracao/permissoes', [DonoConfig::class, 'updatePermissoes'])->name('config.permissoes');
+        Route::delete('/configuracao/logo',  [DonoConfig::class, 'destroyLogo'])->name('config.logo.destroy');
+        Route::delete('/configuracao/capa',  [DonoConfig::class, 'destroyCapa'])->name('config.capa.destroy');
+    });
+
+    Route::middleware(['role_or_perm:dono,auditoria.view', 'check.salao'])->group(function () {
+        Route::get('/auditoria', [DonoAuditoria::class, 'index'])->name('auditoria.index');
+    });
+
+    // Onboarding — só dono/admin (sem grant para atendente)
+    Route::middleware(['role:dono', 'check.salao'])->group(function () {
+        Route::get('/onboarding', [DonoOnboarding::class, 'show'])->name('onboarding.show');
+        Route::post('/onboarding/complete', [DonoOnboarding::class, 'complete'])->name('onboarding.complete');
+        Route::post('/onboarding/dismiss', [DonoOnboarding::class, 'dismiss'])->name('onboarding.dismiss');
+    });
 });
 
 // ========================
@@ -238,6 +305,10 @@ Route::prefix('manicure')->name('manicure.')->middleware(['auth', 'verified', 'r
     Route::get('/folgas', [ManicureFolga::class, 'index'])->name('folgas.index');
     Route::post('/folgas', [ManicureFolga::class, 'store'])->name('folgas.store');
     Route::delete('/folgas/{folga}', [ManicureFolga::class, 'destroy'])->name('folgas.destroy');
+
+    // Disponibilidade / pausa (almoço)
+    Route::get('/disponibilidade', [ManicureDisponibilidade::class, 'edit'])->name('disponibilidade.edit');
+    Route::put('/disponibilidade', [ManicureDisponibilidade::class, 'update'])->name('disponibilidade.update');
 });
 
 // ========================

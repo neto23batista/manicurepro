@@ -22,13 +22,24 @@ class StoreCupomRequest extends FormRequest
                 'required', 'string', 'max:30',
                 Rule::unique('cupons', 'codigo')->where(fn ($q) => $q->where('salao_id', $salaoId)),
             ],
-            'tipo'            => ['required', 'in:percentual,fixo'],
-            'valor'           => ['required', 'numeric', 'min:0'],
-            'minimo_pedido'   => ['nullable', 'numeric', 'min:0'],
-            'maximo_desconto' => ['nullable', 'numeric', 'min:0'],
-            'uso_maximo'      => ['nullable', 'integer', 'min:1'],
-            'validade'        => ['nullable', 'date', 'after:today'],
-            'ativo'           => ['sometimes', 'boolean'],
+            'tipo'                     => ['required', 'in:percentual,fixo'],
+            'valor'                    => ['required', 'numeric', 'min:0'],
+            'minimo_pedido'            => ['nullable', 'numeric', 'min:0'],
+            'maximo_desconto'          => ['nullable', 'numeric', 'min:0'],
+            'uso_maximo'               => ['nullable', 'integer', 'min:1'],
+            'uso_maximo_por_cliente'    => ['nullable', 'integer', 'min:1'],
+            'validade'                 => ['nullable', 'date', 'after:today'],
+            'ativo'                    => ['sometimes', 'boolean'],
+            'primeira_compra'          => ['sometimes', 'boolean'],
+            'anti_stacking_fidelidade' => ['sometimes', 'boolean'],
+            'cliente_id'               => [
+                'nullable', 'integer',
+                Rule::exists('clientes', 'id')->where(fn ($q) => $q->where('salao_id', $salaoId)),
+            ],
+            'servico_id' => [
+                'nullable', 'integer',
+                Rule::exists('servicos', 'id')->where(fn ($q) => $q->where('salao_id', $salaoId)),
+            ],
         ];
     }
 

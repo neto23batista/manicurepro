@@ -4,6 +4,8 @@
 @section('page-title', 'Caixa & Comissões')
 
 @section('content')
+@include('dono.financeiro._nav')
+
 {{-- Filtro de período --}}
 <div class="card mb-4">
     <div class="card-body">
@@ -106,6 +108,41 @@
     </div>
 </div>
 
+{{-- Fluxo de caixa --}}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-chart-line text-pink me-2"></i>Fluxo de caixa</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="small text-uppercase text-muted">Entradas</div>
+                <div class="fs-4 fw-bold text-success">@money($fluxo['entradas'])</div>
+                <small class="text-muted">Pagamentos confirmados</small>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-uppercase text-muted">Saídas</div>
+                <div class="fs-4 fw-bold text-danger">@money($fluxo['saidas'])</div>
+                <small class="text-muted">
+                    Despesas @money($fluxo['despesas_pagas'])
+                    · Comissões @money($fluxo['comissoes_pagas'])
+                </small>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-uppercase text-muted">Saldo do período</div>
+                <div class="fs-4 fw-bold {{ $fluxo['saldo'] >= 0 ? 'text-success' : 'text-danger' }}">
+                    @money($fluxo['saldo'])
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-uppercase text-muted">Despesas a vencer</div>
+                <div class="fs-4 fw-bold">@money($fluxo['despesas_pendentes'])</div>
+                <small class="text-muted">{{ $fluxo['despesas_pendentes_count'] }} pendente(s) no período</small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4">
     {{-- Caixa por forma de pagamento --}}
     <div class="col-lg-5">
@@ -170,17 +207,32 @@
                             <tbody>
                                 @foreach($comissoes as $c)
                                     <tr>
-                                        <td class="fw-semibold">{{ $c['nome'] }}</td>
+                                        <td class="fw-semibold">
+                                            {{ $c['nome'] }}
+                                            @if(!empty($c['usa_regra_servico']))
+                                                <span class="badge text-bg-light border ms-1" title="Usa regra por serviço">serviço</span>
+                                            @endif
+                                        </td>
                                         <td class="text-center">{{ $c['atendimentos'] }}</td>
                                         <td class="text-end">@money($c['base'])</td>
                                         <td class="text-center">
                                             @if($c['taxa'] > 0)
                                                 {{ rtrim(rtrim(number_format($c['taxa'], 2, ',', '.'), '0'), ',') }}%
+                                                @if(!empty($c['usa_regra_servico']))
+                                                    <div class="small text-muted">efetiva</div>
+                                                @endif
                                             @else
                                                 <span class="text-muted" title="Defina a comissão no cadastro do profissional">—</span>
                                             @endif
                                         </td>
-                                        <td class="text-end fw-bold">@money($c['comissao'])</td>
+                                        <td class="text-end fw-bold">
+                                            @money($c['comissao'])
+                                            @if(($c['ajuste'] ?? 0) != 0)
+                                                <div class="small {{ $c['ajuste'] > 0 ? 'text-success' : 'text-danger' }}">
+                                                    {{ $c['ajuste'] > 0 ? '+' : '' }}@money($c['ajuste'])
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td class="text-end">
                                             @if($c['pago'])
                                                 <span class="badge text-bg-success">Pago</span>
@@ -233,14 +285,101 @@
                     </div>
                     <p class="text-muted small p-3 mb-0">
                         <i class="fas fa-circle-info me-1"></i>
-                        A taxa de comissão de cada profissional é definida no cadastro de manicures. Produtos não entram na base.
-                        Marcar como pago registra o repasse deste período filtrado.
+                        % padrão vem do cadastro da manicure. Serviço com % ou valor fixo próprio sobrepõe essa taxa.
+                        Ajustes manuais (+/−) entram no total a pagar.
                     </p>
                 @else
                     <div class="empty-state py-4">
                         <div class="empty-state-icon"><i class="fas fa-hand-sparkles"></i></div>
                         <p class="mb-0">Nenhum atendimento concluído no período.</p>
                     </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Ajustes manuais de comissão --}}
+<div class="row g-4 mt-1">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="card-title mb-0"><i class="fas fa-sliders text-pink me-2"></i>Ajustes de comissão</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ route('dono.financeiro.comissoes.ajustes.store') }}" class="row g-2 align-items-end mb-3">
+                    @csrf
+                    <input type="hidden" name="data_inicio" value="{{ $inicio->toDateString() }}">
+                    <input type="hidden" name="data_fim" value="{{ $fim->toDateString() }}">
+                    <input type="hidden" name="periodo" value="{{ $periodo }}">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Profissional</label>
+                        <select name="manicure_id" class="form-select @error('manicure_id') is-invalid @enderror" required>
+                            <option value="">Selecione…</option>
+                            @foreach($manicures as $m)
+                                <option value="{{ $m->id }}" @selected(old('manicure_id') == $m->id)>{{ $m->nome }}</option>
+                            @endforeach
+                        </select>
+                        @error('manicure_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Valor (+/−)</label>
+                        <input type="number" name="valor" step="0.01" class="form-control @error('valor') is-invalid @enderror"
+                               value="{{ old('valor') }}" placeholder="Ex: 10 ou -5" required>
+                        @error('valor') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Motivo</label>
+                        <input type="text" name="motivo" class="form-control @error('motivo') is-invalid @enderror"
+                               value="{{ old('motivo') }}" maxlength="255" placeholder="Opcional">
+                        @error('motivo') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-outline-pink w-100">
+                            <i class="fas fa-plus me-1"></i>Registrar ajuste
+                        </button>
+                    </div>
+                </form>
+
+                @if($ajustes->isNotEmpty())
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Profissional</th>
+                                    <th class="text-end">Valor</th>
+                                    <th>Motivo</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($ajustes as $aj)
+                                    <tr>
+                                        <td>{{ $aj->manicure?->nome }}</td>
+                                        <td class="text-end {{ $aj->valor >= 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ $aj->valor > 0 ? '+' : '' }}@money($aj->valor)
+                                        </td>
+                                        <td class="text-muted">{{ $aj->motivo ?: '—' }}</td>
+                                        <td class="text-end">
+                                            <form method="POST"
+                                                  action="{{ route('dono.financeiro.comissoes.ajustes.destroy', $aj) }}"
+                                                  class="d-inline"
+                                                  data-confirm="Remover ajuste?"
+                                                  data-confirm-ok="Remover">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-link btn-sm text-muted p-0" title="Remover">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-muted small mb-0">Nenhum ajuste neste período.</p>
                 @endif
             </div>
         </div>

@@ -12,6 +12,12 @@
                 <input type="search" name="busca" value="{{ request('busca') }}"
                        class="form-control form-control-sm" placeholder="Buscar produto…" style="min-width:180px">
             </form>
+            <a href="{{ route('dono.estoque.inventario.create') }}" class="btn btn-outline-secondary btn-sm" title="Inventário">
+                <i class="fas fa-clipboard-check"></i>
+            </a>
+            <a href="{{ route('dono.estoque.relatorio') }}" class="btn btn-outline-secondary btn-sm" title="Relatório">
+                <i class="fas fa-chart-bar"></i>
+            </a>
             <a href="{{ route('dono.produtos.create') }}" class="btn btn-pink btn-sm">
                 <i class="fas fa-plus me-1"></i>Novo produto
             </a>
@@ -36,6 +42,7 @@
                     </div>
                     <small class="text-muted">
                         {{ $produto->marca ?: 'Sem marca' }}@if($produto->codigo) · cód. {{ $produto->codigo }}@endif
+                        @if($produto->fornecedor) · {{ $produto->fornecedor->nome }}@endif
                     </small>
                 </div>
                 <div class="text-center px-3 d-none d-md-block">
@@ -83,10 +90,13 @@
                                 </p>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold">Tipo</label>
-                                    <select name="tipo" class="form-select" required>
+                                    <select name="tipo" class="form-select js-estoque-tipo" required>
                                         <option value="entrada">Entrada (+) — reposição/compra</option>
-                                        <option value="saida">Saída (−) — venda/uso/perda</option>
+                                        <option value="saida">Saída (−) — venda/uso</option>
                                         <option value="ajuste">Ajuste — definir o total exato</option>
+                                        <option value="perda">Perda (−) — motivo obrigatório</option>
+                                        <option value="consumo_interno">Consumo interno (−) — motivo obrigatório</option>
+                                        <option value="devolucao">Devolução (+) — motivo obrigatório</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -94,7 +104,7 @@
                                     <input type="number" step="0.001" min="0.001" name="quantidade" class="form-control" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold">Motivo <small class="text-muted">(opcional)</small></label>
+                                    <label class="form-label fw-semibold">Motivo <small class="text-muted js-motivo-hint">(opcional)</small></label>
                                     <input type="text" name="motivo" class="form-control" maxlength="255" placeholder="Ex: Compra no fornecedor">
                                 </div>
                             </div>
@@ -123,3 +133,18 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.querySelectorAll('.js-estoque-tipo').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+        var precisa = ['perda', 'consumo_interno', 'devolucao'].includes(sel.value);
+        var form = sel.closest('form');
+        var motivo = form.querySelector('[name="motivo"]');
+        var hint = form.querySelector('.js-motivo-hint');
+        if (motivo) motivo.required = precisa;
+        if (hint) hint.textContent = precisa ? '(obrigatório)' : '(opcional)';
+    });
+});
+</script>
+@endpush

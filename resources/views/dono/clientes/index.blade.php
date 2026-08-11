@@ -4,13 +4,25 @@
 @section('page-title', 'Clientes do salão')
 
 @section('content')
+@php
+    $crm = app(\App\Services\ClienteSegmentacao::class);
+@endphp
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="card-title mb-0"><i class="fas fa-users text-pink me-2"></i>Clientes</h5>
-        <div class="d-flex gap-2">
-            <form method="GET" class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
+            <form method="GET" class="d-flex gap-2 flex-wrap">
                 <input type="search" name="search" class="form-control form-control-sm"
                        value="{{ request('search') }}" placeholder="Buscar por nome, e-mail, telefone...">
+                <select name="segmento" class="form-select form-select-sm" style="min-width:10rem"
+                        onchange="this.form.submit()" aria-label="Filtrar por segmento CRM">
+                    <option value="">Todos os segmentos</option>
+                    @foreach($segmentos as $seg)
+                        <option value="{{ $seg }}" @selected($segmentoAtual === $seg)>
+                            {{ $crm->label($seg) }}
+                        </option>
+                    @endforeach
+                </select>
                 <button class="btn btn-outline-pink btn-sm"><i class="fas fa-search"></i></button>
             </form>
             <a href="{{ route('dono.clientes.create') }}" class="btn btn-pink btn-sm">
@@ -18,6 +30,15 @@
             </a>
         </div>
     </div>
+    @if($segmentoAtual)
+        <div class="px-3 pt-3">
+            <span class="badge bg-{{ $crm->cor($segmentoAtual) }}">
+                Filtro: {{ $crm->label($segmentoAtual) }}
+            </span>
+            <a href="{{ route('dono.clientes.index', array_filter(['search' => request('search')])) }}"
+               class="small ms-2">Limpar filtro</a>
+        </div>
+    @endif
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
@@ -34,6 +55,12 @@
                 </thead>
                 <tbody>
                     @forelse($clientes as $c)
+                        @php
+                            $segs = $crm->segmentosDe(
+                                $c,
+                                $c->ultima_visita_em ? \Carbon\Carbon::parse($c->ultima_visita_em) : null
+                            );
+                        @endphp
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
@@ -45,6 +72,7 @@
                                         <div class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
                                             {{ $c->nome }}
                                             <x-badge-no-show :cliente="$c" />
+                                            <x-badge-crm :segmentos="$segs" />
                                         </div>
                                         @if($c->aniversario_hoje)
                                             <small class="text-pink"><i class="fas fa-cake-candles"></i> Aniversariante hoje!</small>
@@ -81,8 +109,8 @@
                         <tr><td colspan="7">
                             <div class="empty-state">
                                 <div class="empty-state-icon"><i class="fas fa-user-friends"></i></div>
-                                <h6 class="fw-bold">Nenhum cliente {{ request('search') ? 'encontrado' : 'cadastrado' }}</h6>
-                                @if(!request('search'))
+                                <h6 class="fw-bold">Nenhum cliente {{ request('search') || $segmentoAtual ? 'encontrado' : 'cadastrado' }}</h6>
+                                @if(!request('search') && !$segmentoAtual)
                                     <p>Comece cadastrando seu primeiro cliente.</p>
                                     <a href="{{ route('dono.clientes.create') }}" class="btn btn-pink mt-2">
                                         <i class="fas fa-plus me-1"></i>Cadastrar cliente

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProdutoRequest extends FormRequest
 {
@@ -17,6 +18,8 @@ class UpdateProdutoRequest extends FormRequest
 
     public function rules(): array
     {
+        $salaoId = (int) ($this->user()?->salao_id ?? 0);
+
         // O estoque não é alterado por aqui — usa-se a movimentação de estoque.
         return [
             'nome'           => ['required', 'string', 'max:255'],
@@ -28,6 +31,17 @@ class UpdateProdutoRequest extends FormRequest
             'estoque_minimo' => ['nullable', 'numeric', 'min:0', 'max:999999'],
             'unidade'        => ['nullable', 'string', 'max:20'],
             'ativo'          => ['sometimes', 'boolean'],
+            'fornecedor_id'  => [
+                'nullable',
+                Rule::exists('fornecedores', 'id')->where(fn ($q) => $q->where('salao_id', $salaoId)->where('ativo', true)),
+            ],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('fornecedor_id')) {
+            $this->merge(['fornecedor_id' => null]);
+        }
     }
 }

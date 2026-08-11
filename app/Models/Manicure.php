@@ -49,6 +49,12 @@ class Manicure extends Model
         return $this->hasMany(ComissaoPagamento::class);
     }
 
+    /** @return HasMany<ComissaoAjuste, $this> */
+    public function comissaoAjustes(): HasMany
+    {
+        return $this->hasMany(ComissaoAjuste::class);
+    }
+
     /** @return HasMany<DisponibilidadeManicure, $this> */
     public function disponibilidades(): HasMany
     {

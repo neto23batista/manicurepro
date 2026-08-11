@@ -49,7 +49,10 @@ test('domainExceptionJson reporta exceção e devolve mensagem genérica', funct
     );
 
     expect($response->getStatusCode())->toBe(422)
-        ->and($response->getData(true))->toBe(['message' => 'Não foi possível criar o agendamento.']);
+        ->and($response->getData(true))->toBe([
+            'message' => 'Não foi possível criar o agendamento.',
+            'code' => 'domain_error',
+        ]);
 
     Log::shouldHaveReceived('error')->once();
 });

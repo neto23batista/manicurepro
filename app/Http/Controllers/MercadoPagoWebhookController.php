@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agendamento;
+use App\Models\WebhookEvent;
 use App\Services\MercadoPagoService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +15,7 @@ class MercadoPagoWebhookController extends Controller
 
     /**
      * Recebe notificações da Mercado Pago (sem CSRF/sessão).
-     * Responde 200 rapidamente e sincroniza o status do sinal.
+     * Responde 200 rapidamente, deduplica por payment_id e sincroniza o status.
      */
     public function handle(Request $request): JsonResponse
     {
@@ -33,13 +35,60 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
+        $paymentId = (string) $paymentId;
+        $payloadHash = hash('sha256', $request->getContent() ?: json_encode($request->all()));
+
+        if (! $this->reservarProcessamento($paymentId, $payloadHash)) {
+            return response()->json(['ok' => true, 'duplicate' => true]);
+        }
+
         $agendamento = Agendamento::where('mp_payment_id', $paymentId)->first();
 
         if ($agendamento) {
             $this->mp->sincronizarStatus($agendamento);
         }
 
+        WebhookEvent::where('provider', 'mercadopago')
+            ->where('event_id', $paymentId)
+            ->update(['processed_at' => now()]);
+
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Insere o evento; se (provider, event_id) já existir, é duplicata.
+     */
+    private function reservarProcessamento(string $paymentId, string $payloadHash): bool
+    {
+        try {
+            WebhookEvent::create([
+                'provider'     => 'mercadopago',
+                'event_id'     => $paymentId,
+                'payload_hash' => $payloadHash,
+                'processed_at' => null,
+            ]);
+
+            return true;
+        } catch (QueryException $e) {
+            // Unique (provider, event_id) — evento já visto.
+            if ($this->isUniqueViolation($e)) {
+                return false;
+            }
+
+            throw $e;
+        }
+    }
+
+    private function isUniqueViolation(QueryException $e): bool
+    {
+        $sqlState = $e->errorInfo[0] ?? '';
+        $driverCode = (int) ($e->errorInfo[1] ?? 0);
+
+        // SQLSTATE 23000 + MySQL 1062 / SQLite 19 / Postgres unique_violation
+        return $sqlState === '23000'
+            || $driverCode === 1062
+            || $driverCode === 19
+            || str_contains(strtolower($e->getMessage()), 'unique');
     }
 
     /**

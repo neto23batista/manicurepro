@@ -190,6 +190,71 @@ test('webhook de outro tópico é ignorado', function () {
     Http::assertNothingSent();
 });
 
+test('webhook duplicado responde 200 sem reprocessar', function () {
+    $ag = novoAgendamentoPix($this, 100.0, 'aguardando');
+    $ag->update([
+        'mp_payment_id' => '999050',
+        'mp_cobranca_tipo' => 'sinal',
+        'sinal_status' => 'pendente',
+        'sinal_valor' => 30,
+    ]);
+
+    Http::fake([
+        'api.mercadopago.com/v1/payments/999050' => Http::response([
+            'id' => 999050,
+            'status' => 'approved',
+        ], 200),
+    ]);
+
+    $sig = assinaturaWebhook('999050');
+    $payload = [
+        'type' => 'payment',
+        'data' => ['id' => '999050'],
+    ];
+
+    $this->withHeaders($sig['headers'])
+        ->postJson(route('webhooks.mercadopago') . '?data.id=999050', $payload)
+        ->assertOk()
+        ->assertJsonMissing(['duplicate' => true]);
+
+    expect($ag->fresh()->sinal_status)->toBe('pago');
+    expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
+
+    // Segunda entrega: 200 + duplicate, sem nova chamada à API MP.
+    Http::fake();
+
+    $this->withHeaders($sig['headers'])
+        ->postJson(route('webhooks.mercadopago') . '?data.id=999050', $payload)
+        ->assertOk()
+        ->assertJson(['ok' => true, 'duplicate' => true]);
+
+    Http::assertNothingSent();
+    expect($ag->fresh()->sinal_status)->toBe('pago');
+    expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
+});
+
+test('sincronizarStatus não regride pagamento pago para pendente', function () {
+    $ag = novoAgendamentoPix($this, 100.0, 'confirmado');
+    $ag->update([
+        'mp_payment_id' => '999060',
+        'mp_cobranca_tipo' => 'sinal',
+        'sinal_status' => 'pago',
+        'sinal_valor' => 30,
+    ]);
+
+    Http::fake([
+        'api.mercadopago.com/v1/payments/999060' => Http::response([
+            'id' => 999060,
+            'status' => 'pending',
+        ], 200),
+    ]);
+
+    $status = $this->mp->sincronizarStatus($ag);
+
+    expect($status)->toBe('pago');
+    expect($ag->fresh()->sinal_status)->toBe('pago');
+});
+
 test('cancelarOuEstornar cancela cobrança pendente', function () {
     $ag = novoAgendamentoPix($this, 100.0);
     $ag->update([

@@ -6,17 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreClienteRequest;
 use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
+use App\Services\ClienteSegmentacao;
 use Illuminate\Http\Request;
 
 class ClienteController extends Controller
 {
+    public function __construct(private ClienteSegmentacao $crm) {}
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', Cliente::class);
 
         $salao = auth()->user()->salao;
+        $segmento = $request->string('segmento')->toString();
 
-        $clientes = $salao->clientes()
+        $query = $salao->clientes()
             ->when($request->search, function ($q) use ($request) {
                 $s = '%'.$request->search.'%';
                 $q->where(function ($q2) use ($s) {
@@ -25,12 +29,23 @@ class ClienteController extends Controller
                         ->orWhere('telefone', 'like', $s)
                         ->orWhere('cpf', 'like', $s);
                 });
-            })
+            });
+
+        if ($this->crm->isSegmentoValido($segmento)) {
+            $this->crm->aplicarFiltro($query, $segmento);
+        }
+
+        $this->crm->withUltimaVisita($query);
+
+        $clientes = $query
             ->orderBy('nome')
             ->paginate(20)
             ->withQueryString();
 
-        return view('dono.clientes.index', compact('clientes'));
+        $segmentos = ClienteSegmentacao::SEGMENTOS;
+        $segmentoAtual = $this->crm->isSegmentoValido($segmento) ? $segmento : null;
+
+        return view('dono.clientes.index', compact('clientes', 'segmentos', 'segmentoAtual'));
     }
 
     public function create()
@@ -63,7 +78,9 @@ class ClienteController extends Controller
             'fichaHistorico' => fn ($q) => $q->with('user')->limit(10),
         ]);
 
-        return view('dono.clientes.show', compact('cliente'));
+        $metricas = $this->crm->metricas($cliente);
+
+        return view('dono.clientes.show', compact('cliente', 'metricas'));
     }
 
     public function edit(Cliente $cliente)
@@ -92,5 +109,21 @@ class ClienteController extends Controller
         $cliente->update(['ativo' => false]);
 
         return back()->with('success', 'Cliente desativado.');
+    }
+
+    /**
+     * Gera cupom de reativação (reusa Cupom) para cliente no segmento inativo.
+     */
+    public function reativar(Cliente $cliente)
+    {
+        $this->authorize('update', $cliente);
+
+        $cupom = $this->crm->gerarCupomReativacao($cliente);
+
+        return back()->with(
+            'success',
+            'Cupom de reativação: '.$cupom->codigo
+            .' (válido até '.$cupom->validade?->format('d/m/Y').').'
+        );
     }
 }

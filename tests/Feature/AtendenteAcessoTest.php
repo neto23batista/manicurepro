@@ -45,6 +45,7 @@ test('matriz atendente vs dono: caixa exclusivo do dono', function (string $uri)
     '/dono/financeiro',
     '/dono/vales',
     '/dono/configuracao',
+    '/dono/auditoria',
 ]);
 
 test('atendente não acessa financeiro, configuração nem vales', function () {

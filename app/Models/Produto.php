@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Produto extends Model
 {
     protected $fillable = [
-        'salao_id', 'nome', 'descricao', 'codigo', 'marca',
+        'salao_id', 'fornecedor_id', 'nome', 'descricao', 'codigo', 'marca',
         'preco_custo', 'preco_venda', 'estoque_atual', 'estoque_minimo',
         'unidade', 'ativo',
     ];
@@ -26,6 +26,12 @@ class Produto extends Model
     public function salao(): BelongsTo
     {
         return $this->belongsTo(Salao::class);
+    }
+
+    /** @return BelongsTo<Fornecedor, $this> */
+    public function fornecedor(): BelongsTo
+    {
+        return $this->belongsTo(Fornecedor::class);
     }
 
     /** @return HasMany<EstoqueMovimentacao, $this> */

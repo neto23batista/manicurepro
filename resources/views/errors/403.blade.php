@@ -13,7 +13,8 @@
     </style>
 </head>
 <body>
-    <div class="container text-center py-5">
+    <x-skip-link />
+    <div class="container text-center py-5" id="mainContent" tabindex="-1">
         <div class="mb-3">
             <i class="fa-solid fa-lock icon-big"></i>
         </div>

@@ -19,6 +19,10 @@ class StoreAgendamentoRequest extends FormRequest
         if ($this->user()?->isCliente() && ! $this->filled('salao_id')) {
             $this->merge(['salao_id' => Salao::principalId()]);
         }
+
+        if ($this->has('encaixe')) {
+            $this->merge(['encaixe' => filter_var($this->input('encaixe'), FILTER_VALIDATE_BOOLEAN)]);
+        }
     }
 
     public function rules(): array
@@ -31,6 +35,8 @@ class StoreAgendamentoRequest extends FormRequest
             'manicure_id'      => ['required', 'exists:manicures,id'],
             'servico_ids'      => ['required', 'array', 'min:1'],
             'servico_ids.*'    => ['integer', 'exists:servicos,id'],
+            'servico_variacoes'   => ['nullable', 'array'],
+            'servico_variacoes.*' => ['nullable', 'integer', 'exists:servico_variacoes,id'],
             'data_hora_inicio' => ['required', 'date', 'after:now'],
             'cliente_id'       => ['nullable', 'exists:clientes,id'],
             'nome_cliente'     => ['nullable', 'string', 'max:255'],
@@ -38,6 +44,8 @@ class StoreAgendamentoRequest extends FormRequest
             'observacoes'      => ['nullable', 'string', 'max:1000'],
             'recorrencia'      => ['nullable', 'in:nenhuma,semanal,quinzenal,mensal'],
             'ocorrencias'      => ['nullable', 'integer', 'min:1', 'max:12'],
+            // Encaixe: apenas staff (dono/atendente). Público/cliente nunca passam.
+            'encaixe'          => [$isStaff ? 'sometimes' : 'prohibited', 'boolean'],
         ];
     }
 

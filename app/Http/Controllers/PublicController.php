@@ -46,7 +46,7 @@ class PublicController extends Controller
         }]);
 
         $servicos = $salao->servicos()->where('disponivel_online', true)
-            ->with('categoria')
+            ->with(['categoria', 'variacoesAtivas'])
             ->orderBy('nome')
             ->get()
             ->groupBy('categoria.nome');
@@ -65,6 +65,7 @@ class PublicController extends Controller
 
         $servicos = $salao->servicos()
             ->where('disponivel_online', true)
+            ->with('variacoesAtivas')
             ->orderBy('nome')
             ->get();
 
@@ -99,6 +100,7 @@ class PublicController extends Controller
                 'salao_id'         => $salao->id,
                 'manicure_id'      => $request->integer('manicure_id'),
                 'servico_ids'      => $request->input('servico_ids'),
+                'servico_variacoes'=> $request->input('servico_variacoes', []),
                 'data_hora_inicio' => $request->input('data_hora_inicio'),
                 'cliente_id'       => $cliente->id,
                 'nome_cliente'     => $cliente->nome,

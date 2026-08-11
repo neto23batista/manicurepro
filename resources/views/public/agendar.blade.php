@@ -7,7 +7,7 @@
     <title>Agendar em {{ $salao->nome }}</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="app-env" content="{{ app()->environment() }}">
-    <x-theme-vars />
+    <x-theme-vars :salao="$salao" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="public-body">
@@ -99,16 +99,17 @@
                                     <label class="w-100 cursor-pointer">
                                         <input type="checkbox" name="servico_ids[]" value="{{ $s->id }}"
                                                data-preco="{{ $s->preco }}" data-duracao="{{ $s->duracao }}"
+                                               data-servico-id="{{ $s->id }}"
                                                class="servico-check visually-hidden"
                                                @checked(collect(old('servico_ids', []))->contains($s->id))>
                                         <div class="servico-option p-3 @if(collect(old('servico_ids', []))->contains($s->id)) selected @endif">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
                                                     <div class="fw-semibold">{{ $s->nome }}</div>
-                                                    <small class="text-muted"><i class="fas fa-clock me-1" aria-hidden="true"></i>{{ $s->duracao_formatada }}</small>
+                                                    <small class="text-muted"><i class="fas fa-clock me-1" aria-hidden="true"></i><span class="servico-duracao-label">{{ $s->duracao_formatada }}</span></small>
                                                 </div>
                                                 <div class="text-end">
-                                                    <div class="fw-bold text-gradient">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
+                                                    <div class="fw-bold text-gradient servico-preco-label">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
                                                     @if($s->combo)
                                                         <span class="badge bg-warning text-white">Combo</span>
                                                     @endif
@@ -116,6 +117,22 @@
                                             </div>
                                         </div>
                                     </label>
+                                    @if($s->variacoesAtivas->isNotEmpty())
+                                        <select name="servico_variacoes[{{ $s->id }}]"
+                                                class="form-select form-select-sm mt-1 variacao-select"
+                                                data-servico-id="{{ $s->id }}"
+                                                data-base-preco="{{ $s->preco }}"
+                                                data-base-duracao="{{ $s->duracao }}">
+                                            <option value="" data-preco="{{ $s->preco }}" data-duracao="{{ $s->duracao }}">Padrão</option>
+                                            @foreach($s->variacoesAtivas as $v)
+                                                <option value="{{ $v->id }}"
+                                                    data-preco="{{ $v->preco }}" data-duracao="{{ $v->duracao }}"
+                                                    @selected((string) old("servico_variacoes.{$s->id}") === (string) $v->id)>
+                                                    {{ $v->nome }} — {{ $v->preco_formatado }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -209,6 +226,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const resumoCard = document.getElementById('resumoCard');
     const isGuest = {{ auth()->guest() ? 'true' : 'false' }};
 
+    function syncVariacao(select) {
+        const sid = select.dataset.servicoId;
+        const check = document.querySelector(`.servico-check[data-servico-id="${sid}"]`);
+        if (!check) return;
+        const opt = select.options[select.selectedIndex];
+        check.dataset.preco = opt.dataset.preco || select.dataset.basePreco;
+        check.dataset.duracao = opt.dataset.duracao || select.dataset.baseDuracao;
+    }
+
     function getDuracao() {
         return [...document.querySelectorAll('.servico-check:checked')]
             .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
@@ -261,8 +287,13 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.servico-check').forEach((c) => {
         c.addEventListener('change', function () {
             this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
+            const sel = document.querySelector(`.variacao-select[data-servico-id="${this.dataset.servicoId}"]`);
+            if (sel) { sel.disabled = !this.checked; if (this.checked) syncVariacao(sel); }
             picker?.load();
         });
+    });
+    document.querySelectorAll('.variacao-select').forEach((sel) => {
+        sel.addEventListener('change', () => { syncVariacao(sel); picker?.load(); atualizarResumo(getDuracao()); verificarBotao(); });
     });
     document.querySelectorAll('.manicure-radio').forEach((r) => {
         r.addEventListener('change', function () {

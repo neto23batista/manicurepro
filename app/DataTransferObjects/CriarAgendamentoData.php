@@ -12,6 +12,7 @@ final readonly class CriarAgendamentoData
 {
     /**
      * @param  array<int>  $servicoIds
+     * @param  array<int, int>  $servicoVariacoes  mapa servico_id => variacao_id
      */
     public function __construct(
         public int $salaoId,
@@ -26,11 +27,23 @@ final readonly class CriarAgendamentoData
         public string $origem = 'web',
         public AgendamentoStatus $status = AgendamentoStatus::Aguardando,
         public ?int $cupomId = null,
+        public bool $encaixe = false,
+        public array $servicoVariacoes = [],
     ) {}
 
     public static function fromArray(array $d): self
     {
         $status = $d['status'] ?? null;
+        $variacoes = [];
+        if (! empty($d['servico_variacoes']) && is_array($d['servico_variacoes'])) {
+            foreach ($d['servico_variacoes'] as $servicoId => $variacaoId) {
+                if ($variacaoId === null || $variacaoId === '' || $variacaoId === 0 || $variacaoId === '0') {
+                    continue;
+                }
+                $variacoes[(int) $servicoId] = (int) $variacaoId;
+            }
+        }
+
         return new self(
             salaoId:         (int) $d['salao_id'],
             manicureId:      (int) $d['manicure_id'],
@@ -46,24 +59,28 @@ final readonly class CriarAgendamentoData
                                 ? $status
                                 : (AgendamentoStatus::tryFrom((string) ($status ?? '')) ?? AgendamentoStatus::Aguardando),
             cupomId:         isset($d['cupom_id']) ? (int) $d['cupom_id'] : null,
+            encaixe:         (bool) ($d['encaixe'] ?? false),
+            servicoVariacoes: $variacoes,
         );
     }
 
     public function toArray(): array
     {
         return [
-            'salao_id'         => $this->salaoId,
-            'manicure_id'      => $this->manicureId,
-            'servico_ids'      => $this->servicoIds,
-            'data_hora_inicio' => $this->dataHoraInicio,
-            'cliente_id'       => $this->clienteId,
-            'user_id'          => $this->userId,
-            'nome_cliente'     => $this->nomeCliente,
-            'telefone_cliente' => $this->telefoneCliente,
-            'observacoes'      => $this->observacoes,
-            'origem'           => $this->origem,
-            'status'           => $this->status,
-            'cupom_id'         => $this->cupomId,
+            'salao_id'           => $this->salaoId,
+            'manicure_id'        => $this->manicureId,
+            'servico_ids'        => $this->servicoIds,
+            'data_hora_inicio'   => $this->dataHoraInicio,
+            'cliente_id'         => $this->clienteId,
+            'user_id'            => $this->userId,
+            'nome_cliente'       => $this->nomeCliente,
+            'telefone_cliente'   => $this->telefoneCliente,
+            'observacoes'        => $this->observacoes,
+            'origem'             => $this->origem,
+            'status'             => $this->status,
+            'cupom_id'           => $this->cupomId,
+            'encaixe'            => $this->encaixe,
+            'servico_variacoes'  => $this->servicoVariacoes,
         ];
     }
 }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Dono;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\MovimentarEstoqueRequest;
 use App\Http\Requests\StoreProdutoRequest;
 use App\Http\Requests\UpdateProdutoRequest;
+use App\Models\Fornecedor;
 use App\Models\Produto;
 use App\Models\Salao;
 use App\Services\EstoqueService;
@@ -27,6 +29,7 @@ class ProdutoController extends Controller
         $salaoId = $this->salaoId();
 
         $produtos = Produto::where('salao_id', $salaoId)
+            ->with('fornecedor:id,nome')
             ->when($request->filled('busca'), function ($q) use ($request) {
                 $busca = $request->busca;
                 $q->where(fn ($s) => $s->where('nome', 'like', "%{$busca}%")
@@ -49,7 +52,9 @@ class ProdutoController extends Controller
     {
         $this->authorize('create', Produto::class);
 
-        return view('dono.produtos.create');
+        $fornecedores = $this->fornecedoresAtivos();
+
+        return view('dono.produtos.create', compact('fornecedores'));
     }
 
     public function store(StoreProdutoRequest $request)
@@ -88,8 +93,9 @@ class ProdutoController extends Controller
             ->latest()
             ->take(15)
             ->get();
+        $fornecedores = $this->fornecedoresAtivos();
 
-        return view('dono.produtos.edit', compact('produto', 'movimentacoes'));
+        return view('dono.produtos.edit', compact('produto', 'movimentacoes', 'fornecedores'));
     }
 
     public function update(UpdateProdutoRequest $request, Produto $produto)
@@ -114,26 +120,31 @@ class ProdutoController extends Controller
     }
 
     /**
-     * Registra uma movimentação de estoque (entrada/saída/ajuste).
+     * Registra uma movimentação de estoque (entrada/saída/ajuste/perda/consumo/devolução).
      */
-    public function movimentar(Request $request, Produto $produto)
+    public function movimentar(MovimentarEstoqueRequest $request, Produto $produto)
     {
         $this->authorize('update', $produto);
 
-        $request->validate([
-            'tipo'       => 'required|in:entrada,saida,ajuste',
-            'quantidade' => 'required|numeric|min:0.001|max:999999',
-            'motivo'     => 'nullable|string|max:255',
-        ]);
+        $data = $request->validated();
 
         $this->estoque->movimentar(
             $produto,
-            $request->tipo,
-            (float) $request->quantidade,
+            $data['tipo'],
+            (float) $data['quantidade'],
             auth()->id(),
-            $request->motivo,
+            $data['motivo'] ?? null,
         );
 
         return back()->with('success', 'Estoque atualizado!');
+    }
+
+    /** @return \Illuminate\Support\Collection<int, Fornecedor> */
+    private function fornecedoresAtivos()
+    {
+        return Fornecedor::where('salao_id', $this->salaoId())
+            ->where('ativo', true)
+            ->orderBy('nome')
+            ->get(['id', 'nome']);
     }
 }

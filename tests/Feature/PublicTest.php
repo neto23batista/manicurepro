@@ -60,8 +60,10 @@ test('página de agendamento redireciona quando desabilitada', function () {
 });
 
 test('endpoint de slots requer parâmetros', function () {
-    $response = $this->get('/api/slots');
-    $response->assertStatus(302); // redirect por validação
+    $response = $this->getJson('/api/slots');
+    $response->assertStatus(422)
+        ->assertJsonPath('code', 'validation_error')
+        ->assertJsonStructure(['message', 'code', 'errors']);
 });
 
 test('página de login é acessível para visitantes', function () {

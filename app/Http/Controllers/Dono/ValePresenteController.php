@@ -18,13 +18,10 @@ class ValePresenteController extends Controller
         return (int) (auth()->user()->salao_id ?? Salao::principalId());
     }
 
-    private function autoriza(ValePresente $vale): void
-    {
-        abort_unless($vale->salao_id === $this->salaoId(), 403);
-    }
-
     public function index(Request $request)
     {
+        $this->authorize('viewAny', ValePresente::class);
+
         $salaoId = $this->salaoId();
 
         $vales = ValePresente::where('salao_id', $salaoId)
@@ -65,6 +62,8 @@ class ValePresenteController extends Controller
 
     public function store(\App\Http\Requests\StoreValePresenteRequest $request)
     {
+        $this->authorize('create', ValePresente::class);
+
         $vale = $this->vales->criar($this->salaoId(), $request->validated());
 
         return redirect()->route('dono.vales.show', $vale)
@@ -73,13 +72,14 @@ class ValePresenteController extends Controller
 
     public function show(ValePresente $vale)
     {
-        $this->autoriza($vale);
+        $this->authorize('view', $vale);
+
         return view('dono.vales.show', compact('vale'));
     }
 
     public function cancelar(ValePresente $vale)
     {
-        $this->autoriza($vale);
+        $this->authorize('delete', $vale);
         $vale->update(['status' => ValePresente::STATUS_CANCELADO]);
 
         return redirect()->route('dono.vales.index')

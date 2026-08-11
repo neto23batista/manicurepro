@@ -39,6 +39,9 @@ class FidelidadeController extends Controller
         $progressoPct = $pontosPorBloco > 0
             ? min(100, (int) round(($pontos / $pontosPorBloco) * 100))
             : 0;
+        $nivel = $cliente ? $this->fidelidade->nivelPara($cliente) : [
+            'chave' => 'bronze', 'nome' => 'Bronze', 'pontos_min' => 0, 'multiplicador' => 1.0,
+        ];
 
         return view('cliente.fidelidade.index', compact(
             'cliente',
@@ -52,6 +55,7 @@ class FidelidadeController extends Controller
             'progressoPct',
             'codigoIndicacao',
             'indicacaoAtiva',
+            'nivel',
         ));
     }
 

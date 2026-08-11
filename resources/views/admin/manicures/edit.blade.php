@@ -51,8 +51,9 @@
                             <input type="password" name="password" class="form-control" placeholder="Mínimo 8 caracteres">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Comissão (%)</label>
+                            <label class="form-label fw-semibold">Comissão padrão (%)</label>
                             <input type="number" name="comissao" class="form-control" value="{{ old('comissao', $manicure->comissao) }}" min="0" max="100" step="0.5">
+                            <small class="text-muted">Usada quando o serviço não define % nem valor fixo próprio.</small>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
                             <div class="form-check">

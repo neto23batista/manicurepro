@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AgendamentoController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FidelidadeController;
 use App\Http\Controllers\Api\SalaoController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,8 +27,9 @@ Route::prefix('v1')->group(function () {
     // Autenticadas (120 req/min por usuário)
     // ========================
     Route::middleware(['auth:sanctum', 'user.active', 'throttle:120,1'])->group(function () {
-        Route::get('/me',      [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me',            [AuthController::class, 'me']);
+        Route::get('/me/fidelidade', [FidelidadeController::class, 'me']);
+        Route::post('/logout',       [AuthController::class, 'logout']);
 
         Route::prefix('agendamentos')->group(function () {
             Route::get('/',                        [AgendamentoController::class, 'index']);

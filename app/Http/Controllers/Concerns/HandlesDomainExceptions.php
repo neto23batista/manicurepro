@@ -61,6 +61,6 @@ trait HandlesDomainExceptions
     ): JsonResponse {
         $this->reportUnlessFramework($e);
 
-        return response()->json(['message' => $message], $status);
+        return \App\Support\ApiError::make($message, $status, 'domain_error');
     }
 }

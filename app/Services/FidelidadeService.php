@@ -20,6 +20,7 @@ class FidelidadeService
     /**
      * Credita pontos ao cliente conforme configuração do salão.
      * Atualiza contadores do cliente (visitas/gasto) também.
+     * Respeita anti-stacking de cupom promocional e multiplicador do nível.
      */
     public function creditarPorAtendimento(Agendamento $agendamento, float $valorPago): void
     {
@@ -32,8 +33,19 @@ class FidelidadeService
         $cliente->increment('total_gasto', $valorPago);
 
         $config = $agendamento->salao->configuracao;
-        if ($config?->fidelidade_ativo) {
-            $pontos = (int) floor($valorPago * $config->pontos_por_real);
+        $cupom = $agendamento->cupom_id
+            ? Cupom::find($agendamento->cupom_id)
+            : null;
+
+        $creditarPontos = $config?->fidelidade_ativo
+            && ! ($cupom?->bloqueiaCreditoFidelidade() ?? false);
+
+        if ($creditarPontos) {
+            $pontosBase = (int) floor($valorPago * $config->pontos_por_real);
+            $nivel = $this->nivelPara($cliente);
+            $mult = (float) ($nivel['multiplicador'] ?? 1.0);
+            $pontos = (int) floor($pontosBase * max(1.0, $mult));
+
             if ($pontos > 0) {
                 FidelidadePonto::create([
                     'cliente_id'     => $cliente->id,
@@ -42,6 +54,7 @@ class FidelidadeService
                     'pontos'         => $pontos,
                     'tipo'           => 'ganho',
                     'descricao'      => "Atendimento #{$agendamento->id}",
+                    'expires_at'     => $this->calcularExpiracao(),
                 ]);
 
                 $cliente->increment('pontos_fidelidade', $pontos);
@@ -49,6 +62,115 @@ class FidelidadeService
         }
 
         $this->processarRecompensaIndicacao($cliente->fresh(), $agendamento);
+    }
+
+    /**
+     * Nível atual com base no total de pontos já ganhos (tipo=ganho).
+     *
+     * @return array{chave: string, nome: string, pontos_min: int, multiplicador: float}
+     */
+    public function nivelPara(Cliente $cliente): array
+    {
+        $niveis = collect(config('manicure.fidelidade.niveis', []))
+            ->sortByDesc(fn ($n) => (int) ($n['pontos_min'] ?? 0))
+            ->values();
+
+        $ganhos = (int) FidelidadePonto::query()
+            ->where('cliente_id', $cliente->id)
+            ->where('tipo', 'ganho')
+            ->sum('pontos');
+
+        foreach ($niveis as $nivel) {
+            if ($ganhos >= (int) ($nivel['pontos_min'] ?? 0)) {
+                return [
+                    'chave'         => (string) ($nivel['chave'] ?? 'bronze'),
+                    'nome'          => (string) ($nivel['nome'] ?? 'Bronze'),
+                    'pontos_min'    => (int) ($nivel['pontos_min'] ?? 0),
+                    'multiplicador' => (float) ($nivel['multiplicador'] ?? 1.0),
+                ];
+            }
+        }
+
+        return [
+            'chave'         => 'bronze',
+            'nome'          => 'Bronze',
+            'pontos_min'    => 0,
+            'multiplicador' => 1.0,
+        ];
+    }
+
+    public function calcularExpiracao(): ?\Carbon\Carbon
+    {
+        $dias = config('manicure.fidelidade.expiracao_dias');
+        if ($dias === null || (int) $dias <= 0) {
+            return null;
+        }
+
+        return now()->addDays((int) $dias);
+    }
+
+    /**
+     * Expira pontos vencidos (ganhos com expires_at no passado ainda não debitados).
+     * Retorna quantidade de registros processados.
+     */
+    public function expirarPontosVencidos(): int
+    {
+        $vencidos = FidelidadePonto::query()
+            ->where('tipo', 'ganho')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->where('pontos', '>', 0)
+            ->orderBy('id')
+            ->get();
+
+        $processados = 0;
+
+        foreach ($vencidos as $ganho) {
+            DB::transaction(function () use ($ganho, &$processados) {
+                $travado = FidelidadePonto::whereKey($ganho->id)->lockForUpdate()->first();
+                if (! $travado || $travado->tipo !== 'ganho' || $travado->pontos <= 0) {
+                    return;
+                }
+                if (! $travado->expires_at || $travado->expires_at->isFuture()) {
+                    return;
+                }
+
+                // Já expirado? (registro espelho)
+                $jaExpirado = FidelidadePonto::query()
+                    ->where('cliente_id', $travado->cliente_id)
+                    ->where('tipo', 'expirado')
+                    ->where('descricao', 'like', "Expiração #{$travado->id}%")
+                    ->exists();
+
+                if ($jaExpirado) {
+                    return;
+                }
+
+                $cliente = Cliente::whereKey($travado->cliente_id)->lockForUpdate()->first();
+                if (! $cliente) {
+                    return;
+                }
+
+                $debitar = min((int) $travado->pontos, (int) $cliente->pontos_fidelidade);
+
+                FidelidadePonto::create([
+                    'cliente_id'     => $cliente->id,
+                    'salao_id'       => $travado->salao_id,
+                    'agendamento_id' => $travado->agendamento_id,
+                    'pontos'         => -$debitar,
+                    'tipo'           => 'expirado',
+                    'descricao'      => "Expiração #{$travado->id}",
+                ]);
+
+                if ($debitar > 0) {
+                    $cliente->decrement('pontos_fidelidade', $debitar);
+                }
+
+                $processados++;
+            });
+        }
+
+        return $processados;
     }
 
     /**
@@ -110,6 +232,7 @@ class FidelidadeService
             'pontos'         => $pontos,
             'tipo'           => 'ganho',
             'descricao'      => "{$descricaoBase} — {$indicado->nome}",
+            'expires_at'     => $this->calcularExpiracao(),
         ]);
 
         $indicador->increment('pontos_fidelidade', $pontos);
@@ -133,6 +256,8 @@ class FidelidadeService
             'uso_atual'  => 0,
             'validade'   => now()->addDays($validadeDias),
             'ativo'      => true,
+            'origem'     => 'indicacao',
+            'cliente_id' => $indicador->id,
         ]);
 
         FidelidadePonto::create([
@@ -159,7 +284,7 @@ class FidelidadeService
     {
         $config = $cliente->salao?->configuracao;
 
-        return (float) (($config !== null ? $config->valor_desconto : null)
+        return (float) (($config !== null ? $config->valor_desconto_pontos : null)
             ?? config('manicure.fidelidade.valor_desconto', 10));
     }
 
@@ -193,6 +318,8 @@ class FidelidadeService
                 'uso_atual'  => 0,
                 'validade'   => now()->addDays(30),
                 'ativo'      => true,
+                'origem'     => 'fidelidade',
+                'cliente_id' => $cliente->id,
             ]);
 
             FidelidadePonto::create([

@@ -15,17 +15,20 @@ class Cliente extends Model
 
     protected $fillable = [
         'user_id', 'salao_id', 'nome', 'email', 'telefone', 'cpf',
-        'data_nascimento', 'aniversario_enviado_em', 'endereco', 'observacoes', 'alergias',
+        'data_nascimento', 'aniversario_enviado_em', 'reativacao_enviada_em', 'retorno_sugerido_em',
+        'endereco', 'observacoes', 'alergias',
         'notas_unhas', 'cores_preferidas', 'contraindicacoes', 'ultima_formula',
         'total_visitas', 'total_gasto', 'pontos_fidelidade', 'total_faltas',
         'codigo_indicacao', 'indicado_por_cliente_id', 'ativo',
     ];
 
     protected $casts = [
-        'data_nascimento'        => 'date',
-        'aniversario_enviado_em' => 'date',
-        'ativo'                  => 'boolean',
-        'total_gasto'            => 'decimal:2',
+        'data_nascimento'         => 'date',
+        'aniversario_enviado_em'  => 'date',
+        'reativacao_enviada_em'   => 'datetime',
+        'retorno_sugerido_em'     => 'datetime',
+        'ativo'                   => 'boolean',
+        'total_gasto'             => 'decimal:2',
     ];
 
     protected static function booted(): void

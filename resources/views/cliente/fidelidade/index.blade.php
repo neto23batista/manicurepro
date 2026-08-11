@@ -10,7 +10,13 @@
             <div class="card-body p-4 text-center">
                 <i class="fas fa-gem fs-1 mb-2"></i>
                 <div class="display-5 fw-bold">{{ $pontos }}</div>
-                <div class="opacity-75 mb-3">pontos disponíveis</div>
+                <div class="opacity-75 mb-1">pontos disponíveis</div>
+                <div class="mb-3">
+                    <span class="badge bg-white text-pink">Nível {{ $nivel['nome'] ?? 'Bronze' }}</span>
+                    @if(($nivel['multiplicador'] ?? 1) > 1)
+                        <span class="badge bg-white bg-opacity-25">×{{ number_format($nivel['multiplicador'], 2) }} pts</span>
+                    @endif
+                </div>
 
                 <div class="text-start bg-white bg-opacity-10 rounded-3 p-3">
                     <div class="d-flex justify-content-between align-items-center small mb-2">

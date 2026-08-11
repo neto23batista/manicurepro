@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\AgendamentoCanceladoEvent;
 use App\Events\AgendamentoCriado;
+use App\Events\AgendamentoFinalizado;
 use App\Events\AgendamentoReagendado;
 use App\Events\EstoqueZerado;
 use App\Listeners\CancelarPagamentoMercadoPago;
@@ -13,6 +14,7 @@ use App\Listeners\NotificarAgendamentoCriado;
 use App\Listeners\NotificarAgendamentoReagendado;
 use App\Listeners\NotificarEstoqueZerado;
 use App\Listeners\NotificarListaEspera;
+use App\Listeners\PedirAvaliacaoPosAtendimento;
 use App\Models\User;
 use App\Observers\UserObserver;
 use App\View\Composers\NotificacoesComposer;
@@ -53,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Event listeners para agendamentos
         Event::listen(AgendamentoCriado::class, NotificarAgendamentoCriado::class);
+        Event::listen(AgendamentoFinalizado::class, PedirAvaliacaoPosAtendimento::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarAgendamentoCancelado::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarListaEspera::class);
         Event::listen(AgendamentoCanceladoEvent::class, InvalidarCacheSlotsAgendamento::class);

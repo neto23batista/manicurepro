@@ -38,6 +38,9 @@
                 <a href="{{ route('admin.relatorios.pdf', request()->all()) }}" class="btn btn-outline-danger" title="Exportar PDF">
                     <i class="fas fa-file-pdf"></i>
                 </a>
+                <a href="{{ route('admin.relatorios.csv', request()->all()) }}" class="btn btn-outline-success" title="Exportar CSV">
+                    <i class="fas fa-file-csv"></i>
+                </a>
             </div>
         </form>
     </div>

@@ -12,7 +12,29 @@ test('layout de auth aplica cor_primaria nas CSS variables', function () {
         ->assertOk()
         ->assertSee('--cor-primaria: #112233', false)
         ->assertSee('--pink-500: #112233', false)
-        ->assertSee('name="theme-color" content="#112233"', false);
+        ->assertSee('name="theme-color" content="#112233"', false)
+        ->assertSee('skip-link', false)
+        ->assertSee('id="mainContent"', false);
+});
+
+test('página pública aplica cor_primaria do salão (DB) sobre o config', function () {
+    config(['manicure.tema.cor_primaria' => '#abcdef']);
+
+    $salao = Salao::factory()->create(['ativo' => true, 'nome' => 'Salão Tema']);
+    \App\Models\ConfiguracaoSalao::create([
+        'salao_id' => $salao->id,
+        'cor_primaria' => '#ff5500',
+        'intervalo_agendamento' => 30,
+        'antecedencia_minima' => 1,
+        'antecedencia_maxima' => 30,
+        'permitir_agendamento_online' => true,
+    ]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('--cor-primaria: #ff5500', false)
+        ->assertSee('--pink: #ff5500', false)
+        ->assertDontSee('--cor-primaria: #abcdef', false);
 });
 
 test('página pública aplica cor_primaria nas CSS variables', function () {

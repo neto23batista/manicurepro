@@ -81,6 +81,15 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasRole(UserRole::Atendente);
     }
 
+    /**
+     * Grant extra (JSON em configuracoes_salao) além do default da role.
+     * Sem grants configurados, retorna false para roles que não são dono/admin.
+     */
+    public function hasExtraPermission(string $permission): bool
+    {
+        return app(\App\Services\PermissionService::class)->hasGrant($this, $permission);
+    }
+
     /** @return BelongsTo<Salao, $this> */
     public function salao(): BelongsTo
     {

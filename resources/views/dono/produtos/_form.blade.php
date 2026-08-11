@@ -16,6 +16,18 @@
         <input type="text" name="codigo" class="form-control" value="{{ old('codigo', $p->codigo ?? '') }}" maxlength="50">
     </div>
     <div class="col-md-4">
+        <label class="form-label fw-semibold">Fornecedor</label>
+        <select name="fornecedor_id" class="form-select @error('fornecedor_id') is-invalid @enderror">
+            <option value="">— Sem fornecedor —</option>
+            @foreach($fornecedores ?? [] as $forn)
+                <option value="{{ $forn->id }}" @selected((string) old('fornecedor_id', $p->fornecedor_id ?? '') === (string) $forn->id)>
+                    {{ $forn->nome }}
+                </option>
+            @endforeach
+        </select>
+        @error('fornecedor_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+    <div class="col-md-4">
         <label class="form-label fw-semibold">Unidade</label>
         <input type="text" name="unidade" class="form-control" value="{{ old('unidade', $p->unidade ?? 'un') }}"
                maxlength="20" placeholder="un, ml, g…">

@@ -13,8 +13,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="auth-body">
+    <x-skip-link />
     <div class="auth-container">
-        <div class="auth-card">
+        <div class="auth-card" id="mainContent" tabindex="-1">
             <div class="auth-logo">
                 <div class="auth-logo-icon">F</div>
                 <div class="auth-logo-text">{{ config('app.name') }}</div>

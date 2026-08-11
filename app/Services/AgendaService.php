@@ -12,6 +12,8 @@ use App\Models\Agendamento;
 use App\Models\Comanda;
 use App\Models\ConfiguracaoSalao;
 use App\Models\Cupom;
+use App\Models\DisponibilidadeManicure;
+use App\Models\Feriado;
 use App\Models\Manicure;
 use App\Models\Servico;
 use App\Models\SlotHold;
@@ -73,6 +75,38 @@ class AgendaService
             ->each(fn (int $id) => $this->invalidarCacheSlots($id, $data));
     }
 
+    /**
+     * Invalida ocorrências próximas do feriado recorrente (ano atual + próximo).
+     */
+    public function invalidarCacheSlotsFeriado(Feriado $feriado): void
+    {
+        $anoAtual = (int) now()->year;
+        foreach ([$anoAtual, $anoAtual + 1] as $ano) {
+            if (! checkdate($feriado->mes, $feriado->dia, $ano)) {
+                continue;
+            }
+            $data = Carbon::create($ano, $feriado->mes, $feriado->dia)->startOfDay();
+            $this->invalidarCacheSlotsSalao((int) $feriado->salao_id, $data);
+        }
+    }
+
+    /**
+     * Invalida slots dos próximos ~60 dias que caem no dia_semana da disponibilidade.
+     */
+    public function invalidarCacheSlotsDisponibilidade(DisponibilidadeManicure $disp): void
+    {
+        $manicureId = (int) $disp->manicure_id;
+        $diaSemana = (int) $disp->dia_semana;
+        $cursor = Carbon::today();
+
+        for ($i = 0; $i < 60; $i++) {
+            $dia = $cursor->copy()->addDays($i);
+            if ((int) $dia->format('w') === $diaSemana) {
+                $this->invalidarCacheSlots($manicureId, $dia);
+            }
+        }
+    }
+
     private function slotsCacheKey(int $manicureId, string $dataStr, int $duracao, ?int $ignoreId): string
     {
         $ver = (int) Cache::get($this->slotsCacheVersionKey($manicureId, $dataStr), 0);
@@ -97,7 +131,7 @@ class AgendaService
         $diaSemana = (int) $data->format('w');
 
         // Horários/disponibilidades: eager-load (estáveis no request).
-        // Folgas do dia: query pontual (evita relação stale após create/delete no mesmo request).
+        // Folgas/feriados do dia: query pontual (evita relação stale após create/delete no mesmo request).
         $manicure->loadMissing([
             'salao.horarios',
             'disponibilidades',
@@ -105,6 +139,11 @@ class AgendaService
 
         $salao = $manicure->salao;
         if (! $salao) {
+            return $slots;
+        }
+
+        $feriado = $this->feriadoDoDia($salao->id, $data);
+        if ($feriado && $feriado->dia_todo) {
             return $slots;
         }
 
@@ -166,6 +205,11 @@ class AgendaService
                 'fim'    => Carbon::parse($item->data_hora_fim),
             ]);
 
+        // Bloqueios parciais (folga/feriado) e pausa/almoço entram como ocupados.
+        foreach ($this->bloqueiosParciaisDoDia($dataStr, $feriado, $folgaSalao, $folgaManicure, $dispManicure) as $bloqueio) {
+            $ocupados->push($bloqueio);
+        }
+
         $cursor = $inicio;
         while ($cursor + ($duracaoTotal * 60) <= $fim) {
             $slotInicio = Carbon::createFromTimestamp($cursor, config('app.timezone'));
@@ -185,6 +229,47 @@ class AgendaService
         return $slots;
     }
 
+    /**
+     * @return list<array{inicio: Carbon, fim: Carbon}>
+     */
+    private function bloqueiosParciaisDoDia(
+        string $dataStr,
+        ?Feriado $feriado,
+        mixed $folgaSalao,
+        mixed $folgaManicure,
+        DisponibilidadeManicure $dispManicure,
+    ): array {
+        $bloqueios = [];
+
+        foreach ([$feriado, $folgaSalao, $folgaManicure] as $bloco) {
+            if (! $bloco || $bloco->dia_todo || ! $bloco->hora_inicio || ! $bloco->hora_fim) {
+                continue;
+            }
+            $bloqueios[] = [
+                'inicio' => Carbon::parse($dataStr.' '.$bloco->hora_inicio),
+                'fim'    => Carbon::parse($dataStr.' '.$bloco->hora_fim),
+            ];
+        }
+
+        if ($dispManicure->temPausa()) {
+            $bloqueios[] = [
+                'inicio' => Carbon::parse($dataStr.' '.$dispManicure->pausa_inicio),
+                'fim'    => Carbon::parse($dataStr.' '.$dispManicure->pausa_fim),
+            ];
+        }
+
+        return $bloqueios;
+    }
+
+    private function feriadoDoDia(int $salaoId, Carbon $data): ?Feriado
+    {
+        return Feriado::where('salao_id', $salaoId)
+            ->where('ativo', true)
+            ->where('mes', (int) $data->month)
+            ->where('dia', (int) $data->day)
+            ->first();
+    }
+
     private function temConflito(Collection $ocupados, Carbon $inicio, Carbon $fim): bool
     {
         foreach ($ocupados as $ag) {
@@ -194,6 +279,70 @@ class AgendaService
         }
 
         return false;
+    }
+
+    /**
+     * Soft rules (horário, folga, feriado, pausa). Encaixe pula esta checagem.
+     */
+    public function horarioDentroDisponibilidade(Manicure $manicure, Carbon $inicio, Carbon $fim): bool
+    {
+        $dataStr = $inicio->toDateString();
+        $diaSemana = (int) $inicio->format('w');
+
+        $manicure->loadMissing(['salao.horarios', 'disponibilidades']);
+        $salao = $manicure->salao;
+        if (! $salao) {
+            return false;
+        }
+
+        $feriado = $this->feriadoDoDia($salao->id, $inicio);
+        if ($feriado && $feriado->dia_todo) {
+            return false;
+        }
+
+        $folgaSalao = $salao->folgas()->whereDate('data', $dataStr)->first();
+        if ($folgaSalao && $folgaSalao->dia_todo) {
+            return false;
+        }
+
+        $folgaManicure = $manicure->folgas()->whereDate('data', $dataStr)->first();
+        if ($folgaManicure && $folgaManicure->dia_todo) {
+            return false;
+        }
+
+        $horarioSalao = $salao->horarios->first(
+            fn ($h) => (int) $h->dia_semana === $diaSemana && $h->ativo,
+        );
+        $dispManicure = $manicure->disponibilidades->first(
+            fn ($d) => (int) $d->dia_semana === $diaSemana && $d->ativo,
+        );
+
+        if (! $horarioSalao || ! $dispManicure) {
+            return false;
+        }
+
+        $janelaInicio = max(
+            strtotime($dataStr.' '.$horarioSalao->hora_abertura),
+            strtotime($dataStr.' '.$dispManicure->hora_inicio),
+        );
+        $janelaFim = min(
+            strtotime($dataStr.' '.$horarioSalao->hora_fechamento),
+            strtotime($dataStr.' '.$dispManicure->hora_fim),
+        );
+
+        if ($inicio->timestamp < $janelaInicio || $fim->timestamp > $janelaFim) {
+            return false;
+        }
+
+        $bloqueios = collect($this->bloqueiosParciaisDoDia(
+            $dataStr,
+            $feriado,
+            $folgaSalao,
+            $folgaManicure,
+            $dispManicure,
+        ));
+
+        return ! $this->temConflito($bloqueios, $inicio, $fim);
     }
 
     /**
@@ -208,8 +357,46 @@ class AgendaService
 
         return DB::transaction(function () use ($data) {
             $servicos = Servico::whereIn('id', $data->servicoIds)->get();
-            $duracaoTotal = (int) $servicos->sum('duracao');
-            $valorTotal = (float) $servicos->sum('preco');
+            if ($servicos->count() !== count(array_unique($data->servicoIds))) {
+                throw ValidationException::withMessages([
+                    'error' => 'Um ou mais serviços são inválidos.',
+                ]);
+            }
+
+            $linhas = [];
+            $duracaoTotal = 0;
+            $valorTotal = 0.0;
+
+            foreach ($servicos as $servico) {
+                $variacaoId = $data->servicoVariacoes[$servico->id] ?? null;
+                $variacao = null;
+
+                if ($variacaoId) {
+                    $variacao = \App\Models\ServicoVariacao::query()
+                        ->whereKey($variacaoId)
+                        ->where('servico_id', $servico->id)
+                        ->where('ativo', true)
+                        ->first();
+
+                    if (! $variacao) {
+                        throw ValidationException::withMessages([
+                            'error' => "Variação inválida para o serviço {$servico->nome}.",
+                        ]);
+                    }
+                }
+
+                $preco = (float) ($variacao?->preco ?? $servico->preco);
+                $duracao = (int) ($variacao?->duracao ?? $servico->duracao);
+                $duracaoTotal += $duracao;
+                $valorTotal += $preco;
+
+                $linhas[] = [
+                    'servico'     => $servico,
+                    'variacao_id' => $variacao?->id,
+                    'preco'       => $preco,
+                    'duracao'     => $duracao,
+                ];
+            }
 
             $manicure = $this->travarManicure($data->manicureId);
             $dataHoraInicio = Carbon::parse($data->dataHoraInicio);
@@ -218,6 +405,13 @@ class AgendaService
             if ($this->temConflitoNoBanco($manicure->id, $dataHoraInicio, $dataHoraFim)) {
                 throw ValidationException::withMessages([
                     'error' => 'Horário indisponível. Por favor, escolha outro horário.',
+                ]);
+            }
+
+            // Encaixe (só staff): permite fora de disponibilidade, mas nunca overlap.
+            if (! $data->encaixe && ! $this->horarioDentroDisponibilidade($manicure, $dataHoraInicio, $dataHoraFim)) {
+                throw ValidationException::withMessages([
+                    'error' => 'Horário fora da disponibilidade. Por favor, escolha outro horário.',
                 ]);
             }
 
@@ -230,8 +424,13 @@ class AgendaService
                         'error' => 'Cupom não encontrado.',
                     ]);
                 }
-                // Valida validade / uso máximo / salão e consome 1 uso com lock.
-                $desconto = $cupom->aplicarPara($data->salaoId, $valorTotal);
+                // Valida validade / uso máximo / salão / regras avançadas e consome 1 uso com lock.
+                $desconto = $cupom->aplicarPara(
+                    $data->salaoId,
+                    $valorTotal,
+                    $data->clienteId,
+                    $data->servicoIds,
+                );
                 $cupomIdAplicado = $cupom->id;
             }
 
@@ -245,6 +444,7 @@ class AgendaService
                 'status'           => $data->status->value,
                 'observacoes'      => $data->observacoes,
                 'origem'           => $data->origem,
+                'encaixe'          => $data->encaixe,
                 'valor_total'      => $valorTotal,
                 'valor_desconto'   => $desconto,
                 'cupom_id'         => $cupomIdAplicado,
@@ -252,10 +452,11 @@ class AgendaService
                 'telefone_cliente' => $data->telefoneCliente,
             ]);
 
-            foreach ($servicos as $servico) {
-                $agendamento->servicos()->attach($servico->id, [
-                    'preco'   => $servico->preco,
-                    'duracao' => $servico->duracao,
+            foreach ($linhas as $linha) {
+                $agendamento->servicos()->attach($linha['servico']->id, [
+                    'preco'                => $linha['preco'],
+                    'duracao'              => $linha['duracao'],
+                    'servico_variacao_id'  => $linha['variacao_id'],
                 ]);
             }
 
@@ -365,7 +566,9 @@ class AgendaService
             try {
                 $criados[] = $this->criarAgendamento($ocorrencia);
             } catch (ValidationException $e) {
-                if (! str_contains($e->getMessage(), 'Horário indisponível')) {
+                $msgs = collect($e->errors())->flatten()->implode(' ');
+                if (! str_contains($msgs, 'Horário indisponível')
+                    && ! str_contains($msgs, 'fora da disponibilidade')) {
                     throw $e;
                 }
                 $pulados[] = $inicio->format('d/m/Y H:i');
@@ -435,6 +638,16 @@ class AgendaService
                 ]);
             }
 
+            // Encaixe original pode remarcar fora da grade; demais respeitam disponibilidade.
+            if (! $agendamento->encaixe) {
+                $manicure = Manicure::findOrFail($agendamento->manicure_id);
+                if (! $this->horarioDentroDisponibilidade($manicure, $novoInicio, $novoFim)) {
+                    throw ValidationException::withMessages([
+                        'error' => 'Horário fora da disponibilidade. Por favor, escolha outro horário.',
+                    ]);
+                }
+            }
+
             $dataAnterior = $agendamento->data_hora_inicio->copy();
 
             $agendamento->update([
@@ -461,7 +674,7 @@ class AgendaService
         $antecedenciaMaxima = ($config !== null ? $config->antecedencia_maxima : null)
             ?? config('manicure.agenda.antecedencia_max', 30);
 
-        $manicure->loadMissing(['disponibilidades', 'folgas', 'salao.folgas']);
+        $manicure->loadMissing(['disponibilidades', 'folgas', 'salao.folgas', 'salao.feriados']);
 
         $diasAtivos = $manicure->disponibilidades
             ->where('ativo', true)
@@ -470,13 +683,18 @@ class AgendaService
             ->all();
 
         $diasFolga = $manicure->folgas
-            ->filter(fn ($f) => $f->data->toDateString() >= $hoje->toDateString())
+            ->filter(fn ($f) => $f->dia_todo && $f->data->toDateString() >= $hoje->toDateString())
             ->map(fn ($f) => $f->data->toDateString())
             ->all();
 
         $diasFolgaSalao = $manicure->salao->folgas
-            ->filter(fn ($f) => $f->data->toDateString() >= $hoje->toDateString())
+            ->filter(fn ($f) => $f->dia_todo && $f->data->toDateString() >= $hoje->toDateString())
             ->map(fn ($f) => $f->data->toDateString())
+            ->all();
+
+        $feriadosDiaTodo = $manicure->salao->feriados
+            ->filter(fn ($f) => $f->ativo && $f->dia_todo)
+            ->map(fn ($f) => sprintf('%02d-%02d', $f->mes, $f->dia))
             ->all();
 
         for ($i = $antecedenciaMinima; $i <= $antecedenciaMaxima; $i++) {
@@ -490,6 +708,9 @@ class AgendaService
                 continue;
             }
             if (in_array($data->toDateString(), $diasFolgaSalao, true)) {
+                continue;
+            }
+            if (in_array(sprintf('%02d-%02d', (int) $data->month, (int) $data->day), $feriadosDiaTodo, true)) {
                 continue;
             }
 

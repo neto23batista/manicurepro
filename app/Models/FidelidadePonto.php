@@ -11,7 +11,11 @@ class FidelidadePonto extends Model
 
     protected $fillable = [
         'cliente_id', 'salao_id', 'agendamento_id',
-        'pontos', 'tipo', 'descricao',
+        'pontos', 'tipo', 'descricao', 'expires_at',
+    ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
     ];
 
     /** @return BelongsTo<Cliente, $this> */

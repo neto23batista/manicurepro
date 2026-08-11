@@ -25,7 +25,8 @@
 
     {{-- Vite bundle (Bootstrap, Font Awesome, ApexCharts e app.css/js) --}}
     <meta name="app-env" content="{{ app()->environment() }}">
-    @if (filled(config('manicure.webpush.vapid.public_key')))
+    {{-- Web Push: meta só se envio real estiver disponível (não stub) --}}
+    @if (app(\App\Services\WebPushService::class)->envioDisponivel())
         <meta name="vapid-public-key" content="{{ config('manicure.webpush.vapid.public_key') }}">
         <meta name="push-subscribe-url" content="{{ route('push-subscriptions.store') }}">
     @endif

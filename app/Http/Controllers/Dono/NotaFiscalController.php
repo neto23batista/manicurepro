@@ -26,14 +26,10 @@ class NotaFiscalController extends Controller
         abort_unless(config('manicure.fiscal.enabled'), 404);
     }
 
-    private function autoriza(NotaFiscal $nota): void
-    {
-        abort_unless($nota->salao_id === $this->salaoId(), 403);
-    }
-
     public function index()
     {
         $this->exigeModuloAtivo();
+        $this->authorize('viewAny', NotaFiscal::class);
 
         $notas = $this->fiscais->list($this->salaoId());
 
@@ -43,6 +39,7 @@ class NotaFiscalController extends Controller
     public function store(Request $request)
     {
         $this->exigeModuloAtivo();
+        $this->authorize('create', NotaFiscal::class);
 
         $dados = $request->validate([
             'agendamento_id' => ['required', 'integer', 'exists:agendamentos,id'],
@@ -62,7 +59,7 @@ class NotaFiscalController extends Controller
     public function show(NotaFiscal $notaFiscal)
     {
         $this->exigeModuloAtivo();
-        $this->autoriza($notaFiscal);
+        $this->authorize('view', $notaFiscal);
 
         $notaFiscal->load(['agendamento.cliente', 'comanda']);
 

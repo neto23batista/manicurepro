@@ -57,8 +57,9 @@
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Comissão (%)</label>
+                            <label class="form-label fw-semibold">Comissão padrão (%)</label>
                             <input type="number" name="comissao" class="form-control" value="{{ old('comissao', 40) }}" min="0" max="100" step="0.5">
+                            <small class="text-muted">Usada quando o serviço não define % nem valor fixo próprio.</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Bio</label>

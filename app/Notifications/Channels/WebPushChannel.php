@@ -17,7 +17,7 @@ class WebPushChannel
 
     public function send(object $notifiable, Notification $notification): void
     {
-        if (! $this->webPush->configurado()) {
+        if (! $this->webPush->envioDisponivel()) {
             return;
         }
 

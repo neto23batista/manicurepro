@@ -24,3 +24,15 @@ Schedule::command('manicure:limpar-expirados')
 Schedule::command('manicure:enviar-aniversarios')
     ->dailyAt('09:00')
     ->withoutOverlapping();
+
+Schedule::command('manicure:expirar-pontos-fidelidade')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();
+
+Schedule::command('manicure:reativar-inativos')
+    ->weeklyOn(1, '10:00')
+    ->withoutOverlapping();
+
+Schedule::command('manicure:sugerir-retorno')
+    ->dailyAt('10:30')
+    ->withoutOverlapping();

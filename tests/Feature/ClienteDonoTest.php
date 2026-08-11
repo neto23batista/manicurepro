@@ -93,3 +93,67 @@ test('dono A não pode ver cliente do salão B', function () {
     $this->actingAs($this->dono)->get("/dono/clientes/{$cliOutro->id}")
         ->assertStatus(403);
 });
+
+test('dono filtra clientes por segmento VIP', function () {
+    Cliente::factory()->create([
+        'salao_id'      => $this->salao->id,
+        'nome'          => 'Vip Ada',
+        'total_gasto'   => 800,
+        'total_visitas' => 2,
+    ]);
+    Cliente::factory()->create([
+        'salao_id'      => $this->salao->id,
+        'nome'          => 'Comum Bea',
+        'total_gasto'   => 20,
+        'total_visitas' => 1,
+    ]);
+
+    $r = $this->actingAs($this->dono)->get('/dono/clientes?segmento=vip');
+    $r->assertOk();
+    expect($r->viewData('clientes')->total())->toBe(1);
+    expect($r->viewData('segmentoAtual'))->toBe('vip');
+});
+
+test('show do cliente inclui métricas CRM', function () {
+    $cli = Cliente::factory()->create([
+        'salao_id'      => $this->salao->id,
+        'total_gasto'   => 200,
+        'total_visitas' => 2,
+    ]);
+
+    $r = $this->actingAs($this->dono)->get("/dono/clientes/{$cli->id}");
+    $r->assertOk();
+    $metricas = $r->viewData('metricas');
+    expect($metricas)->toHaveKeys(['ticket_medio', 'ltv', 'ultima_visita', 'proxima_visita', 'segmentos']);
+});
+
+test('dono gera cupom de reativação para cliente inativo', function () {
+    $cli = Cliente::factory()->create([
+        'salao_id'      => $this->salao->id,
+        'total_visitas' => 0,
+        'created_at'    => now()->subDays(90),
+    ]);
+
+    $this->actingAs($this->dono)
+        ->from("/dono/clientes/{$cli->id}")
+        ->post(route('dono.clientes.reativar', $cli))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('cupons', [
+        'salao_id' => $this->salao->id,
+        'codigo'   => 'REATIVA-'.$cli->id.'-'.now()->format('Ym'),
+    ]);
+});
+
+test('dono não gera cupom de reativação para cliente recente', function () {
+    $cli = Cliente::factory()->create([
+        'salao_id'   => $this->salao->id,
+        'created_at' => now()->subDays(2),
+    ]);
+
+    $this->actingAs($this->dono)
+        ->from("/dono/clientes/{$cli->id}")
+        ->post(route('dono.clientes.reativar', $cli))
+        ->assertSessionHasErrors();
+});

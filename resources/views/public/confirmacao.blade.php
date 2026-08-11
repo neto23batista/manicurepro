@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmação · {{ $agendamento->salao->nome }}</title>
     <meta name="app-env" content="{{ app()->environment() }}">
-    <x-theme-vars />
+    <x-theme-vars :salao="$agendamento->salao" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="public-body">

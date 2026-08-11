@@ -15,7 +15,7 @@ class EnsureUserIsActive
         if ($user && ! $user->ativo) {
             $user->currentAccessToken()->delete();
 
-            return response()->json(['message' => 'Conta inativa.'], 401);
+            return \App\Support\ApiError::make('Conta inativa.', 401, 'inactive');
         }
 
         return $next($request);

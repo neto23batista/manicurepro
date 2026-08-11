@@ -18,6 +18,40 @@ return [
         'pontos_por_real'      => env('MANICURE_PONTOS_POR_REAL', 1),
         'pontos_para_desconto' => env('MANICURE_PONTOS_DESCONTO', 100),
         'valor_desconto'       => env('MANICURE_VALOR_DESCONTO', 10.00),
+        /*
+         * Níveis Bronze→VIP (pontos_min = total de pontos já ganhos, tipo=ganho).
+         * multiplicador aplica-se ao crédito de pontos no atendimento.
+         * Edite aqui ou via env FIDELIDADE_NIVEIS_JSON (array JSON).
+         */
+        'niveis' => json_decode((string) env('FIDELIDADE_NIVEIS_JSON', ''), true) ?: [
+            ['chave' => 'bronze', 'nome' => 'Bronze', 'pontos_min' => 0,   'multiplicador' => 1.0],
+            ['chave' => 'prata',  'nome' => 'Prata',  'pontos_min' => 100, 'multiplicador' => 1.1],
+            ['chave' => 'ouro',   'nome' => 'Ouro',   'pontos_min' => 300, 'multiplicador' => 1.25],
+            ['chave' => 'vip',    'nome' => 'VIP',    'pontos_min' => 600, 'multiplicador' => 1.5],
+        ],
+        // null/0 = pontos não expiram. Ex.: 365 = expiram 1 ano após o ganho.
+        'expiracao_dias' => env('FIDELIDADE_EXPIRACAO_DIAS') !== null && env('FIDELIDADE_EXPIRACAO_DIAS') !== ''
+            ? (int) env('FIDELIDADE_EXPIRACAO_DIAS')
+            : null,
+    ],
+
+    /*
+     * CRM — segmentação de clientes (não confundir com fidelidade/pontos).
+     * Usado em ClienteSegmentacao + filtros em dono.clientes.
+     */
+    'crm' => [
+        'novo_dias'            => (int) env('CRM_NOVO_DIAS', 30),
+        'recorrente_min_visitas' => (int) env('CRM_RECORRENTE_MIN_VISITAS', 3),
+        'inativo_dias'         => (int) env('CRM_INATIVO_DIAS', 60),
+        // Janela de “esfriando”: última visita entre risco_churn_dias e inativo_dias.
+        'risco_churn_dias'     => (int) env('CRM_RISCO_CHURN_DIAS', 40),
+        'vip_gasto_minimo'     => (float) env('CRM_VIP_GASTO_MINIMO', 500),
+        'vip_visitas_minimas'  => (int) env('CRM_VIP_VISITAS_MINIMAS', 8),
+        'reativacao'           => [
+            'cupom_tipo'          => env('CRM_REATIVACAO_CUPOM_TIPO', 'percentual'), // percentual | fixo
+            'cupom_valor'         => (float) env('CRM_REATIVACAO_CUPOM_VALOR', 15),
+            'cupom_validade_dias' => (int) env('CRM_REATIVACAO_CUPOM_VALIDADE', 30),
+        ],
     ],
 
     /*
@@ -45,6 +79,28 @@ return [
     'estoque' => [
         'minimo_padrao'    => env('ESTOQUE_MINIMO_PADRAO', 1),
         'notificar_zerado' => env('ESTOQUE_NOTIFICAR_ZERADO', true),
+        /** Dias sem movimentação para considerar produto “parado” no relatório. */
+        'dias_parado'      => env('ESTOQUE_DIAS_PARADO', 60),
+    ],
+
+    /*
+     * Marketing de retenção (comandos + listener pós-atendimento).
+     * Gate global: com enabled=false, reativar/sugerir-retorno/pedir avaliação
+     * não disparam. Cooldown evita spam; cadência controla sugestão de retorno.
+     */
+    'marketing' => [
+        'enabled' => env('MARKETING_ENABLED', true),
+        'reativar' => [
+            'cooldown_dias' => (int) env('MARKETING_REATIVAR_COOLDOWN', 30),
+            'com_cupom'     => env('MARKETING_REATIVAR_CUPOM', true),
+        ],
+        'retorno' => [
+            // Dias após a última visita concluída para sugerir retorno.
+            'cadencia_dias' => (int) env('MARKETING_RETORNO_CADENCIA', 28),
+            // Janela (dias) em torno da cadência para capturar o cliente.
+            'janela_dias'   => (int) env('MARKETING_RETORNO_JANELA', 3),
+            'cooldown_dias' => (int) env('MARKETING_RETORNO_COOLDOWN', 25),
+        ],
     ],
 
     /*
@@ -61,9 +117,9 @@ return [
     ],
 
     /*
-     * Pagamento online (sinal antecipado via Pix — Mercado Pago).
-     * Ative preenchendo MP_* e SINAL_HABILITADO no .env. Sem token a cobrança
-     * é ignorada e o agendamento segue o fluxo normal sem sinal.
+     * Pagamento online via Pix (Mercado Pago).
+     * Ative preenchendo MP_* e as flags SINAL_HABILITADO / PAGAMENTO_TOTAL_HABILITADO no .env.
+     * Sem token a cobrança é ignorada e o agendamento segue o fluxo normal.
      */
     'pagamento' => [
         'mercadopago' => [
@@ -75,6 +131,10 @@ return [
             'habilitado' => env('SINAL_HABILITADO', false),
             'tipo'       => env('SINAL_TIPO', 'percentual'), // percentual | fixo
             'valor'      => env('SINAL_VALOR', 30),           // 30% ou R$ 30,00
+        ],
+        'total' => [
+            // Cobra o líquido do agendamento (ou o restante se o sinal já foi pago).
+            'habilitado' => env('PAGAMENTO_TOTAL_HABILITADO', false),
         ],
     ],
 
@@ -146,11 +206,30 @@ return [
     ],
 
     /*
-     * Web Push (PWA). Opcional — sem VAPID_* o JS não tenta subscrever e
-     * WebPushService::sendToUser / WebPushChannel são no-op.
-     * Gere o par com openssl/web-push CLI (não obrigatório em produção).
+     * Permissões extras por role (JSON em configuracoes_salao.role_permissions).
+     * Sem Spatie: defaults das 5 roles NÃO mudam até haver grant explícito.
+     * grant = além do default; revoke = remove do grant (não altera Policies base).
+     */
+    'permissions' => [
+        'catalog' => [
+            'financeiro.view'       => 'Ver financeiro e comissões',
+            'financeiro.caixa'      => 'Operar caixa diário',
+            'financeiro.despesas'   => 'Gerenciar despesas',
+            'vales.manage'          => 'Gerenciar vale-presente',
+            'config.manage'         => 'Editar configurações do salão',
+            'auditoria.view'        => 'Ver logs de auditoria',
+            'notas_fiscais.manage'  => 'Notas fiscais (stub)',
+        ],
+    ],
+
+    /*
+     * Web Push (PWA). Sem minishlink/web-push o envio é stub (retorna 0).
+     * subscribe_ui=false esconde meta/pedido de permissão no browser —
+     * não coletar subscriptions sem send real. Ative só após instalar o
+     * pacote e implementar WebPushService::sendToUser de verdade.
      */
     'webpush' => [
+        'subscribe_ui' => (bool) env('WEBPUSH_SUBSCRIBE_UI', false),
         'vapid' => [
             'subject'     => env('VAPID_SUBJECT', 'mailto:noreply@manicurepro.com.br'),
             'public_key'  => env('VAPID_PUBLIC_KEY'),

@@ -11,6 +11,8 @@
     </div>
 @else
 
+@include('dono.dashboard._onboarding')
+
 {{-- Ações rápidas (mesmo conjunto do FAB + command palette) --}}
 <div class="quick-actions mb-4" role="navigation" aria-label="Ações rápidas">
     @foreach($quickActions as $action)
@@ -64,6 +66,20 @@
     </div>
 @endif
 
+{{-- Alertas de negócio (CRM / cancelamentos) --}}
+@foreach(($alertas ?? []) as $alerta)
+    <div class="alert alert-{{ $alerta['tipo'] }} alert-permanent mb-4 d-flex align-items-start gap-2" role="status">
+        <i class="fas fa-lightbulb mt-1" aria-hidden="true"></i>
+        <div>
+            <strong>{{ $alerta['titulo'] }}:</strong>
+            {{ $alerta['mensagem'] }}
+            @if(!empty($alerta['url']))
+                <a href="{{ $alerta['url'] }}" class="alert-link">{{ $alerta['url_label'] ?? 'Ver' }}</a>
+            @endif
+        </div>
+    </div>
+@endforeach
+
 {{-- STATS --}}
 <div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-3">
@@ -80,8 +96,9 @@
         <x-stat-card
             icon="fa-money-bill-wave"
             color="green"
-            :value="'R$ ' . number_format($faturamentoHoje, 2, ',', '.')"
-            label="Faturamento Hoje"
+            :value="'R$ ' . number_format($faturamentoMes, 2, ',', '.')"
+            label="Faturamento do Mês"
+            :delta="$deltaFaturamentoPct ?? null"
             :href="auth()->user()->isDono() || auth()->user()->isAdmin() ? route('dono.financeiro.index') : null"
         />
     </div>
@@ -91,15 +108,18 @@
             color="blue"
             :value="$totalMes"
             label="Agendamentos do Mês"
+            :delta="$deltaAgendamentosPct ?? null"
             :href="route('dono.agendamentos.index')"
         />
     </div>
     <div class="col-sm-6 col-xl-3">
         <x-stat-card
-            icon="fa-users"
+            icon="fa-user-plus"
             color="purple"
-            :value="$totalClientes"
-            label="Clientes Ativos"
+            :value="$novosClientesMes ?? 0"
+            label="Novos Clientes no Mês"
+            :subtitle="$totalClientes . ' no total'"
+            :delta="$deltaNovosClientesPct ?? null"
             :href="route('dono.clientes.index')"
         />
     </div>
