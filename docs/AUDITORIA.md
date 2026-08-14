@@ -25,7 +25,6 @@ Buracos honestos que **ainda** restam:
 
 - **NF-e** — stub local, sem SEFAZ.
 - **Web Push send** — stub; UI de subscribe escondida (`WEBPUSH_SUBSCRIBE_UI=false`) até haver minishlink + send real.
-- Avaliações sem moderação admin / média pública.
 - API sem paridade financeira/estoque.
 - Multi-empresa = futuro (ver ARQUITETURA).
 
@@ -146,9 +145,12 @@ CRUD + atribuir ao cliente; `PacotePolicy` + authorize no controller.
 
 `Cliente/ListaEsperaController`, listener/notificação de vaga, `ListaEsperaTest`.
 
-### Avaliações — PARCIAL
+### Avaliações — FULL
 
-Cliente pode avaliar (web); API `POST .../avaliar` existe. Sem listagem/moderação admin nem ratings públicos na página do salão.
+Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendente listam e ocultam (`publicar`). Página pública mostra só publicadas; `nota_media` ignora ocultas.
+
+- `Dono/AvaliacaoController`, `AvaliacaoPolicy`, view `dono/avaliacoes/index`
+- Testes: `AvaliacaoModeracaoTest`, `ApiAgendamentoAvaliarTest`
 
 ### Galeria — FULL
 
@@ -177,7 +179,7 @@ Cliente pode avaliar (web); API `POST .../avaliar` existe. Sem listagem/moderaç
 |------------|--------|
 | Sinal Pix | FULL (service + UI cliente + webhook) |
 | Webhook fail-closed sem secret | FULL (`MercadoPagoWebhookController`) |
-| Idempotência webhook | FULL — `webhook_events` (provider + event_id unique); duplicata → 200 |
+| Idempotência webhook | FULL — `webhook_events` (provider + event_id); reserva serializa concorrência; reentrega do mesmo payment_id ainda chama `sincronizarStatus` (pending→approved); sem agendamento libera reserva |
 | Anti-regressão pago→pendente | FULL em `MercadoPagoService::aplicarStatus` |
 | Pix valor total / restante | FULL — config `pagamento.total`, `pagamento`/`pagamentoStatus`, view + `ClientePagamentoTotalTest` |
 | Gorjeta via MP | AUSENTE — gorjeta só no fechar comanda presencial |
@@ -263,7 +265,7 @@ Skip-link em app/auth/público/erros; foco no `confirm-modal`; loading em submit
 | Cupons / vales | FULL |
 | Pacotes | FULL |
 | Lista de espera | FULL |
-| Avaliações | PARCIAL |
+| Avaliações | FULL |
 | Galeria | FULL |
 | NF-e | STUB |
 | Web Push | PARCIAL (UI off / send STUB) |

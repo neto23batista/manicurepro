@@ -295,22 +295,34 @@ class FidelidadeService
 
     /**
      * Troca pontos por um cupom de desconto fixo (valor por bloco × blocos).
+     * Trava o cliente (lockForUpdate) para impedir resgate duplo concorrente.
      */
     public function resgatar(Cliente $cliente, int $blocos = 1): Cupom
     {
-        $custoBloco = $this->pontosPorBloco($cliente);
-        $valorBloco = $this->valorPorBloco($cliente);
-        $custoTotal = $custoBloco * $blocos;
-
-        if ($blocos < 1 || $cliente->pontos_fidelidade < $custoTotal) {
+        if ($blocos < 1) {
             throw ValidationException::withMessages([
                 'error' => 'Pontos insuficientes para o resgate.',
             ]);
         }
 
-        return DB::transaction(function () use ($cliente, $blocos, $custoTotal, $valorBloco) {
+        return DB::transaction(function () use ($cliente, $blocos) {
+            $travado = Cliente::query()
+                ->whereKey($cliente->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $custoBloco = $this->pontosPorBloco($travado);
+            $valorBloco = $this->valorPorBloco($travado);
+            $custoTotal = $custoBloco * $blocos;
+
+            if ($travado->pontos_fidelidade < $custoTotal) {
+                throw ValidationException::withMessages([
+                    'error' => 'Pontos insuficientes para o resgate.',
+                ]);
+            }
+
             $cupom = Cupom::create([
-                'salao_id'   => $cliente->salao_id,
+                'salao_id'   => $travado->salao_id,
                 'codigo'     => 'FID-'.strtoupper(Str::random(6)),
                 'tipo'       => 'fixo',
                 'valor'      => $valorBloco * $blocos,
@@ -319,19 +331,19 @@ class FidelidadeService
                 'validade'   => now()->addDays(30),
                 'ativo'      => true,
                 'origem'     => 'fidelidade',
-                'cliente_id' => $cliente->id,
+                'cliente_id' => $travado->id,
             ]);
 
             FidelidadePonto::create([
-                'cliente_id'     => $cliente->id,
-                'salao_id'       => $cliente->salao_id,
+                'cliente_id'     => $travado->id,
+                'salao_id'       => $travado->salao_id,
                 'agendamento_id' => null,
                 'pontos'         => -$custoTotal,
                 'tipo'           => 'resgatado',
                 'descricao'      => "Resgate de pontos → cupom {$cupom->codigo}",
             ]);
 
-            $cliente->decrement('pontos_fidelidade', $custoTotal);
+            $travado->decrement('pontos_fidelidade', $custoTotal);
 
             return $cupom;
         });

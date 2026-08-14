@@ -40,7 +40,7 @@ class PublicController extends Controller
     private function renderSalao(Salao $salao)
     {
         $salao->load(['manicures', 'servicos.categoria', 'horarios', 'avaliacoes' => function ($q) {
-            $q->where('publicar', true)->orderByDesc('created_at')->take(10);
+            $q->publicadas()->with('agendamento')->orderByDesc('created_at')->take(10);
         }, 'galeria' => function ($q) {
             $q->where('publicar', true)->orderByDesc('destaque')->orderBy('ordem')->orderByDesc('id')->take(24);
         }]);

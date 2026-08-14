@@ -6,6 +6,7 @@ use App\Models\EstoqueMovimentacao;
 use App\Models\Produto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
@@ -48,7 +49,14 @@ class EstoqueService
 
         return DB::transaction(function () use ($produto, $tipo, $quantidade, $userId, $motivo, $precoUnitario, $referencia) {
             $produto = Produto::query()->lockForUpdate()->findOrFail($produto->id);
-            $atual = (float) $produto->estoque_atual;
+            $atual = round((float) $produto->estoque_atual, 3);
+            $quantidade = round((float) $quantidade, 3);
+
+            if (in_array($tipo, self::TIPOS_SAIDA, true) && $quantidade > $atual) {
+                throw ValidationException::withMessages([
+                    'quantidade' => 'Estoque insuficiente. Disponível: '.rtrim(rtrim(number_format($atual, 3, '.', ''), '0'), '.').'.',
+                ]);
+            }
 
             $novo = match (true) {
                 in_array($tipo, self::TIPOS_ENTRADA, true) => $atual + $quantidade,
@@ -57,7 +65,13 @@ class EstoqueService
                 default                                    => $atual,
             };
 
-            $produto->update(['estoque_atual' => max(0, $novo)]);
+            if ($tipo === 'ajuste' && $novo < 0) {
+                throw ValidationException::withMessages([
+                    'quantidade' => 'O estoque ajustado não pode ser negativo.',
+                ]);
+            }
+
+            $produto->update(['estoque_atual' => $novo]);
 
             return EstoqueMovimentacao::create([
                 'produto_id'     => $produto->id,

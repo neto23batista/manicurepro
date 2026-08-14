@@ -115,6 +115,20 @@ test('devolucao soma estoque com motivo obrigatório', function () {
     ]);
 });
 
+test('saida acima do estoque disponível é rejeitada sem alterar saldo', function () {
+    $produto = produtoEstoque($this->salao->id, ['estoque_atual' => 5]);
+
+    $this->actingAs($this->dono)
+        ->post("/dono/produtos/{$produto->id}/estoque", [
+            'tipo'       => 'saida',
+            'quantidade' => 10,
+        ])
+        ->assertSessionHasErrors('quantidade');
+
+    expect((float) $produto->fresh()->estoque_atual)->toBe(5.0);
+    expect(EstoqueMovimentacao::where('produto_id', $produto->id)->count())->toBe(0);
+});
+
 test('inventario gera ajustes e registra auditoria', function () {
     $a = produtoEstoque($this->salao->id, ['nome' => 'A', 'estoque_atual' => 10]);
     $b = produtoEstoque($this->salao->id, ['nome' => 'B', 'estoque_atual' => 4]);
@@ -177,4 +191,16 @@ test('cliente nao acessa fornecedores nem inventario', function () {
     $this->actingAs($cliente)->get('/dono/fornecedores')->assertForbidden();
     $this->actingAs($cliente)->get('/dono/estoque/inventario')->assertForbidden();
     $this->actingAs($cliente)->get('/dono/estoque/relatorio')->assertForbidden();
+});
+
+test('manicure nao acessa fornecedores nem inventario', function () {
+    $manicure = User::factory()->create([
+        'role'     => 'manicure',
+        'salao_id' => $this->salao->id,
+        'ativo'    => true,
+    ]);
+
+    $this->actingAs($manicure)->get('/dono/fornecedores')->assertForbidden();
+    $this->actingAs($manicure)->get('/dono/estoque/inventario')->assertForbidden();
+    $this->actingAs($manicure)->put("/dono/fornecedores/1", ['nome' => 'Hack'])->assertForbidden();
 });

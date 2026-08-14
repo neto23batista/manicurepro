@@ -21,7 +21,7 @@ Não reabrir como backlog.
 - **Idempotência de webhook MP** — tabela `webhook_events`; duplicata → 200 sem reprocessar; anti-regressão `pago` → `pendente`
 - **CSP / SecurityHeaders / honeypot** — `ContentSecurityPolicy`, `SecurityHeaders`, `ProtectPublicForms`
 - **`audit_logs`** + UI read-only `/dono/auditoria`
-- **Policies** — Agendamento, Cliente, Cupom, Produto, Galeria, Folga*, Caixa, Despesa, Pacote, ValePresente, NotaFiscal, AuditLog, Feriado, Fornecedor
+- **Policies** — Agendamento, Cliente, Cupom, Produto, Galeria, Folga*, Caixa, Despesa, Pacote, ValePresente, NotaFiscal, AuditLog, Feriado, Fornecedor, Avaliacao
 
 ### Produto núcleo
 
@@ -34,6 +34,7 @@ Não reabrir como backlog.
 - **Indicação** + fidelidade com níveis + expiração de pontos
 - Estoque avançado (fornecedor, inventário, perda/consumo/devolução, giro/margem/CSV)
 - Galeria, lista de espera, aniversário (comando), iCal + template Google
+- **Avaliações** — create web/API (só cliente), moderação dono/atendente (`publicar`), média pública só das publicadas
 - **Sinal Pix MP** + **Pix total/restante** (controller + config + testes)
 - **Caixa operacional** — abrir/movimentar/fechar + show + `CaixaTest`
 - **Despesas** + **fluxo de caixa** no painel financeiro
@@ -69,7 +70,6 @@ Itens com código, mas incompletos.
 | **Web Push** | Persistência + canal; UI subscribe **escondida** (`WEBPUSH_SUBSCRIBE_UI`) | `sendToUser` stub (log + 0); sem `minishlink/web-push` | `WebPushService.php` |
 | **NF-e** | Rascunho local, UI dono (flag `fiscal.enabled`) | Emissão SEFAZ / provedor | `NotaFiscalService.php` |
 | **API v1** | Auth + salão/slots + agendamentos + fidelidade + erros JSON | Paridade web (financeiro, estoque, caixa) | `routes/api.php` |
-| **Avaliações** | Create web + API | Moderação admin; média na página pública | `Cliente/AgendamentoController::avaliar` |
 | **Estorno Pix UX** | `MercadoPagoService::cancelarOuEstornar` | UI dono dedicada de refund | `MercadoPagoService.php` |
 | **A11y** | Skip-link + foco modal básico + contraste parcial | Auditoria completa / contraste sistemático | layouts + `confirm-modal` |
 
@@ -96,8 +96,7 @@ Ainda não há implementação utilizável (ou só estratégia em doc).
 
 1. Uso real em salão + correção de bugs operacionais.
 2. Push send real **ou** manter UI escondida; NF-e continuar `FISCAL_ENABLED=false` em prod.
-3. Moderação de avaliações + média pública (se o salão usar reviews).
-4. OAuth / fiscal real / multi-empresa só com escopo explícito.
+3. OAuth / fiscal real / multi-empresa só com escopo explícito.
 
 ---
 

@@ -267,7 +267,7 @@ class AgendamentoController extends Controller
 
     public function avaliar(Request $request, Agendamento $agendamento)
     {
-        $this->authorize('view', $agendamento);
+        $this->authorize('review', $agendamento);
 
         if ($agendamento->status !== AgendamentoStatus::Concluido->value) {
             return back()->withErrors(['error' => 'Só é possível avaliar agendamentos concluídos.']);

@@ -19,6 +19,10 @@ class FornecedorPolicy
 
     public function view(User $user, Fornecedor $fornecedor): bool
     {
+        if (! $user->isDono() && ! $user->isAtendente()) {
+            return false;
+        }
+
         return $fornecedor->salao_id === $user->salao_id;
     }
 

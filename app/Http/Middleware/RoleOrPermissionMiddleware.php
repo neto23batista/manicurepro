@@ -46,7 +46,13 @@ class RoleOrPermissionMiddleware
             return $next($request);
         }
 
-        if ($permission && $this->permissions->hasGrant($user, $permission)) {
+        // Grants extras só para atendente (staff operacional). Cliente/manicure nunca
+        // herdam rotas do painel dono via JSON de permissões.
+        if (
+            $userRole === UserRole::Atendente
+            && $permission
+            && $this->permissions->hasGrant($user, $permission)
+        ) {
             return $next($request);
         }
 

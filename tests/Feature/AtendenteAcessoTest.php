@@ -32,6 +32,7 @@ test('matriz atendente vs dono: operação compartilhada', function (string $uri
     '/dono/cupons',
     '/dono/produtos',
     '/dono/galeria',
+    '/dono/avaliacoes',
     '/dono/folgas',
 ]);
 

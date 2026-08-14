@@ -44,6 +44,19 @@ test('resgate sem pontos suficientes lança exceção', function () {
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
+test('segunda instância do cliente não resgata os mesmos pontos', function () {
+    $this->cliente->update(['pontos_fidelidade' => 100]);
+    $stale = Cliente::find($this->cliente->id);
+
+    $this->fidelidade->resgatar($this->cliente, 1);
+
+    expect(fn () => $this->fidelidade->resgatar($stale, 1))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    expect($this->cliente->fresh()->pontos_fidelidade)->toBe(0);
+    expect(Cupom::where('cliente_id', $this->cliente->id)->where('origem', 'fidelidade')->count())->toBe(1);
+});
+
 test('cliente resgata pela rota e recebe o código do cupom', function () {
     $this->actingAs($this->userCliente)
         ->post(route('cliente.fidelidade.resgatar'), ['blocos' => 2])

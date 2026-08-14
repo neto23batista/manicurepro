@@ -89,6 +89,7 @@ class Sidebar extends Component
             ['route' => 'dono.estoque.inventario.create', 'icon' => 'fa-clipboard-check', 'label' => 'Inventário', 'active_pattern' => 'dono.estoque.inventario*'],
             ['route' => 'dono.estoque.relatorio',    'icon' => 'fa-chart-bar',     'label' => 'Estoque relatório', 'active_pattern' => 'dono.estoque.relatorio*'],
             ['route' => 'dono.galeria.index',        'icon' => 'fa-images',        'label' => 'Galeria',           'active_pattern' => 'dono.galeria*'],
+            ['route' => 'dono.avaliacoes.index',     'icon' => 'fa-star',          'label' => 'Avaliações',        'active_pattern' => 'dono.avaliacoes*'],
             ['route' => 'dono.folgas.index',         'icon' => 'fa-umbrella-beach','label' => 'Folgas',            'active_pattern' => ['dono.folgas*', 'dono.feriados*']],
             ['route' => 'dono.disponibilidades.index','icon' => 'fa-clock',        'label' => 'Disponibilidade',   'active_pattern' => 'dono.disponibilidades*'],
             ['route' => 'dono.auditoria.index',      'icon' => 'fa-clipboard-list','label' => 'Auditoria',         'active_pattern' => 'dono.auditoria*'],
@@ -117,6 +118,7 @@ class Sidebar extends Component
             ['route' => 'dono.estoque.inventario.create', 'icon' => 'fa-clipboard-check', 'label' => 'Inventário', 'active_pattern' => 'dono.estoque.inventario*'],
             ['route' => 'dono.estoque.relatorio',    'icon' => 'fa-chart-bar',     'label' => 'Estoque relatório', 'active_pattern' => 'dono.estoque.relatorio*'],
             ['route' => 'dono.galeria.index',        'icon' => 'fa-images',        'label' => 'Galeria',           'active_pattern' => 'dono.galeria*'],
+            ['route' => 'dono.avaliacoes.index',     'icon' => 'fa-star',          'label' => 'Avaliações',        'active_pattern' => 'dono.avaliacoes*'],
             ['route' => 'dono.folgas.index',         'icon' => 'fa-umbrella-beach','label' => 'Folgas',            'active_pattern' => ['dono.folgas*', 'dono.feriados*']],
             ['route' => 'dono.disponibilidades.index','icon' => 'fa-clock',        'label' => 'Disponibilidade',   'active_pattern' => 'dono.disponibilidades*'],
         ];

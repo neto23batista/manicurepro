@@ -15,7 +15,8 @@ class MercadoPagoWebhookController extends Controller
 
     /**
      * Recebe notificações da Mercado Pago (sem CSRF/sessão).
-     * Responde 200 rapidamente, deduplica por payment_id e sincroniza o status.
+     * Reserva por payment_id serializa entregas concorrentes; reentregas do mesmo id
+     * ainda chamam sincronizarStatus (pending→approved). Sem agendamento, libera a reserva.
      */
     public function handle(Request $request): JsonResponse
     {
@@ -38,21 +39,27 @@ class MercadoPagoWebhookController extends Controller
         $paymentId = (string) $paymentId;
         $payloadHash = hash('sha256', $request->getContent() ?: json_encode($request->all()));
 
-        if (! $this->reservarProcessamento($paymentId, $payloadHash)) {
-            return response()->json(['ok' => true, 'duplicate' => true]);
-        }
+        // Reserva só serializa entregas concorrentes. NÃO ignora reentregas do mesmo
+        // payment_id: a MP notifica pending→approved com o mesmo id; o sync é idempotente.
+        $reserved = $this->reservarProcessamento($paymentId, $payloadHash);
 
         $agendamento = Agendamento::where('mp_payment_id', $paymentId)->first();
 
         if ($agendamento) {
             $this->mp->sincronizarStatus($agendamento);
+
+            WebhookEvent::where('provider', 'mercadopago')
+                ->where('event_id', $paymentId)
+                ->update(['processed_at' => now()]);
+        } elseif ($reserved) {
+            // Sem agendamento ainda — libera a reserva para a MP poder reentregar
+            // depois que mp_payment_id for persistido.
+            WebhookEvent::where('provider', 'mercadopago')
+                ->where('event_id', $paymentId)
+                ->delete();
         }
 
-        WebhookEvent::where('provider', 'mercadopago')
-            ->where('event_id', $paymentId)
-            ->update(['processed_at' => now()]);
-
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'duplicate' => ! $reserved]);
     }
 
     /**

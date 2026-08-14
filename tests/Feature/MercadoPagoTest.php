@@ -190,7 +190,7 @@ test('webhook de outro tópico é ignorado', function () {
     Http::assertNothingSent();
 });
 
-test('webhook duplicado responde 200 sem reprocessar', function () {
+test('webhook duplicado ainda sincroniza status (pending→approved)', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'aguardando');
     $ag->update([
         'mp_payment_id' => '999050',
@@ -200,10 +200,9 @@ test('webhook duplicado responde 200 sem reprocessar', function () {
     ]);
 
     Http::fake([
-        'api.mercadopago.com/v1/payments/999050' => Http::response([
-            'id' => 999050,
-            'status' => 'approved',
-        ], 200),
+        'api.mercadopago.com/v1/payments/999050' => Http::sequence()
+            ->push(['id' => 999050, 'status' => 'pending'], 200)
+            ->push(['id' => 999050, 'status' => 'approved'], 200),
     ]);
 
     $sig = assinaturaWebhook('999050');
@@ -217,20 +216,36 @@ test('webhook duplicado responde 200 sem reprocessar', function () {
         ->assertOk()
         ->assertJsonMissing(['duplicate' => true]);
 
-    expect($ag->fresh()->sinal_status)->toBe('pago');
+    expect($ag->fresh()->sinal_status)->toBe('pendente');
     expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
 
-    // Segunda entrega: 200 + duplicate, sem nova chamada à API MP.
-    Http::fake();
-
+    // Segunda entrega: duplicate=true, mas ainda sincroniza pending→approved.
     $this->withHeaders($sig['headers'])
         ->postJson(route('webhooks.mercadopago') . '?data.id=999050', $payload)
         ->assertOk()
         ->assertJson(['ok' => true, 'duplicate' => true]);
 
-    Http::assertNothingSent();
     expect($ag->fresh()->sinal_status)->toBe('pago');
     expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
+});
+
+test('webhook sem agendamento libera reserva para reentrega', function () {
+    $sig = assinaturaWebhook('999051');
+    $payload = [
+        'type' => 'payment',
+        'data' => ['id' => '999051'],
+    ];
+
+    $this->withHeaders($sig['headers'])
+        ->postJson(route('webhooks.mercadopago') . '?data.id=999051', $payload)
+        ->assertOk();
+
+    expect(\App\Models\WebhookEvent::where('event_id', '999051')->exists())->toBeFalse();
+
+    $this->withHeaders(assinaturaWebhook('999051', 'req-retry')['headers'])
+        ->postJson(route('webhooks.mercadopago') . '?data.id=999051', $payload)
+        ->assertOk()
+        ->assertJsonMissing(['duplicate' => true]);
 });
 
 test('sincronizarStatus não regride pagamento pago para pendente', function () {

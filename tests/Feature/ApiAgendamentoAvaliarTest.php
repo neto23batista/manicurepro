@@ -129,3 +129,38 @@ test('valida nota obrigatória entre 1 e 5', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['nota']);
 });
+
+test('manicure não avalia o próprio atendimento via API', function () {
+    $userManicure = User::factory()->create([
+        'role'     => 'manicure',
+        'salao_id' => $this->salao->id,
+        'ativo'    => true,
+    ]);
+    $this->manicure->update(['user_id' => $userManicure->id]);
+
+    $token = $userManicure->createToken('t')->plainTextToken;
+
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->postJson('/api/v1/agendamentos/'.$this->agendamento->id.'/avaliar', [
+            'nota' => 5,
+            'comentario' => 'Autoavaliação',
+        ])
+        ->assertForbidden();
+
+    expect(Avaliacao::where('agendamento_id', $this->agendamento->id)->exists())->toBeFalse();
+});
+
+test('dono não avalia agendamento do salão via API', function () {
+    $dono = User::factory()->create([
+        'role'     => 'dono',
+        'salao_id' => $this->salao->id,
+        'ativo'    => true,
+    ]);
+    $token = $dono->createToken('t')->plainTextToken;
+
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->postJson('/api/v1/agendamentos/'.$this->agendamento->id.'/avaliar', [
+            'nota' => 5,
+        ])
+        ->assertForbidden();
+});

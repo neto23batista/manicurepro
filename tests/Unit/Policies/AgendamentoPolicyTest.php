@@ -105,3 +105,10 @@ test('cliente e staff podem criar agendamento; manicure não', function () {
     expect($this->policy->create($this->userManicure))->toBeFalse();
     expect($this->admin->can('create', Agendamento::class))->toBeTrue();
 });
+
+test('só o cliente dono pode avaliar; manicure e dono não', function () {
+    expect($this->policy->review($this->userCliente, $this->agSalaoA))->toBeTrue();
+    expect($this->policy->review($this->userManicure, $this->agSalaoA))->toBeFalse();
+    expect($this->policy->review($this->dono, $this->agSalaoA))->toBeFalse();
+    expect($this->userManicure->can('review', $this->agSalaoA))->toBeFalse();
+});

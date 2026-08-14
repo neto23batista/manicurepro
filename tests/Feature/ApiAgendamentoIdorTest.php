@@ -112,3 +112,21 @@ test('cliente de outro salão não vê agendamento via API (IDOR cross-tenant)',
         ->getJson('/api/v1/agendamentos/'.$this->agendamentoB->id)
         ->assertForbidden();
 });
+
+test('manicure não cria agendamento via API', function () {
+    $userManicure = User::factory()->create([
+        'role'     => 'manicure',
+        'salao_id' => $this->salao->id,
+        'ativo'    => true,
+    ]);
+    $token = $userManicure->createToken('t')->plainTextToken;
+
+    $this->withHeader('Authorization', 'Bearer '.$token)
+        ->postJson('/api/v1/agendamentos', [
+            'salao_id'         => $this->salao->id,
+            'manicure_id'      => $this->manicure->id,
+            'servico_ids'      => [1],
+            'data_hora_inicio' => now()->addDay()->toIso8601String(),
+        ])
+        ->assertForbidden();
+});

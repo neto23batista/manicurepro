@@ -67,7 +67,7 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P2.3 | Footer social `href="#"` | `config('manicure.social.*')` + normalização de URL | **feito** |
 | P2.4 | Erros com `$e->getMessage()` ao usuário | `HandlesDomainExceptions` + mensagens genéricas | **feito** (Sentry opcional ainda futuro) |
 | P2.5 | API v1 fina vs web | Erros JSON + `/me/fidelidade` + filtros | **parcial** (polish feito; sem financeiro/estoque) |
-| P2.6 | Avaliações sem moderação/listagem | Admin + média na página pública | **pendente** |
+| P2.6 | Avaliações sem moderação/listagem | Admin + média na página pública | **feito** |
 | P2.7 | `FinanceiroService::fluxoCaixa` sem UI | Exposto no painel financeiro | **feito** |
 | P2.8 | PHPStan / build no CI | Jobs no `ci.yml` | **feito** |
 | P2.9 | Docker Compose versionado | `docker-compose.yml` + [DOCKER.md](DOCKER.md) | **feito** |
@@ -93,8 +93,7 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 
 1. Uso real em salão + hotfixes.
 2. Manter Web Push UI escondida até send real; NF-e off em prod.
-3. Avaliações (moderação + média pública) se o salão usar reviews.
-4. OAuth / fiscal real / multi-empresa só com escopo de produto explícito.
+3. OAuth / fiscal real / multi-empresa só com escopo de produto explícito.
 
 ---
 

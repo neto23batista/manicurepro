@@ -27,7 +27,7 @@ Detalhe de módulos: [AUDITORIA.md](AUDITORIA.md). Deploy: [PRODUCAO.md](PRODUCA
 | Grants extras | `role_or_perm` + JSON em `configuracoes_salao.role_permissions` (sem Spatie) |
 | Atendente ≠ financeiro | rotas `dono/financeiro*`, vales, config, NF-e só `role:dono` |
 | 2FA TOTP + recovery codes | `TwoFactorController`, `TotpService` |
-| Policies | `Agendamento`, `Cliente`, `Cupom`, `Produto`, `GaleriaFoto`, `Folga`, `FolgaManicure`, `Caixa`, `Despesa`, `Pacote`, `ValePresente`, `NotaFiscal`, `AuditLog`, `Feriado`, `Fornecedor` |
+| Policies | `Agendamento`, `Cliente`, `Cupom`, `Produto`, `GaleriaFoto`, `Folga`, `FolgaManicure`, `Caixa`, `Despesa`, `Pacote`, `ValePresente`, `NotaFiscal`, `AuditLog`, `Feriado`, `Fornecedor`, `Avaliacao` |
 | IDOR API agendamentos | `Api\AgendamentoController` + Policy; `ApiAgendamentoIdorTest` |
 | Smoke IDOR / 403 | `FluxoEmpresarioTest`, `AtendenteAcessoTest`, `SecurityHardeningTest` |
 
@@ -44,7 +44,7 @@ Detalhe de módulos: [AUDITORIA.md](AUDITORIA.md). Deploy: [PRODUCAO.md](PRODUCA
 | Controle | Onde |
 |----------|------|
 | Webhook MP **fail-closed** | sem `MP_WEBHOOK_SECRET` / config secret → rejeita (não processa) |
-| Webhook MP **idempotente** | `webhook_events` unique `(provider, event_id)`; duplicata → 200 sem reprocessar |
+| Webhook MP **idempotente** | `webhook_events` unique `(provider, event_id)` serializa entregas; reentrega do mesmo payment_id ainda sincroniza status; sem agendamento libera reserva |
 | Anti-regressão status | `aplicarStatus` não rebaixa `pago` → `pendente` |
 | CSRF except | só `webhooks/*` em `bootstrap/app.php` |
 | Checker produção | `ProducaoChecker` alerta MP/secret em prod |

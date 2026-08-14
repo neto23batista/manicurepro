@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
+use App\Models\Salao;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,31 +19,42 @@ class CaixaService
             ->first();
     }
 
+    /**
+     * Abre o caixa do salão.
+     *
+     * Serializa aberturas concorrentes com lock na linha do salão. Índice único
+     * parcial em `fechado_em IS NULL` não é trivial/portável no MySQL — o lock
+     * de aplicação é a garantia de no máximo um caixa aberto por salão.
+     */
     public function abrir(
         int $salaoId,
         float $saldoInicial = 0,
         ?int $userId = null,
         ?string $observacao = null,
     ): Caixa {
-        if ($this->aberto($salaoId) !== null) {
-            throw ValidationException::withMessages([
-                'caixa' => 'Já existe um caixa aberto neste salão. Feche-o antes de abrir outro.',
-            ]);
-        }
-
         if ($saldoInicial < 0) {
             throw ValidationException::withMessages([
                 'saldo_inicial' => 'O saldo inicial não pode ser negativo.',
             ]);
         }
 
-        return Caixa::create([
-            'salao_id'      => $salaoId,
-            'aberto_por'    => $userId,
-            'saldo_inicial' => round($saldoInicial, 2),
-            'aberto_em'     => now(),
-            'observacao'    => $observacao,
-        ]);
+        return DB::transaction(function () use ($salaoId, $saldoInicial, $userId, $observacao) {
+            Salao::whereKey($salaoId)->lockForUpdate()->firstOrFail();
+
+            if ($this->aberto($salaoId) !== null) {
+                throw ValidationException::withMessages([
+                    'caixa' => 'Já existe um caixa aberto neste salão. Feche-o antes de abrir outro.',
+                ]);
+            }
+
+            return Caixa::create([
+                'salao_id'      => $salaoId,
+                'aberto_por'    => $userId,
+                'saldo_inicial' => round($saldoInicial, 2),
+                'aberto_em'     => now(),
+                'observacao'    => $observacao,
+            ]);
+        });
     }
 
     public function movimentar(
@@ -78,14 +90,24 @@ class CaixaService
             ]);
         }
 
-        return CaixaMovimentacao::create([
-            'caixa_id'     => $caixa->id,
-            'tipo'         => $tipo,
-            'valor'        => round($valor, 2),
-            'descricao'    => $descricao,
-            'user_id'      => $userId,
-            'pagamento_id' => $pagamentoId,
-        ]);
+        return DB::transaction(function () use ($caixa, $tipo, $valor, $descricao, $userId, $pagamentoId) {
+            $caixa = Caixa::lockForUpdate()->findOrFail($caixa->id);
+
+            if (! $caixa->estaAberto()) {
+                throw ValidationException::withMessages([
+                    'caixa' => 'Não é possível movimentar um caixa fechado.',
+                ]);
+            }
+
+            return CaixaMovimentacao::create([
+                'caixa_id'     => $caixa->id,
+                'tipo'         => $tipo,
+                'valor'        => round($valor, 2),
+                'descricao'    => $descricao,
+                'user_id'      => $userId,
+                'pagamento_id' => $pagamentoId,
+            ]);
+        });
     }
 
     public function saldoCalculado(Caixa $caixa): float

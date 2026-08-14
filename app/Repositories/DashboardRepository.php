@@ -45,7 +45,7 @@ class DashboardRepository
     {
         return Salao::withCount(['agendamentos' => fn ($q) => $q->whereMonth('data_hora_inicio', now()->month),
         ])
-            ->withAvg('avaliacoes as nota_media_calc', 'nota')
+            ->withAvg(['avaliacoes as nota_media_calc' => fn ($q) => $q->where('publicar', true)], 'nota')
             ->orderByDesc('agendamentos_count')
             ->take($limit)
             ->get();
@@ -261,7 +261,7 @@ class DashboardRepository
         return $salao->manicures()
             ->withCount(['agendamentos as agendamentos_hoje' => fn ($q) => $q->whereDate('data_hora_inicio', today()),
             ])
-            ->withAvg('avaliacoes as nota_media_calc', 'nota')
+            ->withAvg(['avaliacoes as nota_media_calc' => fn ($q) => $q->where('publicar', true)], 'nota')
             ->get();
     }
 

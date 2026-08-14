@@ -56,14 +56,25 @@ test('abrir movimentar e fechar caixa calcula diferença', function () {
 
 test('não permite abrir segundo caixa enquanto houver um aberto', function () {
     $this->caixaService->abrir($this->salao->id, 50, $this->dono->id);
-    $this->caixaService->abrir($this->salao->id, 10, $this->dono->id);
-})->throws(ValidationException::class);
+
+    expect(fn () => $this->caixaService->abrir($this->salao->id, 10, $this->dono->id))
+        ->toThrow(ValidationException::class);
+
+    expect(Caixa::where('salao_id', $this->salao->id)->whereNull('fechado_em')->count())->toBe(1);
+});
 
 test('não permite movimentar caixa fechado', function () {
     $caixa = $this->caixaService->abrir($this->salao->id, 0, $this->dono->id);
     $this->caixaService->fechar($caixa, 0, $this->dono->id);
 
     $this->caixaService->movimentar($caixa->fresh(), 'entrada', 10, 'Tarde demais', $this->dono->id);
+})->throws(ValidationException::class);
+
+test('não permite movimentar caixa fechado com instância desatualizada', function () {
+    $caixa = $this->caixaService->abrir($this->salao->id, 0, $this->dono->id);
+    $this->caixaService->fechar($caixa, 0, $this->dono->id);
+
+    $this->caixaService->movimentar($caixa, 'entrada', 10, 'Tarde demais', $this->dono->id);
 })->throws(ValidationException::class);
 
 test('dono abre e fecha caixa pela UI', function () {
@@ -165,6 +176,39 @@ test('atendente recebe 403 em despesas', function () {
             'vencimento' => now()->toDateString(),
         ])
         ->assertForbidden();
+});
+
+test('dono não altera despesa de outro salão', function () {
+    $outro = Salao::factory()->create();
+    $despesa = Despesa::create([
+        'salao_id'   => $outro->id,
+        'descricao'  => 'Aluguel alheio',
+        'categoria'  => 'aluguel',
+        'valor'      => 900,
+        'vencimento' => now()->addDays(3)->toDateString(),
+        'user_id'    => $this->dono->id,
+    ]);
+
+    $this->actingAs($this->dono)
+        ->put("/dono/financeiro/despesas/{$despesa->id}", [
+            'descricao'  => 'Tentativa IDOR',
+            'categoria'  => 'aluguel',
+            'valor'      => 1,
+            'vencimento' => now()->toDateString(),
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($this->dono)
+        ->post("/dono/financeiro/despesas/{$despesa->id}/pagar")
+        ->assertForbidden();
+
+    $this->actingAs($this->dono)
+        ->delete("/dono/financeiro/despesas/{$despesa->id}")
+        ->assertForbidden();
+
+    expect($despesa->fresh()->descricao)->toBe('Aluguel alheio');
+    expect($despesa->fresh()->estaPaga())->toBeFalse();
+    expect(Despesa::whereKey($despesa->id)->exists())->toBeTrue();
 });
 
 test('fluxoCaixa soma entradas e saídas do período', function () {

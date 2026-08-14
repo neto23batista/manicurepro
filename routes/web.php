@@ -25,6 +25,7 @@ use App\Http\Controllers\Dono\FornecedorController as DonoFornecedor;
 use App\Http\Controllers\Dono\InventarioController as DonoInventario;
 use App\Http\Controllers\Dono\EstoqueRelatorioController as DonoEstoqueRelatorio;
 use App\Http\Controllers\Dono\GaleriaController as DonoGaleria;
+use App\Http\Controllers\Dono\AvaliacaoController as DonoAvaliacao;
 use App\Http\Controllers\Dono\FinanceiroController as DonoFinanceiro;
 use App\Http\Controllers\Dono\CaixaController as DonoCaixa;
 use App\Http\Controllers\Dono\DespesaController as DonoDespesa;
@@ -212,6 +213,9 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified', 'role:dono
     Route::resource('galeria', DonoGaleria::class)->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['galeria' => 'foto']);
     Route::patch('galeria/{foto}/publicar', [DonoGaleria::class, 'togglePublicar'])->name('galeria.publicar');
+
+    Route::get('avaliacoes', [DonoAvaliacao::class, 'index'])->name('avaliacoes.index');
+    Route::patch('avaliacoes/{avaliacao}/publicar', [DonoAvaliacao::class, 'togglePublicar'])->name('avaliacoes.publicar');
 
     // Folgas + feriados recorrentes anuais
     Route::get('/folgas', [DonoFolga::class, 'index'])->name('folgas.index');

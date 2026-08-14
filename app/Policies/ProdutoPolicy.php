@@ -19,6 +19,10 @@ class ProdutoPolicy
 
     public function view(User $user, Produto $produto): bool
     {
+        if (! $user->isDono() && ! $user->isAtendente()) {
+            return false;
+        }
+
         return $produto->salao_id === $user->salao_id;
     }
 

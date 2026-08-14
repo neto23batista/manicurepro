@@ -123,6 +123,37 @@ test('dono salva permissões extras na configuração', function () {
     expect($fresh->role_permissions['atendente']['grant'] ?? [])->toContain('auditoria.view');
 });
 
+test('sanitizePayload ignora grants de cliente e manicure', function () {
+    $svc = app(PermissionService::class);
+    $payload = $svc->sanitizePayload([
+        'cliente' => ['grant' => ['financeiro.view']],
+        'manicure' => ['grant' => ['config.manage']],
+        'atendente' => ['grant' => ['financeiro.view']],
+    ]);
+
+    expect($payload)->not->toHaveKey('cliente');
+    expect($payload)->not->toHaveKey('manicure');
+    expect($payload['atendente']['grant'] ?? [])->toContain('financeiro.view');
+});
+
+test('cliente com grant no JSON não acessa financeiro do dono', function () {
+    $this->config->update([
+        'role_permissions' => [
+            'cliente' => ['grant' => ['financeiro.view'], 'revoke' => []],
+        ],
+    ]);
+    ConfiguracaoSalao::esquecerCache($this->salao->id);
+
+    $cliente = User::factory()->create([
+        'role' => 'cliente',
+        'salao_id' => $this->salao->id,
+        'ativo' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $this->actingAs($cliente)->get('/dono/financeiro')->assertForbidden();
+});
+
 // ---------- Onboarding ----------
 
 test('dono vê checklist no dashboard quando onboarding incompleto', function () {

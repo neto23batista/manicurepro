@@ -66,6 +66,21 @@ class AgendamentoPolicy
         return $this->view($user, $agendamento);
     }
 
+    /**
+     * Só o cliente dono do agendamento avalia. Manicure/dono/atendente não.
+     */
+    public function review(User $user, Agendamento $agendamento): bool
+    {
+        if (! $user->isCliente()) {
+            return false;
+        }
+
+        $clienteId = $user->cliente?->id;
+
+        return ($clienteId !== null && $agendamento->cliente_id === $clienteId)
+            || $agendamento->user_id === $user->id;
+    }
+
     public function finalize(User $user, Agendamento $agendamento): bool
     {
         return $this->update($user, $agendamento);

@@ -57,11 +57,14 @@ test('entrada, saída e ajuste atualizam o estoque corretamente', function () {
     expect((float) $produto->fresh()->estoque_atual)->toBe(20.0);
 });
 
-test('saída não deixa o estoque negativo', function () {
+test('saída acima do estoque é rejeitada e não altera o saldo', function () {
     $produto = novoProduto($this->salao->id, ['estoque_atual' => 2]);
 
-    $this->actingAs($this->dono)->post("/dono/produtos/{$produto->id}/estoque", ['tipo' => 'saida', 'quantidade' => 5])->assertRedirect();
-    expect((float) $produto->fresh()->estoque_atual)->toBe(0.0);
+    $this->actingAs($this->dono)
+        ->post("/dono/produtos/{$produto->id}/estoque", ['tipo' => 'saida', 'quantidade' => 5])
+        ->assertSessionHasErrors('quantidade');
+
+    expect((float) $produto->fresh()->estoque_atual)->toBe(2.0);
 });
 
 test('estoque_baixo sinaliza quando no mínimo ou abaixo', function () {

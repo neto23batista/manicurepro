@@ -12,15 +12,17 @@ use App\Models\User;
  *
  * Estrutura armazenada:
  * {
- *   "atendente": { "grant": ["financeiro.view"], "revoke": [] },
- *   "manicure":  { "grant": [], "revoke": [] }
+ *   "atendente": { "grant": ["financeiro.view"], "revoke": [] }
  * }
  *
- * - grant: habilidades além do default da role
+ * - grant: habilidades além do default da role (somente role atendente)
  * - revoke: remove grants previamente dados (não altera defaults embutidos nas Policies/rotas)
  */
 class PermissionService
 {
+    /** Roles que podem receber grants extras (painel dono sensível). */
+    public const GRANTABLE_ROLES = ['atendente'];
+
     /** @return array<string, string> chave => rótulo */
     public static function catalog(): array
     {
@@ -54,9 +56,14 @@ class PermissionService
             return false;
         }
 
-        // Admin/dono já cobrem operação via RoleMiddleware; grant é para roles menores.
+        // Admin/dono já cobrem operação via RoleMiddleware; grant é só para atendente.
         if ($user->isSuperAdmin() || $user->isDono()) {
             return true;
+        }
+
+        $role = $user->roleEnum()?->value;
+        if (! $role || ! in_array($role, self::GRANTABLE_ROLES, true)) {
+            return false;
         }
 
         return in_array($permission, $this->grantsFor($user), true);
@@ -88,6 +95,10 @@ class PermissionService
     {
         $out = [];
         foreach (UserRole::cases() as $role) {
+            if (! in_array($role->value, self::GRANTABLE_ROLES, true)) {
+                continue;
+            }
+
             $bucket = is_array($input[$role->value] ?? null) ? $input[$role->value] : [];
             $grant = $this->filterKeys($bucket['grant'] ?? []);
             $revoke = $this->filterKeys($bucket['revoke'] ?? []);

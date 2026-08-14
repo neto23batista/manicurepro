@@ -87,6 +87,19 @@ test('cliente não acessa produtos', function () {
     expect($this->cliente->can('update', $this->produtoA))->toBeFalse();
 });
 
+test('manicure não gerencia produto nem fornecedor do próprio salão', function () {
+    $fornecedor = \App\Models\Fornecedor::create([
+        'salao_id' => $this->salaoA->id,
+        'nome'     => 'Fornecedor A',
+        'ativo'    => true,
+    ]);
+
+    expect($this->userManicure->can('viewAny', Produto::class))->toBeFalse();
+    expect($this->userManicure->can('update', $this->produtoA))->toBeFalse();
+    expect($this->userManicure->can('viewAny', \App\Models\Fornecedor::class))->toBeFalse();
+    expect($this->userManicure->can('update', $fornecedor))->toBeFalse();
+});
+
 // ---------- GaleriaFoto ----------
 
 test('admin pode gerenciar galeria via Gate (before)', function () {

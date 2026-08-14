@@ -358,8 +358,8 @@
                         @foreach($roles as $role)
                             @php
                                 $grants = $rolePermissions[$role->value]['grant'] ?? [];
-                                // Dono/admin já têm tudo via hierarquia — grants só fazem sentido para roles menores.
-                                $editavel = ! in_array($role->value, ['admin', 'dono'], true);
+                                // Grants extras só para atendente (evita escalation cliente/manicure → painel dono).
+                                $editavel = in_array($role->value, \App\Services\PermissionService::GRANTABLE_ROLES, true);
                             @endphp
                             <div class="col-lg-6">
                                 <div class="border rounded-3 p-3 h-100">

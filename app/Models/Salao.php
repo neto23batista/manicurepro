@@ -238,6 +238,6 @@ class Salao extends Model
             return round((float) $this->attributes['nota_media_calc'], 1);
         }
 
-        return round($this->avaliacoes()->avg('nota') ?? 0, 1);
+        return round($this->avaliacoes()->publicadas()->avg('nota') ?? 0, 1);
     }
 }

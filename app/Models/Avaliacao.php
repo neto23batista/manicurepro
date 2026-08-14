@@ -19,6 +19,11 @@ class Avaliacao extends Model
         'publicar'      => 'boolean',
     ];
 
+    public function scopePublicadas($query)
+    {
+        return $query->where('publicar', true);
+    }
+
     /** @return BelongsTo<Agendamento, $this> */
     public function agendamento(): BelongsTo
     {
