@@ -245,6 +245,46 @@
                         <strong class="text-pink fs-5">R$ {{ number_format($totalReceber, 2, ',', '.') }}</strong>
                     </div>
                 @endif
+
+                @php($mpTipo = $agendamento->mp_cobranca_tipo ?: 'sinal')
+                @php($mpStatus = $mpTipo === 'total' ? $agendamento->mp_total_status : $agendamento->sinal_status)
+                @php($mpValor = $mpTipo === 'total' ? $agendamento->mp_total_valor : $agendamento->sinal_valor)
+                @php($podeEstornarPix = $agendamento->mp_payment_id && in_array($mpStatus, ['pago', 'pendente'], true) && (auth()->user()?->isDono() || auth()->user()?->isSuperAdmin()))
+                @if($agendamento->mp_payment_id && $mpStatus)
+                    <hr>
+                    <div class="small text-muted mb-1">Pix online (Mercado Pago)</div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>{{ $mpTipo === 'total' ? 'Cobrança total' : 'Sinal' }}</span>
+                        <span class="badge bg-{{ $mpStatus === 'pago' ? 'success' : ($mpStatus === 'pendente' ? 'warning text-dark' : 'secondary') }}">
+                            {{ $mpStatus }}
+                        </span>
+                    </div>
+                    @if($mpValor)
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Valor</span>
+                            <strong>R$ {{ number_format((float) $mpValor, 2, ',', '.') }}</strong>
+                        </div>
+                    @endif
+                    @if($podeEstornarPix)
+                        <form method="POST" action="{{ route('dono.agendamentos.estorno-pix', $agendamento) }}"
+                              class="mt-2"
+                              data-confirm="{{ $mpStatus === 'pago' ? 'Estornar Pix?' : 'Cancelar cobrança Pix?' }}"
+                              data-confirm-message="{{ $mpStatus === 'pago' ? 'O valor será devolvido ao cliente no Mercado Pago. O agendamento NÃO será cancelado.' : 'A cobrança pendente será cancelada na MP. O agendamento NÃO será cancelado.' }}"
+                              data-confirm-type="warning"
+                              data-confirm-ok="{{ $mpStatus === 'pago' ? 'Estornar' : 'Cancelar cobrança' }}">
+                            @csrf
+                            <div class="mb-2">
+                                <label class="form-label small mb-1" for="motivoEstorno">Motivo (opcional)</label>
+                                <input type="text" name="motivo" id="motivoEstorno" class="form-control form-control-sm"
+                                       maxlength="255" placeholder="Ex.: cliente desistiu do sinal">
+                            </div>
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-rotate-left me-1" aria-hidden="true"></i>
+                                {{ $mpStatus === 'pago' ? 'Estornar Pix' : 'Cancelar cobrança Pix' }}
+                            </button>
+                        </form>
+                    @endif
+                @endif
             </div>
         </div>
 

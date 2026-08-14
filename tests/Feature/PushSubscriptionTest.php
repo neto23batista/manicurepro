@@ -101,6 +101,7 @@ test('usuário pode remover a própria push subscription', function () {
 
 test('WebPushService::sendToUser é no-op sem VAPID', function () {
     config([
+        'manicure.webpush.subscribe_ui' => true,
         'manicure.webpush.vapid.public_key'  => null,
         'manicure.webpush.vapid.private_key' => null,
     ]);
@@ -117,4 +118,19 @@ test('WebPushService::sendToUser é no-op sem VAPID', function () {
 
     expect($sent)->toBe(0);
     expect(app(WebPushService::class)->configurado())->toBeFalse();
+});
+
+test('WebPushService::envioDisponivel exige UI + VAPID + pacote', function () {
+    config([
+        'manicure.webpush.subscribe_ui' => false,
+        'manicure.webpush.vapid.public_key' => 'BNcRdytQsLG',
+        'manicure.webpush.vapid.private_key' => 'private',
+    ]);
+
+    expect(app(WebPushService::class)->envioDisponivel())->toBeFalse();
+
+    config(['manicure.webpush.subscribe_ui' => true]);
+
+    $disponivel = app(WebPushService::class)->envioDisponivel();
+    expect($disponivel)->toBe(class_exists(\Minishlink\WebPush\WebPush::class));
 });

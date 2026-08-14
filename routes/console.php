@@ -36,3 +36,7 @@ Schedule::command('manicure:reativar-inativos')
 Schedule::command('manicure:sugerir-retorno')
     ->dailyAt('10:30')
     ->withoutOverlapping();
+
+Schedule::command('manicure:backup --keep=14')
+    ->dailyAt('02:30')
+    ->withoutOverlapping();

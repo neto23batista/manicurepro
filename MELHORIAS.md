@@ -1,6 +1,6 @@
 # ManicurePro — Backlog de melhorias
 
-Classificação **fiél ao código** (2026-08-10, pós Fases 1–10). Detalhe por módulo: [`docs/AUDITORIA.md`](docs/AUDITORIA.md). Prioridades: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Classificação **fiél ao código** (2026-08-13, pós plano de melhoria). Detalhe por módulo: [`docs/AUDITORIA.md`](docs/AUDITORIA.md). Prioridades: [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 Produção: [`docs/PRODUCAO.md`](docs/PRODUCAO.md).
 
@@ -36,6 +36,7 @@ Não reabrir como backlog.
 - Galeria, lista de espera, aniversário (comando), iCal + template Google
 - **Avaliações** — create web/API (só cliente), moderação dono/atendente (`publicar`), média pública só das publicadas
 - **Sinal Pix MP** + **Pix total/restante** (controller + config + testes)
+- **Estorno Pix UX** — `POST dono/agendamentos/{id}/estorno-pix` + bloco no show + audit `pagamento.estornado` (`DonoEstornoPixTest`)
 - **Caixa operacional** — abrir/movimentar/fechar + show + `CaixaTest`
 - **Despesas** + **fluxo de caixa** no painel financeiro
 - **CRM** — `ClienteSegmentacao` + filtros + cupom reativação
@@ -46,8 +47,10 @@ Não reabrir como backlog.
 - PWA (manifest/SW/offline), Docker Compose Sail, CI (Pest + Pint + **PHPStan** + **frontend build**)
 - Soft deletes; relatórios PDF + CSV admin; dashboard KPIs + alertas
 - Onboarding wizard + checklist no dashboard
-- Ops: `manicure:backup` + `/admin/saude`
+- Ops: `manicure:backup` (também no schedule 02:30) + `/admin/saude` + smoke checklist em PRODUCAO.md
 - API v1 polish: erros JSON (`ApiError`), `GET /me/fidelidade`, filtros/paginação em agendamentos
+- **Booking unificado** — `resources/js/booking-form.js` + `_slots_picker` (guest/cliente/dono/reagendar)
+- **Sentry** opcional (`config/sentry.php` + `SENTRY_LARAVEL_DSN`)
 
 ### Qualidade / UX (Fase 10 P2 pontual)
 
@@ -57,6 +60,7 @@ Não reabrir como backlog.
 - Erros genéricos ao usuário (`HandlesDomainExceptions` — sem vazar `$e->getMessage()`)
 - Skip-link em layouts app/auth/público/erros; foco no modal de confirmação
 - Loading automático em submits (`btn-loading` em `app.js`)
+- A11y pontual: contraste `.text-muted`, `:focus-visible`, slots com `aria-selected` / `aria-live`
 - Smoke empresário: `FluxoEmpresarioTest` (caixa→agenda→comanda→fechar; cancelamento; no-show; double booking; estoque zerado; atendente 403; IDOR)
 
 ---
@@ -67,11 +71,10 @@ Itens com código, mas incompletos.
 
 | Item | O que existe | O que falta | Arquivos-chave |
 |------|--------------|-------------|----------------|
-| **Web Push** | Persistência + canal; UI subscribe **escondida** (`WEBPUSH_SUBSCRIBE_UI`) | `sendToUser` stub (log + 0); sem `minishlink/web-push` | `WebPushService.php` |
+| **Web Push** | `minishlink/web-push` no composer + `sendToUser` real; UI **escondida** (`WEBPUSH_SUBSCRIBE_UI`) | Validar VAPID ponta a ponta e ligar UI | `WebPushService.php` |
 | **NF-e** | Rascunho local, UI dono (flag `fiscal.enabled`) | Emissão SEFAZ / provedor | `NotaFiscalService.php` |
 | **API v1** | Auth + salão/slots + agendamentos + fidelidade + erros JSON | Paridade web (financeiro, estoque, caixa) | `routes/api.php` |
-| **Estorno Pix UX** | `MercadoPagoService::cancelarOuEstornar` | UI dono dedicada de refund | `MercadoPagoService.php` |
-| **A11y** | Skip-link + foco modal básico + contraste parcial | Auditoria completa / contraste sistemático | layouts + `confirm-modal` |
+| **A11y** | Skip-link + foco modal + contraste/`focus-visible` + slots ARIA | Auditoria completa WCAG | layouts + CSS |
 
 ---
 
@@ -80,11 +83,8 @@ Itens com código, mas incompletos.
 Ainda não há implementação utilizável (ou só estratégia em doc).
 
 - [ ] **Emissor fiscal real** (SEFAZ / eNotas etc.) — substituir stub
-- [ ] **Web Push send real** — pacote + VAPID operacional ponta a ponta
 - [ ] **Sync OAuth** Google/Outlook (hoje só `.ics` + template URL)
-- [ ] **Uma UI de booking** — consolidar guest / cliente / dono
 - [ ] **Gorjeta via Mercado Pago**
-- [ ] **Sentry** opcional (APM); hoje só `report()` + log
 - [ ] **Pipeline de deploy** (staging + automático) — hoje manual via PRODUCAO.md
 - [ ] **Multi-empresa / filiais** — ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md); **não migrar agora**
 - [ ] **Spatie Permission** — só se as 5 roles + JSON leve não bastarem
@@ -94,8 +94,8 @@ Ainda não há implementação utilizável (ou só estratégia em doc).
 
 ## Ordem sugerida (pós Fases 1–10)
 
-1. Uso real em salão + correção de bugs operacionais.
-2. Push send real **ou** manter UI escondida; NF-e continuar `FISCAL_ENABLED=false` em prod.
+1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md).
+2. Push UI: manter escondida até validar; NF-e continuar `FISCAL_ENABLED=false` em prod.
 3. OAuth / fiscal real / multi-empresa só com escopo explícito.
 
 ---

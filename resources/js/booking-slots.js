@@ -78,7 +78,7 @@ export function createSlotPicker(opts = {}) {
 
             if (j.slots?.length) {
                 slotsGrid.innerHTML = j.slots.map((s) =>
-                    `<button type="button" class="slot-chip" data-dt="${s.datetime}">${s.hora}</button>`
+                    `<button type="button" class="slot-chip" role="option" aria-selected="false" data-dt="${s.datetime}">${s.hora}</button>`
                 ).join('');
                 slotsGrid.classList.remove('d-none');
                 onSlotsLoaded?.(j.slots, { manicureId, data, duracao });
@@ -126,8 +126,12 @@ export function createSlotPicker(opts = {}) {
             }
         }
 
-        slotsGrid.querySelectorAll('.slot-chip').forEach((c) => c.classList.remove('selected'));
+        slotsGrid.querySelectorAll('.slot-chip').forEach((c) => {
+            c.classList.remove('selected');
+            c.setAttribute('aria-selected', 'false');
+        });
         chip.classList.add('selected');
+        chip.setAttribute('aria-selected', 'true');
         setValue(chip.dataset.dt);
     }
 
@@ -136,14 +140,27 @@ export function createSlotPicker(opts = {}) {
         if (chip) selectChip(chip);
     });
 
+    slotsGrid.addEventListener('keydown', (e) => {
+        const chip = e.target.closest('.slot-chip');
+        if (!chip) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectChip(chip);
+        }
+    });
+
     inputData.addEventListener('change', load);
 
     function selectDatetime(dt) {
         if (!dt) return false;
         const chip = slotsGrid.querySelector(`.slot-chip[data-dt="${dt}"]`);
         if (!chip) return false;
-        slotsGrid.querySelectorAll('.slot-chip').forEach((c) => c.classList.remove('selected'));
+        slotsGrid.querySelectorAll('.slot-chip').forEach((c) => {
+            c.classList.remove('selected');
+            c.setAttribute('aria-selected', 'false');
+        });
         chip.classList.add('selected');
+        chip.setAttribute('aria-selected', 'true');
         setValue(dt);
         return true;
     }

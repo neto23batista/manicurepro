@@ -1,6 +1,6 @@
 # Roadmap
 
-**Data:** 2026-08-10 (atualizado pós Fases 1–10)  
+**Data:** 2026-08-13 (pós plano de melhoria)  
 **Regra:** status baseado no código ([AUDITORIA.md](AUDITORIA.md)), não na intenção da onda.
 
 Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
@@ -37,13 +37,13 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P1.7 | Contas a pagar / despesas | Model + controller + view + fluxo UI | **feito** |
 | P1.8 | Cobrança Pix do valor total | Service + config + controller + view + testes | **feito** |
 | P1.9 | NF-e real (SEFAZ) | Hoje stub local (`NotaFiscalService`) | **pendente** (stub feito; integração real não) |
-| P1.10 | Web Push de verdade | UI subscribe off (`WEBPUSH_SUBSCRIBE_UI`); send stub sem minishlink | **parcial** (UI escondida de propósito) |
+| P1.10 | Web Push de verdade | `minishlink/web-push` no lock + `sendToUser` real; UI off (`WEBPUSH_SUBSCRIBE_UI`) até validar | **parcial** (send pronto; UI escondida de propósito) |
 | P1.11 | Policies em todos os recursos sensíveis | Pacote/Vale/NF/AuditLog/Feriado/Fornecedor + grants JSON | **feito** (Spatie adiado) |
 | P1.12 | Indicação / no-show | Indicação + contador faltas + alerta config | **feito** |
 | P1.13 | Sync OAuth Google/Outlook | Só `.ics` + template URL | **pendente** |
 | P1.14 | Gorjeta / tip online via MP | Gorjeta só no fechar comanda presencial | **pendente** |
-| P1.15 | UI única de booking | Ainda 3 fluxos (público guest, cliente, dono) | **pendente** |
-| P1.16 | Estorno/refund UX | Service consegue estornar; UI limitada | **pendente** |
+| P1.15 | UI única de booking | `booking-form.js` + `_slots_picker` (guest/cliente/dono/reagendar) | **feito** |
+| P1.16 | Estorno/refund UX | UI dono no show + audit `pagamento.estornado` + `DonoEstornoPixTest` | **feito** |
 | P1.17 | CRM segmentação | `ClienteSegmentacao` + filtros + métricas show + cupom reativação | **feito** |
 | P1.18 | Marketing retenção | `manicure:reativar-inativos` / `sugerir-retorno` + listener avaliação + gate `marketing.enabled` | **feito** |
 | P1.19 | Dashboard KPIs + CSV | Comparativo vs mês anterior + alertas CRM; CSV em `admin.relatorios` | **feito** |
@@ -54,7 +54,7 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P1.24 | Audit UI + permissions JSON + onboarding | Fase 8 | **feito** |
 | P1.25 | API polish + backup + `/admin/saude` | Fase 9 | **feito** |
 
-**Ainda falta (honestamente):** push send real, NF-e SEFAZ, OAuth calendar, gorjeta online MP, UI única de booking, UX de estorno; a11y profunda; multi-empresa.
+**Ainda falta (honestamente):** NF-e SEFAZ; ligar UI Web Push após validar VAPID; OAuth calendar; gorjeta online MP; a11y profunda; multi-empresa; pipeline deploy.
 
 ---
 
@@ -65,13 +65,13 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P2.1 | Tema pink fixo vs `cor_primaria` do salão | `theme-vars` lê DB do salão (+ fallback env) | **feito** |
 | P2.2 | Auth/erros ainda CDN Bootstrap | Unificado no Vite | **feito** |
 | P2.3 | Footer social `href="#"` | `config('manicure.social.*')` + normalização de URL | **feito** |
-| P2.4 | Erros com `$e->getMessage()` ao usuário | `HandlesDomainExceptions` + mensagens genéricas | **feito** (Sentry opcional ainda futuro) |
+| P2.4 | Erros com `$e->getMessage()` ao usuário | `HandlesDomainExceptions` + mensagens genéricas | **feito** (Sentry opcional via DSN) |
 | P2.5 | API v1 fina vs web | Erros JSON + `/me/fidelidade` + filtros | **parcial** (polish feito; sem financeiro/estoque) |
 | P2.6 | Avaliações sem moderação/listagem | Admin + média na página pública | **feito** |
 | P2.7 | `FinanceiroService::fluxoCaixa` sem UI | Exposto no painel financeiro | **feito** |
 | P2.8 | PHPStan / build no CI | Jobs no `ci.yml` | **feito** |
 | P2.9 | Docker Compose versionado | `docker-compose.yml` + [DOCKER.md](DOCKER.md) | **feito** |
-| P2.10 | Skip-link / foco modal / loading submits | Layouts + confirm-modal + `btn-loading` | **parcial** (básico feito; auditoria a11y completa não) |
+| P2.10 | Skip-link / foco modal / loading submits | + contraste muted + `:focus-visible` + slots ARIA | **parcial** (crítico feito; auditoria a11y completa não) |
 | P2.11 | Validação fluxo empresário E2E | `FluxoEmpresarioTest` + suíte regressão | **feito** |
 
 ---
@@ -91,8 +91,8 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 
 ## Ordem sugerida (pós Fase 10)
 
-1. Uso real em salão + hotfixes.
-2. Manter Web Push UI escondida até send real; NF-e off em prod.
+1. Uso real em salão + hotfixes (smoke em [PRODUCAO.md](PRODUCAO.md)).
+2. Manter Web Push UI escondida até validar VAPID; NF-e off em prod.
 3. OAuth / fiscal real / multi-empresa só com escopo de produto explícito.
 
 ---

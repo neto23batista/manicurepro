@@ -48,30 +48,31 @@ Categorias alinhadas a [MELHORIAS.md](MELHORIAS.md) e [AUDITORIA.md](docs/AUDITO
 - **CRM** segmentação + marketing (reativar/sugerir retorno)
 - **Fidelidade** (níveis + expiração) + **indicação**
 - **Cupons** avançados, **pacotes**, lista de espera, galeria, ficha de unhas
-- **Sinal Pix** + **Pix total** (Mercado Pago) + webhook fail-closed + idempotente
+- **Sinal Pix** + **Pix total** (Mercado Pago) + webhook fail-closed + idempotente + **estorno/cancelamento Pix no painel do dono** (sem cancelar agendamento)
 - **WhatsApp Cloud API** opcional
 - Relatórios PDF/CSV, dashboards com KPIs/alertas, onboarding, auditoria UI
 - Perfil, e-mail verify, reset, **2FA TOTP**, LGPD
 - **PWA**, iCal + template Google (sem OAuth), cache de slots
-- Ops: backup (`manicure:backup`), `/admin/saude`, Docker Sail, CI
+- Ops: backup (`manicure:backup` no schedule), `/admin/saude`, Docker Sail, CI
 - **API `/api/v1`** (auth + salão/slots + agendamentos + fidelidade + erros JSON)
-- Tema `cor_primaria` do salão no CSS; auth/erros via Vite; skip-link básico
+- Tema `cor_primaria` do salão no CSS; auth/erros via Vite; skip-link + a11y básica
+- **Avaliações** com moderação dono/atendente e média pública só das publicadas
+- Booking unificado (`booking-slots.js` + `booking-form.js`) guest/cliente/dono/reagendar
+- **Sentry** opcional (`SENTRY_LARAVEL_DSN`)
 
 ### PARCIAL
 
-- **Web Push:** UI subscribe **escondida**; `sendToUser` é **stub** (sem minishlink)
+- **Web Push:** send real com `minishlink/web-push` (composer) + VAPID; UI subscribe **escondida** por padrão até validar ponta a ponta
 - **NF-e:** rascunho local — **não emite SEFAZ**
-- **Avaliações:** cliente/API escrevem; sem moderação admin / média pública
 - **API:** sem paridade financeira/estoque/caixa
-- **Estorno Pix:** service existe; UI dono limitada
-- **A11y:** skip-link + foco modal básicos; auditoria completa pendente
+- **A11y:** skip-link + foco modal + contraste/`focus-visible` nos fluxos críticos; auditoria completa pendente
 
 ### FUTURO
 
 - Sync OAuth de calendário (Google/Outlook)
 - Emissor fiscal real (SEFAZ / provedor)
 - Multi-empresa / filiais ([ARQUITETURA.md](docs/ARQUITETURA.md) — estratégia apenas)
-- UI única de booking; API mobile completa; pipeline de deploy; Sentry
+- API mobile completa; pipeline de deploy
 - Gorjeta / tip via Mercado Pago
 - Spatie Permission full; app nativo
 

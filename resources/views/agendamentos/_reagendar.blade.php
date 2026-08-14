@@ -48,13 +48,10 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const btnSubmit = document.getElementById('btnSubmit');
-
-    window.createSlotPicker({
+    window.initBookingForm({
+        mode: 'reagendar',
         manicureId: {{ $agendamento->manicure_id }},
         duracao: {{ $duracao }},
-        emptyHint: 'Escolha uma data para ver os horários disponíveis.',
-        onChange: (dt) => { btnSubmit.disabled = !dt; },
     });
 });
 </script>

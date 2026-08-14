@@ -8,6 +8,8 @@ import ApexCharts from 'apexcharts';
 
 // Slot picker compartilhado (agendar / reagendar) — expõe window.createSlotPicker
 import './booking-slots.js';
+// Wiring unificado guest/cliente/dono/reagendar — expõe window.initBookingForm
+import './booking-form.js';
 
 // Expor globalmente para uso em scripts inline nas views
 window.bootstrap = bootstrap;

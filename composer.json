@@ -9,7 +9,9 @@
         "barryvdh/laravel-dompdf": "^2.2",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "minishlink/web-push": "^9.0",
+        "sentry/sentry-laravel": "^4.13"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

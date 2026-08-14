@@ -223,10 +223,9 @@ return [
     ],
 
     /*
-     * Web Push (PWA). Sem minishlink/web-push o envio é stub (retorna 0).
-     * subscribe_ui=false esconde meta/pedido de permissão no browser —
-     * não coletar subscriptions sem send real. Ative só após instalar o
-     * pacote e implementar WebPushService::sendToUser de verdade.
+     * Web Push (PWA). Requer minishlink/web-push + VAPID.
+     * subscribe_ui=false esconde meta/pedido de permissão no browser.
+     * Ative WEBPUSH_SUBSCRIBE_UI=true só após validar sendToUser ponta a ponta.
      */
     'webpush' => [
         'subscribe_ui' => (bool) env('WEBPUSH_SUBSCRIBE_UI', false),

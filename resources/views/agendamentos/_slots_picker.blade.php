@@ -21,8 +21,8 @@
     </div>
     <div class="col-12">
         <label class="form-label d-block">{{ $timeLabel }}</label>
-        <p class="text-muted small mb-2" id="slotsHint">{{ $hint }}</p>
-        <div id="skeletonHora" class="d-none" aria-hidden="true">
+        <p class="text-muted small mb-2" id="slotsHint" role="status" aria-live="polite">{{ $hint }}</p>
+        <div id="skeletonHora" class="d-none" aria-hidden="true" aria-busy="true">
             <span class="skeleton-slot">--:--</span>
             <span class="skeleton-slot">--:--</span>
             <span class="skeleton-slot">--:--</span>
@@ -32,7 +32,7 @@
             <span class="skeleton-slot">--:--</span>
             <span class="skeleton-slot">--:--</span>
         </div>
-        <div class="slots-grid d-none" id="slotsGrid" role="group" aria-label="Horários disponíveis"></div>
-        <input type="hidden" name="data_hora_inicio" id="dataHoraInicio" value="{{ $dataHoraInicioValue }}">
+        <div class="slots-grid d-none" id="slotsGrid" role="listbox" aria-label="Horários disponíveis"></div>
+        <input type="hidden" name="data_hora_inicio" id="dataHoraInicio" value="{{ $dataHoraInicioValue }}" aria-required="true">
     </div>
 </div>

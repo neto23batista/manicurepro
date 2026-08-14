@@ -88,7 +88,7 @@ Detalhe de módulos: [AUDITORIA.md](AUDITORIA.md). Deploy: [PRODUCAO.md](PRODUCA
 
 ### Web Push
 
-- UI de subscribe desligada por padrão (`WEBPUSH_SUBSCRIBE_UI=false`). Envio continua stub sem `minishlink/web-push`. VAPID no `.env` sozinho **não** ativa pedido de permissão no browser.
+- UI de subscribe desligada por padrão (`WEBPUSH_SUBSCRIBE_UI=false`). Envio real quando `minishlink/web-push` estiver instalado + VAPID + UI. VAPID no `.env` sozinho **não** ativa pedido de permissão no browser.
 
 ### NF-e stub
 
@@ -96,7 +96,7 @@ Detalhe de módulos: [AUDITORIA.md](AUDITORIA.md). Deploy: [PRODUCAO.md](PRODUCA
 
 ### Observabilidade
 
-- Sem Sentry/APM versionado como obrigatório. Controllers críticos usam mensagem genérica; logs internos ainda registram `$e->getMessage()` (aceitável).
+- Sentry opcional via `SENTRY_LARAVEL_DSN` (`config/sentry.php`). Sem DSN, pacote fica no-op. Controllers críticos usam mensagem genérica; logs internos ainda registram `$e->getMessage()` (aceitável).
 
 ### API
 

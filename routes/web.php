@@ -239,6 +239,8 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified'])->group(fu
         Route::delete('/financeiro/comissoes/{pagamento}', [DonoFinanceiro::class, 'destroyPagamento'])->name('financeiro.comissoes.destroy');
         Route::post('/financeiro/comissoes/ajustes', [DonoFinanceiro::class, 'storeAjuste'])->name('financeiro.comissoes.ajustes.store');
         Route::delete('/financeiro/comissoes/ajustes/{ajuste}', [DonoFinanceiro::class, 'destroyAjuste'])->name('financeiro.comissoes.ajustes.destroy');
+        Route::post('agendamentos/{agendamento}/estorno-pix', [DonoAgendamento::class, 'estornarPix'])
+            ->name('agendamentos.estorno-pix');
     });
 
     Route::middleware(['role_or_perm:dono,financeiro.caixa', 'check.salao'])->group(function () {

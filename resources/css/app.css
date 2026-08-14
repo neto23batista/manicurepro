@@ -2152,3 +2152,35 @@ kbd {
         transform: none !important;
     }
 }
+
+/* === A11y (fluxos críticos: agendar, caixa, comanda) === */
+:focus-visible {
+    outline: 3px solid var(--pink-600);
+    outline-offset: 2px;
+}
+
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.slot-chip:focus-visible,
+.form-check-input:focus-visible {
+    outline: 3px solid var(--pink-600);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 0.2rem rgba(190, 19, 92, 0.25);
+}
+
+/* Texto auxiliar com contraste ≥ AA sobre fundo claro */
+.text-muted,
+.form-text,
+.small.text-muted {
+    color: #5c5c66 !important;
+}
+
+.slot-chip[aria-selected="true"] {
+    outline: 2px solid var(--pink-700);
+    outline-offset: 1px;
+}
+
+.skip-link:focus {
+    z-index: 1080;
+}

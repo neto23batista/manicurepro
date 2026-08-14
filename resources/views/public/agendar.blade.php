@@ -222,107 +222,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const btnSubmit = document.getElementById('btnSubmit');
-    const resumoCard = document.getElementById('resumoCard');
-    const isGuest = {{ auth()->guest() ? 'true' : 'false' }};
-
-    function syncVariacao(select) {
-        const sid = select.dataset.servicoId;
-        const check = document.querySelector(`.servico-check[data-servico-id="${sid}"]`);
-        if (!check) return;
-        const opt = select.options[select.selectedIndex];
-        check.dataset.preco = opt.dataset.preco || select.dataset.basePreco;
-        check.dataset.duracao = opt.dataset.duracao || select.dataset.baseDuracao;
-    }
-
-    function getDuracao() {
-        return [...document.querySelectorAll('.servico-check:checked')]
-            .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
-    }
-    function getValor() {
-        return [...document.querySelectorAll('.servico-check:checked')]
-            .reduce((s, c) => s + parseFloat(c.dataset.preco), 0);
-    }
-    function getManicureId() {
-        const r = document.querySelector('.manicure-radio:checked');
-        return r ? r.value : null;
-    }
-
-    function guestDadosOk() {
-        if (!isGuest) return true;
-        const nome = document.getElementById('guestNome')?.value.trim();
-        const tel = (document.getElementById('guestTelefone')?.value || '').replace(/\D/g, '');
-        return !!(nome && tel.length >= 10);
-    }
-
-    function atualizarResumo(duracao) {
-        if (!(duracao > 0)) {
-            resumoCard.classList.add('d-none');
-            return;
-        }
-        const v = getValor(), h = Math.floor(duracao / 60), mm = duracao % 60;
-        resumoCard.classList.remove('d-none');
-        document.getElementById('resumoDuracao').textContent = h > 0 ? `${h}h ${mm}min` : `${mm}min`;
-        document.getElementById('resumoValor').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
-    }
-
-    function verificarBotao() {
-        btnSubmit.disabled = !(getDuracao() > 0 && getManicureId()
-            && picker?.inputData?.value && picker?.getValue() && guestDadosOk());
-    }
-
-    const picker = window.createSlotPicker({
-        getManicureId,
-        getDuracao,
+    window.initBookingForm({
+        mode: {{ auth()->guest() ? "'guest'" : "'cliente'" }},
         hold: true,
-        emptyHint: 'Selecione manicure, serviços e data para ver os horários.',
-        onChange: verificarBotao,
-        onSlotsLoaded: (slots, ctx) => {
-            if (slots?.length) atualizarResumo(ctx.duracao);
-            else resumoCard.classList.add('d-none');
-            verificarBotao();
-        },
     });
-
-    document.querySelectorAll('.servico-check').forEach((c) => {
-        c.addEventListener('change', function () {
-            this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
-            const sel = document.querySelector(`.variacao-select[data-servico-id="${this.dataset.servicoId}"]`);
-            if (sel) { sel.disabled = !this.checked; if (this.checked) syncVariacao(sel); }
-            picker?.load();
-        });
-    });
-    document.querySelectorAll('.variacao-select').forEach((sel) => {
-        sel.addEventListener('change', () => { syncVariacao(sel); picker?.load(); atualizarResumo(getDuracao()); verificarBotao(); });
-    });
-    document.querySelectorAll('.manicure-radio').forEach((r) => {
-        r.addEventListener('change', function () {
-            document.querySelectorAll('.manicure-card').forEach((card) => card.classList.remove('selected'));
-            this.closest('label').querySelector('.manicure-card').classList.add('selected');
-            picker?.load();
-        });
-    });
-
-    ['guestNome', 'guestTelefone'].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', verificarBotao);
-    });
-
-    // Restaura data a partir de old(data_hora_inicio) e recarrega chips
-    const oldDt = document.getElementById('dataHoraInicio')?.value;
-    if (oldDt && picker?.inputData) {
-        const dt = oldDt.replace(' ', 'T');
-        if (dt.length >= 10) {
-            picker.inputData.value = dt.slice(0, 10);
-            picker.load().then(() => {
-                picker.selectDatetime(oldDt);
-            });
-        }
-    }
-
-    // Resumo imediato se serviços já vinham marcados (old input)
-    if (getDuracao() > 0) atualizarResumo(getDuracao());
-    verificarBotao();
 });
 </script>
 </body>

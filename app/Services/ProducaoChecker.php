@@ -60,8 +60,11 @@ class ProducaoChecker
             ? $this->aviso('Fila', 'QUEUE_CONNECTION=sync: jobs rodam no mesmo request (e-mails/WhatsApp deixam a navegação lenta).')
             : $this->ok('Fila', "QUEUE_CONNECTION={$queue} — mantenha um worker ativo (php artisan queue:work).");
 
-        // Agendador (cron)
-        $checks[] = $this->aviso('Agendador', 'Configure o cron para "php artisan schedule:run" a cada minuto (lembretes, aniversários, limpeza).');
+        // Agendador (cron) — sempre aviso: não dá para detectar cron do SO daqui.
+        $checks[] = $this->aviso(
+            'Agendador',
+            'Lembrete permanente: configure cron "* * * * * php artisan schedule:run" (lembretes, aniversários, limpeza, CRM, backup).'
+        );
 
         // CSP
         $checks[] = config('manicure.security.csp_enabled')
@@ -73,20 +76,67 @@ class ProducaoChecker
             ? $this->ok('Storage', 'Link público de storage existe.')
             : $this->erro('Storage', 'Falta o link de storage. Rode "php artisan storage:link" (galeria/logos não aparecem sem ele).');
 
-        // Mercado Pago: se habilitado, exige secret de webhook (fail-closed)
+        // Mercado Pago: se habilitado, exige token + secret de webhook (fail-closed)
         $mpEnabled = (bool) config('manicure.pagamento.mercadopago.enabled');
         $mpSecret = (string) config('manicure.pagamento.mercadopago.webhook_secret');
+        $mpToken = (string) config('manicure.pagamento.mercadopago.access_token');
         if ($mpEnabled) {
-            $checks[] = $mpSecret !== ''
-                ? $this->ok('MercadoPago', 'MP habilitado com MP_WEBHOOK_SECRET.')
-                : ($ehProducao
+            if ($mpToken === '') {
+                $checks[] = $ehProducao
+                    ? $this->erro('MercadoPago', 'MP_ENABLED=true sem MP_ACCESS_TOKEN. Cobranças Pix falharão.')
+                    : $this->aviso('MercadoPago', 'MP habilitado sem MP_ACCESS_TOKEN (obrigatório em produção).');
+            } elseif ($mpSecret === '') {
+                $checks[] = $ehProducao
                     ? $this->erro('MercadoPago', 'MP_ENABLED=true sem MP_WEBHOOK_SECRET. Webhooks serão rejeitados.')
-                    : $this->aviso('MercadoPago', 'MP habilitado sem webhook secret (obrigatório em produção).'));
+                    : $this->aviso('MercadoPago', 'MP habilitado sem webhook secret (obrigatório em produção).');
+            } else {
+                $checks[] = $this->ok('MercadoPago', 'MP habilitado com token e MP_WEBHOOK_SECRET.');
+            }
         } else {
             $checks[] = $this->ok('MercadoPago', 'Pagamento online desabilitado (MP_ENABLED=false).');
         }
 
+        // Backup recente (ZIP em storage/app/backups)
+        $checks[] = $this->checarBackupRecente();
+
+        // Stubs que não devem parecer “ligados” em produção
+        if ((bool) config('manicure.fiscal.enabled')) {
+            $checks[] = $ehProducao
+                ? $this->aviso('NF-e', 'FISCAL_ENABLED=true — apenas rascunho local (não emite SEFAZ). Prefira false em produção.')
+                : $this->aviso('NF-e', 'FISCAL_ENABLED=true — stub local (não emite SEFAZ).');
+        } else {
+            $checks[] = $this->ok('NF-e', 'FISCAL_ENABLED=false (stub desligado).');
+        }
+
         return $checks;
+    }
+
+    /**
+     * @return array{nivel:string,item:string,msg:string}
+     */
+    private function checarBackupRecente(): array
+    {
+        $dir = storage_path('app/backups');
+        if (! is_dir($dir)) {
+            return $this->aviso('Backup', 'Pasta storage/app/backups ausente. Rode "php artisan manicure:backup" e agende no cron.');
+        }
+
+        $zips = glob($dir.DIRECTORY_SEPARATOR.'*.zip') ?: [];
+        if ($zips === []) {
+            return $this->aviso('Backup', 'Nenhum ZIP de backup encontrado. Rode "php artisan manicure:backup".');
+        }
+
+        $maisRecente = max(array_map('filemtime', $zips));
+        $idadeDias = (int) floor((time() - $maisRecente) / 86400);
+
+        if ($idadeDias > 7) {
+            return $this->aviso(
+                'Backup',
+                "Último backup há {$idadeDias} dias. Agende manicure:backup diário e copie ZIPs para fora do servidor."
+            );
+        }
+
+        return $this->ok('Backup', 'Backup recente encontrado (≤7 dias). Confira cópia off-server.');
     }
 
     /**

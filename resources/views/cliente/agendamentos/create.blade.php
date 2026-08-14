@@ -152,78 +152,7 @@
 @if($salao)
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const btnSubmit = document.getElementById('btnSubmit');
-    const resumoCard = document.getElementById('resumoCard');
-
-    function syncVariacao(select) {
-        const sid = select.dataset.servicoId;
-        const check = document.querySelector(`.servico-check[data-servico-id="${sid}"]`);
-        if (!check) return;
-        const opt = select.options[select.selectedIndex];
-        check.dataset.preco = opt.dataset.preco || select.dataset.basePreco;
-        check.dataset.duracao = opt.dataset.duracao || select.dataset.baseDuracao;
-    }
-
-    function getDuracao() {
-        return [...document.querySelectorAll('.servico-check:checked')]
-            .reduce((s, c) => s + parseInt(c.dataset.duracao), 0);
-    }
-
-    function getValor() {
-        return [...document.querySelectorAll('.servico-check:checked')]
-            .reduce((s, c) => s + parseFloat(c.dataset.preco), 0);
-    }
-
-    function getManicureId() {
-        const r = document.querySelector('.manicure-radio:checked');
-        return r ? r.value : null;
-    }
-
-    function atualizarResumo() {
-        const d = getDuracao(), v = getValor();
-        if (d > 0) {
-            resumoCard.classList.remove('d-none');
-            const h = Math.floor(d / 60), m = d % 60;
-            document.getElementById('resumoDuracao').textContent = h > 0 ? `${h}h ${m}min` : `${m}min`;
-            document.getElementById('resumoValor').textContent = 'R$ ' + v.toFixed(2).replace('.', ',');
-        } else {
-            resumoCard.classList.add('d-none');
-        }
-    }
-
-    function verificarBotao() {
-        btnSubmit.disabled = !(getDuracao() > 0 && getManicureId()
-            && picker?.inputData?.value && picker?.getValue());
-    }
-
-    const picker = window.createSlotPicker({
-        getManicureId,
-        getDuracao,
-        emptyHint: 'Selecione manicure, serviços e data para ver os horários.',
-        onChange: verificarBotao,
-        onSlotsLoaded: () => verificarBotao(),
-    });
-
-    document.querySelectorAll('.servico-check').forEach((c) => {
-        c.addEventListener('change', function () {
-            this.closest('label').querySelector('.servico-option').classList.toggle('selected', this.checked);
-            const sel = document.querySelector(`.variacao-select[data-servico-id="${this.dataset.servicoId}"]`);
-            if (sel) { sel.disabled = !this.checked; if (this.checked) syncVariacao(sel); }
-            atualizarResumo();
-            picker?.load();
-        });
-    });
-    document.querySelectorAll('.variacao-select').forEach((sel) => {
-        sel.addEventListener('change', () => { syncVariacao(sel); atualizarResumo(); picker?.load(); });
-    });
-
-    document.querySelectorAll('.manicure-radio').forEach((r) => {
-        r.addEventListener('change', function () {
-            document.querySelectorAll('.manicure-card').forEach((c) => c.classList.remove('selected'));
-            this.closest('label').querySelector('.manicure-card').classList.add('selected');
-            picker?.load();
-        });
-    });
+    window.initBookingForm({ mode: 'cliente' });
 });
 </script>
 @endif

@@ -53,8 +53,8 @@
                     <form method="POST" action="{{ route('dono.financeiro.caixa.movimentar', $aberto) }}">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Tipo *</label>
-                            <select name="tipo" class="form-select @error('tipo') is-invalid @enderror" required>
+                            <label class="form-label fw-semibold" for="caixa_mov_tipo">Tipo *</label>
+                            <select name="tipo" id="caixa_mov_tipo" class="form-select @error('tipo') is-invalid @enderror" required>
                                 @foreach(\App\Models\CaixaMovimentacao::TIPOS_LABELS as $value => $label)
                                     <option value="{{ $value }}" @selected(old('tipo') === $value)>{{ $label }}</option>
                                 @endforeach
@@ -62,15 +62,15 @@
                             @error('tipo') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Valor *</label>
-                            <input type="number" name="valor" step="0.01" min="0.01"
+                            <label class="form-label fw-semibold" for="caixa_mov_valor">Valor *</label>
+                            <input type="number" name="valor" id="caixa_mov_valor" step="0.01" min="0.01"
                                    class="form-control @error('valor') is-invalid @enderror"
                                    value="{{ old('valor') }}" required>
                             @error('valor') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Descrição *</label>
-                            <input type="text" name="descricao" maxlength="255"
+                            <label class="form-label fw-semibold" for="caixa_mov_descricao">Descrição *</label>
+                            <input type="text" name="descricao" id="caixa_mov_descricao" maxlength="255"
                                    class="form-control @error('descricao') is-invalid @enderror"
                                    value="{{ old('descricao') }}" required
                                    placeholder="Ex: Sangria para cofre, venda avulsa…">
@@ -98,15 +98,15 @@
                           data-confirm-ok="Fechar">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Saldo contado *</label>
-                            <input type="number" name="saldo_final_informado" step="0.01" min="0"
+                            <label class="form-label fw-semibold" for="caixa_saldo_contado">Saldo contado *</label>
+                            <input type="number" name="saldo_final_informado" id="caixa_saldo_contado" step="0.01" min="0"
                                    class="form-control @error('saldo_final_informado') is-invalid @enderror"
                                    value="{{ old('saldo_final_informado', $saldoCalculado) }}" required>
                             @error('saldo_final_informado') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Observação</label>
-                            <textarea name="observacao" rows="2" maxlength="500"
+                            <label class="form-label fw-semibold" for="caixa_obs_fechar">Observação</label>
+                            <textarea name="observacao" id="caixa_obs_fechar" rows="2" maxlength="500"
                                       class="form-control @error('observacao') is-invalid @enderror"
                                       placeholder="Opcional">{{ old('observacao', $aberto->observacao) }}</textarea>
                             @error('observacao') <div class="invalid-feedback">{{ $message }}</div> @enderror

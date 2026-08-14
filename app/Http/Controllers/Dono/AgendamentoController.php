@@ -14,8 +14,10 @@ use App\Models\ComandaItem;
 use App\Models\Produto;
 use App\Models\ValePresente;
 use App\Services\AgendaService;
+use App\Services\AuditLogger;
 use App\Services\ComandaService;
 use App\Services\ICalService;
+use App\Services\MercadoPagoService;
 use App\Services\ValePresenteService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -336,6 +338,60 @@ class AgendamentoController extends Controller
         );
 
         return back()->with('success', 'Agendamento cancelado.');
+    }
+
+    /**
+     * Cancela cobrança pendente ou estorna Pix aprovado no Mercado Pago,
+     * sem cancelar o agendamento. Somente dono/admin (middleware financeiro).
+     */
+    public function estornarPix(Request $request, Agendamento $agendamento, MercadoPagoService $mp)
+    {
+        $this->authorize('update', $agendamento);
+
+        $request->validate([
+            'motivo' => 'nullable|string|max:255',
+        ]);
+
+        if (! $agendamento->mp_payment_id) {
+            return back()->withErrors(['error' => 'Este agendamento não possui cobrança Pix online.']);
+        }
+
+        if (! $mp->habilitado()) {
+            return back()->withErrors(['error' => 'Mercado Pago está desabilitado.']);
+        }
+
+        $tipo = $agendamento->mp_cobranca_tipo ?: 'sinal';
+        $statusLocal = $tipo === 'total'
+            ? $agendamento->mp_total_status
+            : $agendamento->sinal_status;
+
+        if (! in_array($statusLocal, ['pago', 'pendente'], true)) {
+            return back()->withErrors(['error' => 'Não há cobrança Pix ativa para cancelar ou estornar.']);
+        }
+
+        $paymentIdAntes = $agendamento->mp_payment_id;
+        $resultado = $mp->cancelarOuEstornar($agendamento->fresh());
+
+        AuditLogger::log('pagamento.estornado', $agendamento, [
+            'payment_id' => $paymentIdAntes,
+            'tipo'       => $tipo,
+            'acao'       => $resultado['acao'],
+            'ok'         => $resultado['ok'],
+            'status'     => $resultado['status'],
+            'motivo'     => $request->input('motivo'),
+        ]);
+
+        if (! $resultado['ok']) {
+            return back()->withErrors(['error' => 'Não foi possível cancelar/estornar no Mercado Pago. Tente novamente ou use o painel da MP.']);
+        }
+
+        $msg = match ($resultado['acao']) {
+            'estornado' => 'Pagamento Pix estornado com sucesso.',
+            'cancelado' => 'Cobrança Pix pendente cancelada.',
+            default     => 'Status da cobrança Pix sincronizado.',
+        };
+
+        return back()->with('success', $msg);
     }
 
     /**

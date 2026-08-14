@@ -109,6 +109,10 @@ Tarefas agendadas (ver `routes/console.php`; todas com `withoutOverlapping`):
 | `manicure:enviar-lembretes 2h`       | de hora em hora   | Lembrete dos que começam nas próximas ~2h15. Marca `lembrete_2h_em`. |
 | `manicure:enviar-aniversarios`       | diário 09:00      | Felicita clientes ativos com aniversário hoje (29/02 → 28/02 em ano não bissexto). Marca `aniversario_enviado_em` e opcionalmente gera cupom `NIVER-{id}-{ano}`. |
 | `manicure:limpar-expirados`          | diário 03:00      | Marca `nao_compareceu` se `data_hora_fim` passou há >2h (ainda aberto) e apaga `slot_holds` expirados. |
+| `manicure:expirar-pontos-fidelidade` | diário 03:30      | Expira pontos de fidelidade vencidos. |
+| `manicure:reativar-inativos`         | segunda 10:00     | Marketing: reativação de inativos (se `marketing.enabled`). |
+| `manicure:sugerir-retorno`           | diário 10:30      | Marketing: sugerir retorno (se `marketing.enabled`). |
+| `manicure:backup --keep=14`          | diário 02:30      | ZIP do banco + `storage/app/public` em `storage/app/backups/`. |
 
 **Idempotência:** reexecutar o mesmo comando no mesmo dia não reenvia —
 os campos `lembrete_*_em` / `aniversario_enviado_em` e o filtro de status
@@ -133,11 +137,15 @@ Desligadas por padrão; ative preenchendo o `.env`:
   - Sinal antecipado: `SINAL_HABILITADO=true`, `SINAL_TIPO=percentual|fixo`, `SINAL_VALOR`.
   - Valor total/restante: `PAGAMENTO_TOTAL_HABILITADO=true` (cobra o líquido, ou o
     restante se o sinal já foi pago). Cancelamento do agendamento tenta cancelar/
-    estornar a cobrança na MP (best-effort).
+    estornar a cobrança na MP (best-effort). O dono também pode estornar/cancelar
+    a cobrança **sem** cancelar o agendamento em `/dono/agendamentos/{id}` (Resumo → Estornar Pix).
 - **WhatsApp (Cloud API):** `WHATSAPP_ENABLED=true`, `WHATSAPP_TOKEN`,
   `WHATSAPP_PHONE_NUMBER_ID` e os templates aprovados.
 - **Aniversário:** ligado por padrão (`ANIVERSARIO_ENABLED=true`); gera cupom-presente
   (`ANIVERSARIO_CUPOM=true`, `ANIVERSARIO_CUPOM_VALOR=15`).
+- **Sentry (APM opcional):** `SENTRY_LARAVEL_DSN=...` — sem DSN, pacote fica no-op.
+- **Web Push:** requer `minishlink/web-push` + VAPID; UI só com `WEBPUSH_SUBSCRIBE_UI=true`
+  após validar envio ponta a ponta.
 
 ## 8. Pós-deploy — verificação
 
@@ -146,6 +154,24 @@ php artisan manicure:verificar-producao
 ```
 
 Resolva todos os ✗ (críticos) e revise os ⚠ (avisos) antes de divulgar o site.
+
+**Nota:** o item **Agendador** é sempre aviso (o PHP não consegue provar que o cron do SO está ativo). Confirme com `crontab -l` e `php artisan schedule:list`.
+
+Saúde em runtime (DB, cache, fila, failed jobs): `/admin/saude` (role admin).
+
+### Smoke checklist (pós go-live)
+
+Marque na ordem; alinhe a `FluxoEmpresarioTest` + uso real no salão:
+
+1. `php artisan manicure:verificar-producao` sem erros críticos.
+2. Login **dono** e **cliente** (e-mail verificado).
+3. Abrir caixa → criar agendamento → iniciar → finalizar comanda → fechar caixa.
+4. Cancelar um agendamento e marcar no-show em outro.
+5. Atendente: acessa agenda; **403** em `/dono/financeiro`.
+6. Se MP ligado: criar Pix de teste, confirmar webhook, e no show do agendamento usar **Estornar Pix** (sem cancelar o atendimento).
+7. Confirmar que a fila drena: `php artisan queue:work --once` (ou ver jobs no Supervisor).
+8. `php artisan manicure:backup` e conferir ZIP em `storage/app/backups/`; copiar off-server.
+9. Abrir `/admin/saude` e conferir DB/cache/fila verdes.
 
 ## 9. Backup e restore
 
@@ -163,13 +189,8 @@ php artisan manicure:backup --keep=30
 - **MySQL:** usa `mysqldump` (precisa estar no `PATH` do sistema).
 - Requer extensão PHP `zip`.
 
-Agende no cron (além do `schedule:run`), por exemplo diário às 02:30:
-
-```cron
-30 2 * * * cd /var/www/manicurepro && php artisan manicure:backup --keep=14 >> /dev/null 2>&1
-```
-
-Guarde cópias dos ZIPs **fora do servidor** (S3, outro host, etc.).
+Já entra no Laravel Schedule (`02:30`, `--keep=14`). Opcionalmente mantenha cron
+extra se preferir horários diferentes; em qualquer caso **copie ZIPs para fora do servidor**.
 
 ### Restore (manual)
 
@@ -185,8 +206,9 @@ Guarde cópias dos ZIPs **fora do servidor** (S3, outro host, etc.).
 
 Não há `manicure:restore` automático de propósito — restore é destrutivo e deve ser revisado.
 
-### Web Push (honesto)
+### Web Push / NF-e (honesto)
 
-Envio **não** está implementado (falta `minishlink/web-push`). A UI de
-subscribe fica **desligada** (`WEBPUSH_SUBSCRIBE_UI=false`). NF-e continua
-stub local (`FISCAL_ENABLED`) — **não** emite na SEFAZ.
+Web Push: `minishlink/web-push` já no projeto; configure VAPID e só então `WEBPUSH_SUBSCRIBE_UI=true`.
+NF-e continua stub local (`FISCAL_ENABLED`) — **não** emite na SEFAZ; mantenha `false` em produção.
+
+Sentry: `sentry/sentry-laravel` no composer; ative com `SENTRY_LARAVEL_DSN` (opcional).

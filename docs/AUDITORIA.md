@@ -1,6 +1,6 @@
 # Auditoria — o que existe de verdade
 
-**Data:** 2026-08-10 (pós Fases 1–10)  
+**Data:** 2026-08-13 (pós plano de melhoria)  
 **Repo:** ManicurePro / Fernanda Silva Nails  
 **Escopo:** mapa por módulo fiél ao código atual. Não inventa features da onda que falharam ou ficaram pela metade.
 
@@ -24,7 +24,7 @@ O núcleo do produto **está** no código. Fases 1–10 fecharam P0 (Pix total, 
 Buracos honestos que **ainda** restam:
 
 - **NF-e** — stub local, sem SEFAZ.
-- **Web Push send** — stub; UI de subscribe escondida (`WEBPUSH_SUBSCRIBE_UI=false`) até haver minishlink + send real.
+- **Web Push UI** — send implementado; UI de subscribe escondida (`WEBPUSH_SUBSCRIBE_UI=false`) até validar VAPID.
 - API sem paridade financeira/estoque.
 - Multi-empresa = futuro (ver ARQUITETURA).
 
@@ -165,15 +165,15 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 - Teste: `NotaFiscalStubTest`
 - Menu: label “Notas fiscais (stub)” em `Sidebar.php`
 
-### Web Push — PARCIAL (subscribe UI off / send STUB)
+### Web Push — PARCIAL (send real / UI off)
 
-- UI de subscribe **escondida** por padrão (`WEBPUSH_SUBSCRIBE_UI=false`; `WebPushService::envioDisponivel()` exige UI + VAPID + classe `minishlink/web-push`)
-- Persistência: rotas `/push-subscriptions` existem, mas o layout não emite meta VAPID sem `envioDisponivel()`
-- Envio: `sendToUser` retorna `0` (sem send falso) — pacote Composer de push real **ausente**
+- Composer: `minishlink/web-push` (^9) no lock; `WebPushService::sendToUser` envia de verdade quando `envioDisponivel()` (UI + VAPID + pacote); remove subscriptions 404/410
+- UI de subscribe **escondida** por padrão (`WEBPUSH_SUBSCRIBE_UI=false`)
+- Persistência: rotas `/push-subscriptions`; layout só emite meta VAPID com `envioDisponivel()`
 - Canal: `App\Notifications\Channels\WebPushChannel`
 - Teste: `PushSubscriptionTest` + cobertura em `ApiOpsFase9Test`
 
-### Mercado Pago — FULL (sinal + total; sem gorjeta online)
+### Mercado Pago — FULL (sinal + total + estorno dono; sem gorjeta online)
 
 | Capacidade | Status |
 |------------|--------|
@@ -182,8 +182,9 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 | Idempotência webhook | FULL — `webhook_events` (provider + event_id); reserva serializa concorrência; reentrega do mesmo payment_id ainda chama `sincronizarStatus` (pending→approved); sem agendamento libera reserva |
 | Anti-regressão pago→pendente | FULL em `MercadoPagoService::aplicarStatus` |
 | Pix valor total / restante | FULL — config `pagamento.total`, `pagamento`/`pagamentoStatus`, view + `ClientePagamentoTotalTest` |
+| Estorno/cancelamento no painel dono | FULL — `POST dono/agendamentos/{id}/estorno-pix` + show + audit + `DonoEstornoPixTest` |
 | Gorjeta via MP | AUSENTE — gorjeta só no fechar comanda presencial |
-| Estorno no service | existe no service; UI de refunds limitada |
+| Estorno no service | FULL (`cancelarOuEstornar`) |
 
 ### WhatsApp Cloud API — FULL (opt-in)
 
@@ -206,7 +207,11 @@ Export JSON + exclusão de conta em `PerfilController`. `LgpdTest`.
 
 ### PWA — FULL (install/offline)
 
-`public/manifest.json`, `public/sw.js`, `offline.html`. Push de envio = stub (acima).
+`public/manifest.json`, `public/sw.js`, `offline.html`. Push: send real com UI gated (acima).
+
+### Booking UI — FULL (unificado)
+
+Partial `_slots_picker` + `booking-slots.js` + `booking-form.js` (`initBookingForm`) para guest, cliente, dono (encaixe) e reagendar. Sem reescrever `AgendaService`.
 
 ### API `/api/v1` — PARCIAL
 
@@ -220,8 +225,9 @@ Fonte: `routes/api.php`.
 
 ### Ops — backup / saúde
 
-- `php artisan manicure:backup` → ZIP em `storage/app/backups/` (DB + `storage/app/public`); restore documentado em [PRODUCAO.md](PRODUCAO.md)
+- `php artisan manicure:backup` → ZIP em `storage/app/backups/` (DB + `storage/app/public`); também no schedule 02:30; restore documentado em [PRODUCAO.md](PRODUCAO.md)
 - `/admin/saude` (role admin): DB, cache, fila, failed jobs
+- `ProducaoChecker`: MP token+secret, backup recente, NF-e stub; smoke checklist em PRODUCAO.md
 
 CSP, SecurityHeaders, honeypot (`ProtectPublicForms`), `RoleMiddleware` + `role_or_perm`, `audit_logs` + UI `/dono/auditoria`, grants JSON leves (sem Spatie), webhook MP fail-closed, policies em pacotes/vales/NF/caixa/despesas. Onboarding wizard + checklist. Detalhes: [SEGURANCA.md](SEGURANCA.md).
 
@@ -237,9 +243,9 @@ Dashboard, salão único (sem create/destroy), manicures, serviços, categorias,
 
 Valor no DB (`ConfiguracaoSalao`) e form do dono; `theme-vars` resolve cor do salão (prop / user / `Salao::principal`) com fallback `config('manicure.tema.cor_primaria')`. Teste: `TemaCssTest`.
 
-### A11y / erros seguros — PARCIAL (básico feito)
+### A11y / erros seguros — PARCIAL (crítico feito)
 
-Skip-link em app/auth/público/erros; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions` (sem vazar `getMessage`). Auditoria a11y completa / contraste sistemático / Sentry: ainda aberto.
+Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions`; contraste `.text-muted`; `:focus-visible`; slots com `aria-selected` / `aria-live`. Sentry opcional (`SENTRY_LARAVEL_DSN`). Auditoria WCAG completa: ainda aberta.
 
 ### Docker / CI — FULL
 
@@ -268,20 +274,21 @@ Skip-link em app/auth/público/erros; foco no `confirm-modal`; loading em submit
 | Avaliações | FULL |
 | Galeria | FULL |
 | NF-e | STUB |
-| Web Push | PARCIAL (UI off / send STUB) |
-| Mercado Pago | FULL (sinal+total; sem tip online) |
+| Web Push | PARCIAL (send real / UI off) |
+| Mercado Pago | FULL (sinal+total+estorno dono; sem tip online) |
 | WhatsApp | FULL (opt-in) |
 | iCal | FULL |
 | Ficha unhas | FULL |
 | LGPD | FULL |
 | PWA | FULL |
+| Booking UI | FULL (unificado) |
 | API v1 | PARCIAL (fidelidade + filtros + erros JSON) |
 | Segurança baseline | FULL |
 | Admin / PDF / saúde | FULL |
-| Backup | FULL (`manicure:backup` + restore docs) |
+| Backup | FULL (`manicure:backup` no schedule + restore docs) |
 | Slot cache | FULL |
 | Tema por salão | FULL |
-| A11y / erros seguros | PARCIAL (básico Fase 10) |
+| A11y / erros seguros | PARCIAL (crítico feito + Sentry opcional) |
 | Docker / CI | FULL |
 | OAuth calendário | AUSENTE |
 | Multi-empresa | AUSENTE (ver [ARQUITETURA.md](ARQUITETURA.md)) |
