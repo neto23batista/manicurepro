@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell($env:Path = \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64;\" + $env:Path; ./vendor/bin/pest --filter=AgendamentoTest 2>&1 | Select-Object -Last 30)",
-      "PowerShell($env:Path = \"C:\\\\laragon\\\\bin\\\\php\\\\php-8.3.30-Win32-vs16-x64;\" + $env:Path; ./vendor/bin/pest 2>&1 | Select-Object -Last 15)"
-    ]
-  }
-}
