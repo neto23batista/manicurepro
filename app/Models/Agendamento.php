@@ -23,6 +23,7 @@ class Agendamento extends Model
         'confirmado_em', 'lembrete_24h_em', 'lembrete_2h_em',
         'mp_payment_id', 'sinal_status', 'sinal_valor',
         'mp_cobranca_tipo', 'mp_total_status', 'mp_total_valor',
+        'mp_gorjeta_status', 'mp_gorjeta_valor',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class Agendamento extends Model
         'lembrete_2h_em'   => 'datetime',
         'sinal_valor'      => 'decimal:2',
         'mp_total_valor'   => 'decimal:2',
+        'mp_gorjeta_valor' => 'decimal:2',
     ];
 
     /** Rótulos de status (value => label) para selects e filtros. */
@@ -229,6 +231,28 @@ class Agendamento extends Model
         $sinalPago = $this->sinalPago() ? (float) $this->sinal_valor : 0.0;
 
         return ($liquido - $sinalPago) > 0.001;
+    }
+
+    public function gorjetaOnlinePaga(): bool
+    {
+        return $this->mp_gorjeta_status === 'pago';
+    }
+
+    /**
+     * Gorjeta Pix pós-atendimento: disponível após conclusão, se flag ligada e ainda não paga.
+     */
+    public function precisaGorjetaOnline(): bool
+    {
+        if ($this->gorjetaOnlinePaga()) {
+            return false;
+        }
+
+        if (! (bool) config('manicure.pagamento.mercadopago.enabled')
+            || ! (bool) config('manicure.pagamento.gorjeta.habilitado')) {
+            return false;
+        }
+
+        return $this->status === AgendamentoStatus::Concluido->value;
     }
 
     public function scopeHoje($query)

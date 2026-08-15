@@ -133,21 +133,26 @@
             @endif
             @if($agendamento->precisaPagamentoTotal())
                 <a href="{{ route('cliente.agendamentos.pagamento', $agendamento) }}" class="btn btn-success">
-                    <i class="fas fa-qrcode me-2"></i>
+                    <i class="fas fa-qrcode me-2" aria-hidden="true"></i>
                     {{ $agendamento->sinalPago() ? 'Pagar restante' : 'Pagar valor total' }}
+                </a>
+            @endif
+            @if($agendamento->precisaGorjetaOnline())
+                <a href="{{ route('cliente.agendamentos.gorjeta', $agendamento) }}" class="btn btn-outline-pink">
+                    <i class="fas fa-heart me-2" aria-hidden="true"></i> Dar gorjeta via Pix
                 </a>
             @endif
             @if(!in_array($agendamento->status, ['cancelado', 'nao_compareceu']))
                 <a href="{{ route('cliente.agendamentos.ical', $agendamento) }}" class="btn btn-outline-pink">
-                    <i class="fas fa-calendar-plus me-2"></i> Baixar .ics
+                    <i class="fas fa-calendar-plus me-2" aria-hidden="true"></i> Baixar .ics
                 </a>
                 <a href="{{ $googleCalendarUrl }}" class="btn btn-outline-pink" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-google me-2"></i> Google Calendar
+                    <i class="fab fa-google me-2" aria-hidden="true"></i> Google Calendar
                 </a>
             @endif
             @if($agendamento->podeSerReagendado())
                 <a href="{{ route('cliente.agendamentos.reagendar.form', $agendamento) }}" class="btn btn-pink">
-                    <i class="fas fa-clock-rotate-left me-2"></i> Remarcar
+                    <i class="fas fa-clock-rotate-left me-2" aria-hidden="true"></i> Remarcar
                 </a>
             @endif
             @if($agendamento->podeSerCancelado())
@@ -155,7 +160,7 @@
                       data-confirm="Cancelar agendamento?" data-confirm-ok="Cancelar agendamento">
                     @csrf
                     <button type="submit" class="btn btn-outline-danger">
-                        <i class="fas fa-times me-2"></i> Cancelar Agendamento
+                        <i class="fas fa-times me-2" aria-hidden="true"></i> Cancelar Agendamento
                     </button>
                 </form>
             @endif

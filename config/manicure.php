@@ -136,6 +136,10 @@ return [
             // Cobra o líquido do agendamento (ou o restante se o sinal já foi pago).
             'habilitado' => env('PAGAMENTO_TOTAL_HABILITADO', false),
         ],
+        'gorjeta' => [
+            // Pix de gorjeta pós-atendimento (cliente). Default off.
+            'habilitado' => env('GORJETA_ONLINE_HABILITADO', false),
+        ],
     ],
 
     'cache_ttl' => [
@@ -224,12 +228,14 @@ return [
 
     /*
      * Web Push (PWA). Requer minishlink/web-push + VAPID.
-     * subscribe_ui=false esconde meta/pedido de permissão no browser.
-     * Ative WEBPUSH_SUBSCRIBE_UI=true só após validar sendToUser ponta a ponta.
+     * WEBPUSH_SUBSCRIBE_UI omitido → auto (liga se VAPID estiver preenchido).
+     * WEBPUSH_SUBSCRIBE_UI=false → força UI escondida; =true → força permitir.
      */
     'webpush' => [
-        'subscribe_ui' => (bool) env('WEBPUSH_SUBSCRIBE_UI', false),
-        'vapid'        => [
+        'subscribe_ui' => env('WEBPUSH_SUBSCRIBE_UI') !== null
+            ? filter_var(env('WEBPUSH_SUBSCRIBE_UI'), FILTER_VALIDATE_BOOLEAN)
+            : (filled(env('VAPID_PUBLIC_KEY')) && filled(env('VAPID_PRIVATE_KEY'))),
+        'vapid' => [
             'subject'     => env('VAPID_SUBJECT', 'mailto:noreply@manicurepro.com.br'),
             'public_key'  => env('VAPID_PUBLIC_KEY'),
             'private_key' => env('VAPID_PRIVATE_KEY'),

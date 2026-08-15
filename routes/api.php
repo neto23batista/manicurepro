@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Api\AgendamentoController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CaixaController;
+use App\Http\Controllers\Api\EstoqueController;
 use App\Http\Controllers\Api\FidelidadeController;
+use App\Http\Controllers\Api\FinanceiroController;
 use App\Http\Controllers\Api\SalaoController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,5 +42,11 @@ Route::prefix('v1')->group(function () {
             Route::post('/{agendamento}/cancelar', [AgendamentoController::class, 'cancelar']);
             Route::post('/{agendamento}/avaliar', [AgendamentoController::class, 'avaliar']);
         });
+
+        // Read-only ops (dono / super-admin)
+        Route::get('/financeiro', [FinanceiroController::class, 'index']);
+        Route::get('/estoque', [EstoqueController::class, 'index']);
+        Route::get('/caixa', [CaixaController::class, 'index']);
+        Route::get('/caixa/{caixa}', [CaixaController::class, 'show']);
     });
 });

@@ -24,8 +24,8 @@ O núcleo do produto **está** no código. Fases 1–10 fecharam P0 (Pix total, 
 Buracos honestos que **ainda** restam:
 
 - **NF-e** — stub local, sem SEFAZ.
-- **Web Push UI** — send implementado; UI de subscribe escondida (`WEBPUSH_SUBSCRIBE_UI=false`) até validar VAPID.
-- API sem paridade financeira/estoque.
+- **Web Push UI** — send real; UI **auto** quando VAPID preenchido (`WEBPUSH_SUBSCRIBE_UI` override).
+- API com reads de financeiro/estoque/caixa; writes ops ainda web-only.
 - Multi-empresa = futuro (ver ARQUITETURA).
 
 ## Mapa por módulo
@@ -165,11 +165,11 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 - Teste: `NotaFiscalStubTest`
 - Menu: label “Notas fiscais (stub)” em `Sidebar.php`
 
-### Web Push — PARCIAL (send real / UI off)
+### Web Push — FULL (send + UI auto com VAPID)
 
-- Composer: `minishlink/web-push` (^9) no lock; `WebPushService::sendToUser` envia de verdade quando `envioDisponivel()` (UI + VAPID + pacote); remove subscriptions 404/410
-- UI de subscribe **escondida** por padrão (`WEBPUSH_SUBSCRIBE_UI=false`)
-- Persistência: rotas `/push-subscriptions`; layout só emite meta VAPID com `envioDisponivel()`
+- Composer: `minishlink/web-push` (^9) no lock; `WebPushService::sendToUser` envia de verdade quando `envioDisponivel()`
+- UI: auto se VAPID preenchido e `WEBPUSH_SUBSCRIBE_UI` omitido; `false` força off; `true` força on
+- Persistência: rotas `/push-subscriptions`; layout emite meta VAPID com `envioDisponivel()`
 - Canal: `App\Notifications\Channels\WebPushChannel`
 - Teste: `PushSubscriptionTest` + cobertura em `ApiOpsFase9Test`
 
@@ -183,7 +183,7 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 | Anti-regressão pago→pendente | FULL em `MercadoPagoService::aplicarStatus` |
 | Pix valor total / restante | FULL — config `pagamento.total`, `pagamento`/`pagamentoStatus`, view + `ClientePagamentoTotalTest` |
 | Estorno/cancelamento no painel dono | FULL — `POST dono/agendamentos/{id}/estorno-pix` + show + audit + `DonoEstornoPixTest` |
-| Gorjeta via MP | AUSENTE — gorjeta só no fechar comanda presencial |
+| Gorjeta via MP | FULL — Pix pós-conclusão (`GORJETA_ONLINE_HABILITADO`) + presencial na comanda |
 | Estorno no service | FULL (`cancelarOuEstornar`) |
 
 ### WhatsApp Cloud API — FULL (opt-in)
@@ -221,7 +221,8 @@ Fonte: `routes/api.php`.
 - Auth Sanctum: me/logout, `GET /me/fidelidade`, listar/criar/ver/cancelar/avaliar agendamento
 - Listagem de agendamentos: paginação + filtros `status`, `manicure_id`, `de`, `ate`, `per_page`
 - Erros JSON padronizados (`message` + `code` [+ `errors`]) via `App\Support\ApiError`
-- Sem API de financeiro, estoque, caixa, etc.
+- Dono read-only: `GET /financeiro`, `/estoque`, `/caixa`, `/caixa/{caixa}`
+- Sem writes de financeiro/estoque/caixa via API
 
 ### Ops — backup / saúde
 
@@ -274,15 +275,15 @@ Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions
 | Avaliações | FULL |
 | Galeria | FULL |
 | NF-e | STUB |
-| Web Push | PARCIAL (send real / UI off) |
-| Mercado Pago | FULL (sinal+total+estorno dono; sem tip online) |
+| Web Push | FULL (send + UI auto VAPID) |
+| Mercado Pago | FULL (sinal+total+gorjeta+estorno dono) |
 | WhatsApp | FULL (opt-in) |
 | iCal | FULL |
 | Ficha unhas | FULL |
 | LGPD | FULL |
 | PWA | FULL |
 | Booking UI | FULL (unificado) |
-| API v1 | PARCIAL (fidelidade + filtros + erros JSON) |
+| API v1 | PARCIAL (fidelidade + filtros + financeiro/estoque/caixa RO) |
 | Segurança baseline | FULL |
 | Admin / PDF / saúde | FULL |
 | Backup | FULL (`manicure:backup` no schedule + restore docs) |

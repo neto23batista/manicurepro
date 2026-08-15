@@ -340,6 +340,10 @@ Route::prefix('cliente')->name('cliente.')->middleware(['auth', 'verified', 'rol
     Route::get('/agendamentos/{agendamento}/pagamento', [ClienteAgendamento::class, 'pagamento'])->name('agendamentos.pagamento');
     Route::post('/agendamentos/{agendamento}/pagamento/status', [ClienteAgendamento::class, 'pagamentoStatus'])
         ->middleware('throttle:30,1')->name('agendamentos.pagamento.status');
+    Route::match(['get', 'post'], '/agendamentos/{agendamento}/gorjeta', [ClienteAgendamento::class, 'gorjeta'])
+        ->name('agendamentos.gorjeta');
+    Route::post('/agendamentos/{agendamento}/gorjeta/status', [ClienteAgendamento::class, 'gorjetaStatus'])
+        ->middleware('throttle:30,1')->name('agendamentos.gorjeta.status');
 
     // Lista de espera
     Route::get('/lista-espera', [ClienteListaEspera::class, 'index'])->name('lista-espera.index');

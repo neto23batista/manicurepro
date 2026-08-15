@@ -135,3 +135,24 @@ test('WebPushService::envioDisponivel exige UI + VAPID + pacote', function () {
     $disponivel = app(WebPushService::class)->envioDisponivel();
     expect($disponivel)->toBe(class_exists(WebPush::class));
 });
+
+test('WEBPUSH_SUBSCRIBE_UI=false força UI off mesmo com VAPID', function () {
+    // Simula resolução do config: override explícito false
+    config([
+        'manicure.webpush.subscribe_ui'      => false,
+        'manicure.webpush.vapid.public_key'  => 'BNcRdytQsLG',
+        'manicure.webpush.vapid.private_key' => 'private',
+    ]);
+
+    expect(app(WebPushService::class)->envioDisponivel())->toBeFalse();
+});
+
+test('subscribe_ui true + VAPID liga envioDisponivel quando pacote existe', function () {
+    config([
+        'manicure.webpush.subscribe_ui'      => true,
+        'manicure.webpush.vapid.public_key'  => 'BNcRdytQsLG',
+        'manicure.webpush.vapid.private_key' => 'private',
+    ]);
+
+    expect(app(WebPushService::class)->envioDisponivel())->toBe(class_exists(WebPush::class));
+});

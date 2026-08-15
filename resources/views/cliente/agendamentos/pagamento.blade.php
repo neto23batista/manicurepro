@@ -39,13 +39,13 @@
                     <label class="form-label fw-semibold d-block text-start">Pix copia e cola</label>
                     <div class="input-group mb-3">
                         <input type="text" class="form-control" id="pixCopiaCola" value="{{ $pix['qr_code'] }}" readonly>
-                        <button class="btn btn-outline-pink" type="button" id="btnCopiarPix">
+                        <button class="btn btn-outline-pink" type="button" id="btnCopiarPix" aria-label="Copiar código Pix">
                             <i class="fas fa-copy" aria-hidden="true"></i>
                         </button>
                     </div>
                 @endif
 
-                <div class="alert alert-info justify-content-center" id="statusBox">
+                <div class="alert alert-info justify-content-center" id="statusBox" role="status" aria-live="polite">
                     <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
                     <span>Aguardando pagamento…</span>
                 </div>

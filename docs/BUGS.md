@@ -1,57 +1,41 @@
 # Bugs e gaps restantes — inventário
 
-**Data:** 2026-08-15  
-**Base:** `main` @ `b1f985b` + correções CI nesta PR  
-**Método:** docs (`AUDITORIA`/`ROADMAP`/`MELHORIAS`) + histórico CI GitHub Actions + suite Pest local.
+**Data:** 2026-08-15 (ciclo 2)  
+**Branch:** `cursor/fix-ci-bugs-cd0b`  
+**Método:** docs + CI + Pest local.
 
 ---
 
-## Corrigido nesta PR (bloqueadores reais)
+## Corrigido neste ciclo
 
-| # | Problema | Impacto | Correção |
-|---|----------|---------|----------|
-| 1 | `composer.lock` puxava `symfony/options-resolver` **v8.1** (PHP ≥ 8.4) via Sentry | CI Pest/Pint/PHPStan **não instalava** deps em PHP 8.2/8.3 | Pin `symfony/options-resolver:^7.2` + lock atualizado |
-| 2 | Pest sem `public/build/manifest.json` | **135** testes Feature com HTTP 500 (`ViteManifestNotFoundException`) | Stub de manifest em `Tests\TestCase` |
-| 3 | `ProducaoCheckerTest` poluído por ZIP de `BackupCommandTest` | Falso negativo no check de backup | Limpa ZIPs antes do assert |
-| 4 | Pint: ~170 issues de estilo | Job CI vermelho | `pint` aplicado |
-| 5 | PHPStan level 5: **33 erros** (nullsafe, `abort_unless` com model\|null, PHPDoc) | Job CI vermelho + contratos de tipo errados | Correções pontuais sem suppressions |
+| # | Item | Correção |
+|---|------|----------|
+| 1 | CI Composer / Vite / Pint / PHPStan | Ver ciclo 1 nesta PR |
+| 2 | **Dompdf advisories** | `barryvdh/laravel-dompdf` ^3 + `dompdf/dompdf` 3.1.6 |
+| 3 | **Web Push UI** | Auto com VAPID (omitir `WEBPUSH_SUBSCRIBE_UI`); `false` ainda força off |
+| 4 | **Gorjeta online MP** | `GORJETA_ONLINE_HABILITADO`, Pix pós-conclusão, webhook/comanda |
+| 5 | **API v1 ops** | `GET /financeiro`, `/estoque`, `/caixa`, `/caixa/{id}` (dono) |
+| 6 | **A11y pontual** | `aria-label` / `aria-live` em Pix (sinal/total/gorjeta) |
 
-Estado local pós-fix: **Pest 602 passed**, **Pint OK**, **PHPStan 0 errors**.
-
----
-
-## Ainda aberto (dívida / produto — não regressão do núcleo)
-
-### Qualidade / supply chain
-
-| Item | Severidade | Notas |
-|------|------------|-------|
-| **Advisories Composer** (dompdf &lt; 3.1.6) | Média | `barryvdh/laravel-dompdf` ^2 ainda amarra Dompdf 2.x. Avaliar upgrade controlado. |
-| **CI: jobs PHP não fazem `npm run build`** | Baixa (mitigado) | Stub resolve testes; prod/dev ainda precisam build real. |
-
-### Produto incompleto (roadmap)
-
-| Item | Status doc | Risco operacional |
-|------|------------|-------------------|
-| **NF-e SEFAZ** | STUB | Com `FISCAL_ENABLED=true` parece emissão real — manter **false** em prod |
-| **Web Push UI** | PARCIAL | Send real; UI off (`WEBPUSH_SUBSCRIBE_UI=false`) até validar VAPID |
-| **API v1** | PARCIAL | Sem financeiro/estoque/caixa |
-| **Gorjeta online MP** | AUSENTE | Só presencial na comanda |
-| **OAuth Google/Outlook** | AUSENTE | Só `.ics` + template URL |
-| **A11y WCAG completa** | PARCIAL | Skip-link/foco/contraste feitos |
-| **Multi-empresa / Spatie / app nativo / deploy pipeline** | Adiado | Fora do escopo atual |
-
-### P0 de segurança / produto (já fechados)
-
-IDOR API, atendente no financeiro, webhook MP fail-closed + idempotência, painéis `verified`, Pix total, caixa/despesas UI, estorno Pix dono — **não reabrir**.
+Estado local: Pest + Pint + PHPStan verdes após as mudanças.
 
 ---
 
-## Ordem sugerida para o próximo ciclo
+## Ainda aberto (adiado / escopo explícito)
 
-1. Smoke manual no salão (`docs/PRODUCAO.md`) + avaliar upgrade Dompdf.  
-2. Só então: validar VAPID/push UI, ou fiscal real / OAuth com escopo explícito.
+| Item | Notas |
+|------|--------|
+| **NF-e SEFAZ** | Stub local; manter `FISCAL_ENABLED=false` em prod |
+| **OAuth Google/Outlook** | Só `.ics` + template URL |
+| **Laravel 11 advisories** | Patches oficiais em 12.x — upgrade de major separado |
+| **A11y WCAG auditoria completa** | Crítico feito; auditoria formal aberta |
+| **Multi-empresa / Spatie / app nativo / deploy pipeline** | Adiado |
 
 ---
 
-*Atualizar este arquivo quando um item mudar no código — não na intenção.*
+## Ops
+
+- Prod: `GORJETA_ONLINE_HABILITADO=false` até validar MP; `WEBPUSH_SUBSCRIBE_UI=false` se quiser forçar off mesmo com VAPID.
+- Smoke: `docs/PRODUCAO.md`.
+
+*Atualizar quando o código mudar — não na intenção.*
