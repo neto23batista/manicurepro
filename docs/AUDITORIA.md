@@ -24,9 +24,8 @@ O núcleo do produto **está** no código. Fases 1–10 fecharam P0 (Pix total, 
 Buracos honestos que **ainda** restam:
 
 - **NF-e** — stub local, sem SEFAZ.
-- **Web Push UI** — send real; UI **auto** quando VAPID preenchido (`WEBPUSH_SUBSCRIBE_UI` override).
-- API com reads de financeiro/estoque/caixa; writes ops ainda web-only.
-- Multi-empresa = futuro (ver ARQUITETURA).
+- Upgrade **Laravel 12** (advisories de signed URL / email rule).
+- Multi-empresa / OAuth calendar = futuro (ver ARQUITETURA).
 
 ## Mapa por módulo
 
@@ -173,7 +172,7 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 - Canal: `App\Notifications\Channels\WebPushChannel`
 - Teste: `PushSubscriptionTest` + cobertura em `ApiOpsFase9Test`
 
-### Mercado Pago — FULL (sinal + total + estorno dono; sem gorjeta online)
+### Mercado Pago — FULL (sinal + total + gorjeta + estorno dono)
 
 | Capacidade | Status |
 |------------|--------|
