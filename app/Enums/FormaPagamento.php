@@ -4,12 +4,12 @@ namespace App\Enums;
 
 enum FormaPagamento: string
 {
-    case Dinheiro       = 'dinheiro';
-    case CartaoCredito  = 'cartao_credito';
-    case CartaoDebito   = 'cartao_debito';
-    case Pix            = 'pix';
-    case Transferencia  = 'transferencia';
-    case Voucher        = 'voucher';
+    case Dinheiro = 'dinheiro';
+    case CartaoCredito = 'cartao_credito';
+    case CartaoDebito = 'cartao_debito';
+    case Pix = 'pix';
+    case Transferencia = 'transferencia';
+    case Voucher = 'voucher';
 
     public function label(): string
     {

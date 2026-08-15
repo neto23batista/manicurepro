@@ -18,13 +18,13 @@ class UpdateFornecedorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nome'         => ['required', 'string', 'max:255'],
-            'contato'      => ['nullable', 'string', 'max:255'],
-            'telefone'     => ['nullable', 'string', 'max:30'],
-            'email'        => ['nullable', 'email', 'max:255'],
-            'documento'    => ['nullable', 'string', 'max:30'],
-            'observacoes'  => ['nullable', 'string', 'max:2000'],
-            'ativo'        => ['sometimes', 'boolean'],
+            'nome'        => ['required', 'string', 'max:255'],
+            'contato'     => ['nullable', 'string', 'max:255'],
+            'telefone'    => ['nullable', 'string', 'max:30'],
+            'email'       => ['nullable', 'email', 'max:255'],
+            'documento'   => ['nullable', 'string', 'max:30'],
+            'observacoes' => ['nullable', 'string', 'max:2000'],
+            'ativo'       => ['sometimes', 'boolean'],
         ];
     }
 }

@@ -12,6 +12,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Manicure;
 use App\Services\AgendaService;
+use App\Support\ApiError;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -76,16 +77,16 @@ class AgendamentoController extends Controller
         try {
             $user = $request->user();
             $agendamento = $this->agendaService->criarAgendamento([
-                'salao_id'         => $validated['salao_id'],
-                'manicure_id'      => $validated['manicure_id'],
-                'servico_ids'      => $validated['servico_ids'],
-                'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
-                'data_hora_inicio' => $validated['data_hora_inicio'],
-                'cliente_id'       => $user->cliente?->id,
-                'user_id'          => $user->id,
-                'nome_cliente'     => $user->name,
-                'observacoes'      => $validated['observacoes'] ?? null,
-                'origem'           => 'app',
+                'salao_id'          => $validated['salao_id'],
+                'manicure_id'       => $validated['manicure_id'],
+                'servico_ids'       => $validated['servico_ids'],
+                'servico_variacoes' => $validated['servico_variacoes'] ?? [],
+                'data_hora_inicio'  => $validated['data_hora_inicio'],
+                'cliente_id'        => $user->cliente?->id,
+                'user_id'           => $user->id,
+                'nome_cliente'      => $user->name,
+                'observacoes'       => $validated['observacoes'] ?? null,
+                'origem'            => 'app',
             ]);
 
             return new AgendamentoResource($agendamento->load(['manicure', 'servicos', 'salao']));
@@ -120,7 +121,7 @@ class AgendamentoController extends Controller
         $this->authorize('cancel', $agendamento);
 
         if (! $agendamento->podeSerCancelado()) {
-            return \App\Support\ApiError::make('Agendamento não pode ser cancelado.', 422, 'cannot_cancel');
+            return ApiError::make('Agendamento não pode ser cancelado.', 422, 'cannot_cancel');
         }
 
         $agendamento->update(['status' => AgendamentoStatus::Cancelado->value]);
@@ -143,11 +144,11 @@ class AgendamentoController extends Controller
         $this->authorize('review', $agendamento);
 
         if ($agendamento->status !== AgendamentoStatus::Concluido->value) {
-            return \App\Support\ApiError::make('Só é possível avaliar agendamentos concluídos.', 422, 'cannot_review');
+            return ApiError::make('Só é possível avaliar agendamentos concluídos.', 422, 'cannot_review');
         }
 
         if ($agendamento->avaliacao) {
-            return \App\Support\ApiError::make('Você já avaliou este atendimento.', 422, 'already_reviewed');
+            return ApiError::make('Você já avaliou este atendimento.', 422, 'already_reviewed');
         }
 
         $request->validate([

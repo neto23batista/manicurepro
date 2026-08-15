@@ -10,22 +10,22 @@ class CupomFactory extends Factory
     public function definition(): array
     {
         return [
-            'salao_id'        => Salao::factory(),
-            'codigo'          => strtoupper(fake()->bothify('???###')),
-            'tipo'            => fake()->randomElement(['percentual', 'fixo']),
-            'valor'           => fake()->randomFloat(2, 5, 50),
-            'minimo_pedido'   => 0,
-            'maximo_desconto' => null,
-            'uso_maximo'      => fake()->optional()->numberBetween(10, 100),
-            'uso_atual'       => 0,
-            'uso_maximo_por_cliente' => null,
-            'validade'        => now()->addMonths(2),
-            'ativo'           => true,
-            'origem'          => 'manual',
-            'primeira_compra' => false,
+            'salao_id'                 => Salao::factory(),
+            'codigo'                   => strtoupper(fake()->bothify('???###')),
+            'tipo'                     => fake()->randomElement(['percentual', 'fixo']),
+            'valor'                    => fake()->randomFloat(2, 5, 50),
+            'minimo_pedido'            => 0,
+            'maximo_desconto'          => null,
+            'uso_maximo'               => fake()->optional()->numberBetween(10, 100),
+            'uso_atual'                => 0,
+            'uso_maximo_por_cliente'   => null,
+            'validade'                 => now()->addMonths(2),
+            'ativo'                    => true,
+            'origem'                   => 'manual',
+            'primeira_compra'          => false,
             'anti_stacking_fidelidade' => false,
-            'cliente_id'      => null,
-            'servico_id'      => null,
+            'cliente_id'               => null,
+            'servico_id'               => null,
         ];
     }
 }

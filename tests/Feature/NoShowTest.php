@@ -18,7 +18,7 @@ beforeEach(function () {
 
     $this->salao = Salao::factory()->create();
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'limite_alerta_no_show' => 2,
     ]);
 
@@ -33,13 +33,14 @@ beforeEach(function () {
 function novoAgendamento($self, string $status, ?Carbon $inicio = null): Agendamento
 {
     $inicio ??= Carbon::now()->subHours(2);
+
     return Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'cliente_id' => $self->cliente->id,
-        'manicure_id' => $self->manicure->id,
+        'salao_id'         => $self->salao->id,
+        'cliente_id'       => $self->cliente->id,
+        'manicure_id'      => $self->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
     ]);
 }
 
@@ -58,13 +59,13 @@ test('dono marca cliente como falta e a contagem reflete', function () {
 test('nao_compareceu sem cliente vinculado nao quebra', function () {
     $inicio = Carbon::now()->subHours(2);
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'cliente_id' => null,
-        'nome_cliente' => 'Walk-in',
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'cliente_id'       => null,
+        'nome_cliente'     => 'Walk-in',
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $this->actingAs($this->dono)
@@ -143,12 +144,12 @@ test('dono persiste limite_alerta_no_show nas configurações', function () {
 test('comando limpar expirados incrementa faltas do cliente', function () {
     $inicio = Carbon::now()->subHours(5);
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'cliente_id' => $this->cliente->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'cliente_id'       => $this->cliente->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     Artisan::call('manicure:limpar-expirados');

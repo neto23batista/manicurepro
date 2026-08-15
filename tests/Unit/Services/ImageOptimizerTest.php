@@ -9,13 +9,13 @@ beforeEach(function () {
 });
 
 test('ImageOptimizer está disponível quando GD ou Intervention existem', function () {
-    $optimizer = new ImageOptimizer();
+    $optimizer = new ImageOptimizer;
 
     expect($optimizer->isAvailable())->toBeTrue();
 });
 
 test('ImageOptimizer redimensiona imagem maior que o limite', function () {
-    $optimizer = new ImageOptimizer();
+    $optimizer = new ImageOptimizer;
 
     if (! $optimizer->isAvailable()) {
         $this->markTestSkipped('GD/Intervention indisponível neste ambiente.');
@@ -36,7 +36,7 @@ test('ImageOptimizer redimensiona imagem maior que o limite', function () {
 });
 
 test('ImageOptimizer não amplia imagem menor que o limite', function () {
-    $optimizer = new ImageOptimizer();
+    $optimizer = new ImageOptimizer;
 
     if (! $optimizer->isAvailable()) {
         $this->markTestSkipped('GD/Intervention indisponível neste ambiente.');

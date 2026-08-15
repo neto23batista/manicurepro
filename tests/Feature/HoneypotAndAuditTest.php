@@ -15,12 +15,12 @@ test('honeypot rejeita agendamento convidado quando o campo bot está preenchido
 
     $this->from(route('public.agendar', $salao))
         ->post(route('public.agendar.store', $salao), [
-            'manicure_id' => 1,
-            'servico_ids' => [1],
+            'manicure_id'      => 1,
+            'servico_ids'      => [1],
             'data_hora_inicio' => now()->addDay()->toDateTimeString(),
-            'nome' => 'Bot',
-            'telefone' => '11999999999',
-            'website' => 'http://spam.test',
+            'nome'             => 'Bot',
+            'telefone'         => '11999999999',
+            'website'          => 'http://spam.test',
         ])
         ->assertSessionHasErrors('website');
 
@@ -32,11 +32,11 @@ test('honeypot rejeita registro quando o campo bot está preenchido', function (
 
     $this->from(route('register'))
         ->post(route('register.post'), [
-            'name' => 'Bot Spam',
-            'email' => 'bot@example.com',
-            'password' => 'password123',
+            'name'                  => 'Bot Spam',
+            'email'                 => 'bot@example.com',
+            'password'              => 'password123',
             'password_confirmation' => 'password123',
-            'website' => 'https://spam.example',
+            'website'               => 'https://spam.example',
         ])
         ->assertSessionHasErrors('website');
 
@@ -48,11 +48,11 @@ test('honeypot aceita registro com campo bot vazio', function () {
     Salao::factory()->create(['ativo' => true]);
 
     $this->post(route('register.post'), [
-        'name' => 'Maria Silva',
-        'email' => 'maria@example.com',
-        'password' => 'password123',
+        'name'                  => 'Maria Silva',
+        'email'                 => 'maria@example.com',
+        'password'              => 'password123',
         'password_confirmation' => 'password123',
-        'website' => '',
+        'website'               => '',
     ])->assertRedirect();
 
     $this->assertDatabaseHas('users', ['email' => 'maria@example.com']);
@@ -65,11 +65,11 @@ test('cancelamento de agendamento grava audit_log', function () {
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
 
     $agendamento = Agendamento::factory()->create([
-        'salao_id' => $salao->id,
-        'manicure_id' => $manicure->id,
+        'salao_id'         => $salao->id,
+        'manicure_id'      => $manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $agendamento->update(['status' => 'cancelado']);

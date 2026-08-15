@@ -13,10 +13,10 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
+        'manicure.pagamento.mercadopago.enabled'      => true,
         'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
-        'manicure.pagamento.sinal.habilitado' => false,
-        'manicure.pagamento.total.habilitado' => true,
+        'manicure.pagamento.sinal.habilitado'         => false,
+        'manicure.pagamento.total.habilitado'         => true,
     ]);
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
@@ -24,7 +24,7 @@ beforeEach(function () {
     $this->userCliente = User::factory()->create(['role' => 'cliente']);
     $this->cliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->userCliente->id,
+        'user_id'  => $this->userCliente->id,
     ]);
 });
 
@@ -33,25 +33,25 @@ function agendamentoParaPagamentoTotal($self, string $status = 'aguardando'): Ag
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
 
     return Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'cliente_id' => $self->cliente->id,
-        'manicure_id' => $self->manicure->id,
-        'user_id' => $self->userCliente->id,
+        'salao_id'         => $self->salao->id,
+        'cliente_id'       => $self->cliente->id,
+        'manicure_id'      => $self->manicure->id,
+        'user_id'          => $self->userCliente->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
-        'valor_total' => 100,
-        'valor_desconto' => 0,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
+        'valor_total'      => 100,
+        'valor_desconto'   => 0,
     ]);
 }
 
 test('cliente abre a tela de pagamento total e a cobrança Pix é criada', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 777001,
-            'status' => 'pending',
+            'id'                   => 777001,
+            'status'               => 'pending',
             'point_of_interaction' => ['transaction_data' => [
-                'qr_code' => 'pix-total-copia-cola',
+                'qr_code'        => 'pix-total-copia-cola',
                 'qr_code_base64' => 'dG90YWw=',
             ]],
         ], 201),
@@ -75,10 +75,10 @@ test('cliente abre a tela de pagamento total e a cobrança Pix é criada', funct
 test('polling de pagamento total confirma e confirma o agendamento', function () {
     $ag = agendamentoParaPagamentoTotal($this);
     $ag->update([
-        'mp_payment_id' => '777002',
+        'mp_payment_id'    => '777002',
         'mp_cobranca_tipo' => 'total',
-        'mp_total_status' => 'pendente',
-        'mp_total_valor' => 100,
+        'mp_total_status'  => 'pendente',
+        'mp_total_valor'   => 100,
     ]);
 
     Http::fake([
@@ -117,10 +117,10 @@ test('outro cliente não acessa o pagamento total alheio', function () {
 test('cliente paga restante após sinal já pago', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 777003,
-            'status' => 'pending',
+            'id'                   => 777003,
+            'status'               => 'pending',
             'point_of_interaction' => ['transaction_data' => [
-                'qr_code' => 'pix-restante',
+                'qr_code'        => 'pix-restante',
                 'qr_code_base64' => 'cmVzdA==',
             ]],
         ], 201),
@@ -129,7 +129,7 @@ test('cliente paga restante após sinal já pago', function () {
     $ag = agendamentoParaPagamentoTotal($this, 'confirmado');
     $ag->update([
         'sinal_status' => 'pago',
-        'sinal_valor' => 30,
+        'sinal_valor'  => 30,
     ]);
 
     $this->actingAs($this->userCliente)

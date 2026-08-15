@@ -19,25 +19,25 @@ beforeEach(function () {
     $this->userA = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->clienteA = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->userA->id,
+        'user_id'  => $this->userA->id,
     ]);
 
     $this->userB = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->clienteB = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->userB->id,
+        'user_id'  => $this->userB->id,
     ]);
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $this->agendamentoB = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'cliente_id' => $this->clienteB->id,
-        'user_id' => $this->userB->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'cliente_id'       => $this->clienteB->id,
+        'user_id'          => $this->userB->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'nome_cliente' => $this->userB->name,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'nome_cliente'     => $this->userB->name,
     ]);
 });
 
@@ -92,7 +92,7 @@ test('cliente A não pode avaliar agendamento do cliente B via API', function ()
 
     $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson('/api/v1/agendamentos/'.$this->agendamentoB->id.'/avaliar', [
-            'nota' => 5,
+            'nota'       => 5,
             'comentario' => 'Intrusão',
         ])
         ->assertForbidden();
@@ -103,7 +103,7 @@ test('cliente de outro salão não vê agendamento via API (IDOR cross-tenant)',
     $intruso = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     Cliente::factory()->create([
         'salao_id' => $outroSalao->id,
-        'user_id' => $intruso->id,
+        'user_id'  => $intruso->id,
     ]);
 
     $token = $intruso->createToken('t')->plainTextToken;

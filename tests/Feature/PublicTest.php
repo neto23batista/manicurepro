@@ -1,7 +1,8 @@
 <?php
 
-use App\Models\Salao;
 use App\Models\ConfiguracaoSalao;
+use App\Models\Salao;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -33,11 +34,11 @@ test('salão inativo retorna 404', function () {
 test('página de agendamento online é acessível quando habilitada', function () {
     $salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id' => $salao->id,
+        'salao_id'                    => $salao->id,
         'permitir_agendamento_online' => true,
-        'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 1,
-        'antecedencia_maxima' => 30,
+        'intervalo_agendamento'       => 30,
+        'antecedencia_minima'         => 1,
+        'antecedencia_maxima'         => 30,
     ]);
 
     $response = $this->get("/salao/{$salao->slug}/agendar");
@@ -48,11 +49,11 @@ test('página de agendamento online é acessível quando habilitada', function (
 test('página de agendamento redireciona quando desabilitada', function () {
     $salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id' => $salao->id,
+        'salao_id'                    => $salao->id,
         'permitir_agendamento_online' => false,
-        'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 1,
-        'antecedencia_maxima' => 30,
+        'intervalo_agendamento'       => 30,
+        'antecedencia_minima'         => 1,
+        'antecedencia_maxima'         => 30,
     ]);
 
     $response = $this->get("/salao/{$salao->slug}/agendar");
@@ -73,7 +74,7 @@ test('página de login é acessível para visitantes', function () {
 });
 
 test('usuário autenticado é redirecionado da página de login', function () {
-    $user = \App\Models\User::factory()->create(['role' => 'cliente', 'ativo' => true]);
+    $user = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
 
     $response = $this->actingAs($user)->get('/login');
     $response->assertRedirect();

@@ -4,8 +4,8 @@ namespace App\Enums;
 
 enum ComandaStatus: string
 {
-    case Aberta    = 'aberta';
-    case Fechada   = 'fechada';
+    case Aberta = 'aberta';
+    case Fechada = 'fechada';
     case Cancelada = 'cancelada';
 
     public function label(): string

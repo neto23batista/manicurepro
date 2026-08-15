@@ -61,7 +61,7 @@ class PasswordResetController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
                 event(new PasswordReset($user));
-            }
+            },
         );
 
         return $status === Password::PASSWORD_RESET

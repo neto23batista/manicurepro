@@ -20,13 +20,13 @@ class MovimentarEstoqueRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tipo' => ['required', Rule::in(EstoqueService::TIPOS)],
+            'tipo'       => ['required', Rule::in(EstoqueService::TIPOS)],
             'quantidade' => ['required', 'numeric', 'min:0.001', 'max:999999'],
-            'motivo' => [
+            'motivo'     => [
                 Rule::requiredIf(fn () => in_array(
                     $this->input('tipo'),
                     EstoqueService::TIPOS_MOTIVO_OBRIGATORIO,
-                    true
+                    true,
                 )),
                 'nullable',
                 'string',

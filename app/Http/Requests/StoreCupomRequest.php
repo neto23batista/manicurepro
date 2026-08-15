@@ -27,7 +27,7 @@ class StoreCupomRequest extends FormRequest
             'minimo_pedido'            => ['nullable', 'numeric', 'min:0'],
             'maximo_desconto'          => ['nullable', 'numeric', 'min:0'],
             'uso_maximo'               => ['nullable', 'integer', 'min:1'],
-            'uso_maximo_por_cliente'    => ['nullable', 'integer', 'min:1'],
+            'uso_maximo_por_cliente'   => ['nullable', 'integer', 'min:1'],
             'validade'                 => ['nullable', 'date', 'after:today'],
             'ativo'                    => ['sometimes', 'boolean'],
             'primeira_compra'          => ['sometimes', 'boolean'],

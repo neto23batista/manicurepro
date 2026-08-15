@@ -31,12 +31,12 @@ beforeEach(function () {
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id'                  => $this->salao->id,
-        'intervalo_agendamento'     => 30,
-        'antecedencia_minima'       => 0,
-        'antecedencia_maxima'       => 30,
+        'salao_id'                    => $this->salao->id,
+        'intervalo_agendamento'       => 30,
+        'antecedencia_minima'         => 0,
+        'antecedencia_maxima'         => 30,
         'permitir_agendamento_online' => true,
-        'limite_alerta_no_show'     => 2,
+        'limite_alerta_no_show'       => 2,
     ]);
 
     $this->dono = User::factory()->create([
@@ -63,11 +63,11 @@ beforeEach(function () {
 
     for ($dia = 1; $dia <= 5; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id'         => $this->salao->id,
-            'dia_semana'       => $dia,
-            'hora_abertura'    => '08:00:00',
-            'hora_fechamento'  => '18:00:00',
-            'ativo'            => true,
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
+            'hora_fechamento' => '18:00:00',
+            'ativo'           => true,
         ]);
         DisponibilidadeManicure::create([
             'manicure_id' => $this->manicure->id,
@@ -79,11 +79,11 @@ beforeEach(function () {
     }
 
     $this->servico = Servico::factory()->create([
-        'salao_id'           => $this->salao->id,
-        'preco'              => 50.00,
-        'duracao'            => 30,
-        'ativo'              => true,
-        'disponivel_online'  => true,
+        'salao_id'          => $this->salao->id,
+        'preco'             => 50.00,
+        'duracao'           => 30,
+        'ativo'             => true,
+        'disponivel_online' => true,
     ]);
 
     $this->cliente = Cliente::factory()->create([

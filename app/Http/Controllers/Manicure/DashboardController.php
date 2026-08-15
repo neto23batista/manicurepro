@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         $manicure = auth()->user()->manicure;
 
-        if (!$manicure) {
+        if (! $manicure) {
             return view('manicure.dashboard', ['manicure' => null]);
         }
 
@@ -24,7 +24,7 @@ class DashboardController extends Controller
                 'proximoAgendamento'   => $this->repo->manicureProximo($manicure),
                 'proximosAgendamentos' => $this->repo->manicureProximos7Dias($manicure),
             ],
-            $this->repo->manicureMetricasMes($manicure)
+            $this->repo->manicureMetricasMes($manicure),
         ));
     }
 }

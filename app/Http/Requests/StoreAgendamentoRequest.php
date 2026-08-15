@@ -31,21 +31,21 @@ class StoreAgendamentoRequest extends FormRequest
         $isStaff = $user && ($user->isDono() || $user->isAtendente() || $user->isSuperAdmin());
 
         return [
-            'salao_id'         => [$isStaff ? 'sometimes' : 'required', 'exists:saloes,id'],
-            'manicure_id'      => ['required', 'exists:manicures,id'],
-            'servico_ids'      => ['required', 'array', 'min:1'],
-            'servico_ids.*'    => ['integer', 'exists:servicos,id'],
+            'salao_id'            => [$isStaff ? 'sometimes' : 'required', 'exists:saloes,id'],
+            'manicure_id'         => ['required', 'exists:manicures,id'],
+            'servico_ids'         => ['required', 'array', 'min:1'],
+            'servico_ids.*'       => ['integer', 'exists:servicos,id'],
             'servico_variacoes'   => ['nullable', 'array'],
             'servico_variacoes.*' => ['nullable', 'integer', 'exists:servico_variacoes,id'],
-            'data_hora_inicio' => ['required', 'date', 'after:now'],
-            'cliente_id'       => ['nullable', 'exists:clientes,id'],
-            'nome_cliente'     => ['nullable', 'string', 'max:255'],
-            'telefone_cliente' => ['nullable', 'string', 'max:20'],
-            'observacoes'      => ['nullable', 'string', 'max:1000'],
-            'recorrencia'      => ['nullable', 'in:nenhuma,semanal,quinzenal,mensal'],
-            'ocorrencias'      => ['nullable', 'integer', 'min:1', 'max:12'],
+            'data_hora_inicio'    => ['required', 'date', 'after:now'],
+            'cliente_id'          => ['nullable', 'exists:clientes,id'],
+            'nome_cliente'        => ['nullable', 'string', 'max:255'],
+            'telefone_cliente'    => ['nullable', 'string', 'max:20'],
+            'observacoes'         => ['nullable', 'string', 'max:1000'],
+            'recorrencia'         => ['nullable', 'in:nenhuma,semanal,quinzenal,mensal'],
+            'ocorrencias'         => ['nullable', 'integer', 'min:1', 'max:12'],
             // Encaixe: apenas staff (dono/atendente). Público/cliente nunca passam.
-            'encaixe'          => [$isStaff ? 'sometimes' : 'prohibited', 'boolean'],
+            'encaixe' => [$isStaff ? 'sometimes' : 'prohibited', 'boolean'],
         ];
     }
 

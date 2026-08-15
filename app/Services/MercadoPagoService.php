@@ -33,6 +33,11 @@ class MercadoPagoService
         return $this->habilitado() && (bool) config('manicure.pagamento.total.habilitado');
     }
 
+    public function gorjetaHabilitado(): bool
+    {
+        return $this->habilitado() && (bool) config('manicure.pagamento.gorjeta.habilitado');
+    }
+
     public function valorLiquido(Agendamento $agendamento): float
     {
         return max(0, round(
@@ -108,6 +113,23 @@ class MercadoPagoService
     }
 
     /**
+     * Cria cobrança Pix de gorjeta (valor informado pelo cliente).
+     *
+     * @return array{payment_id:?int,qr_code:?string,qr_code_base64:?string,ticket_url:?string,valor:float,status:?string}
+     */
+    public function criarPixGorjeta(Agendamento $agendamento, float $valor): array
+    {
+        $valor = max(0, round($valor, 2));
+
+        return $this->criarCobrancaPix(
+            $agendamento,
+            $valor,
+            'gorjeta',
+            "Gorjeta — agendamento #{$agendamento->id}",
+        );
+    }
+
+    /**
      * @return array{payment_id:?int,qr_code:?string,qr_code_base64:?string,ticket_url:?string,valor:float,status:?string}
      */
     private function criarCobrancaPix(
@@ -145,6 +167,9 @@ class MercadoPagoService
         if ($tipo === 'sinal') {
             $attrs['sinal_status'] = 'pendente';
             $attrs['sinal_valor'] = $valor;
+        } elseif ($tipo === 'gorjeta') {
+            $attrs['mp_gorjeta_status'] = 'pendente';
+            $attrs['mp_gorjeta_valor'] = $valor;
         } else {
             $attrs['mp_total_status'] = 'pendente';
             $attrs['mp_total_valor'] = $valor;
@@ -174,9 +199,11 @@ class MercadoPagoService
     public function consultarPix(Agendamento $agendamento): array
     {
         $tipo = $agendamento->mp_cobranca_tipo ?: 'sinal';
-        $statusAtual = $tipo === 'total'
-            ? $agendamento->mp_total_status
-            : $agendamento->sinal_status;
+        $statusAtual = match ($tipo) {
+            'total'   => $agendamento->mp_total_status,
+            'gorjeta' => $agendamento->mp_gorjeta_status,
+            default   => $agendamento->sinal_status,
+        };
 
         $vazio = ['status' => $statusAtual, 'qr_code' => null, 'qr_code_base64' => null, 'ticket_url' => null];
 
@@ -198,11 +225,16 @@ class MercadoPagoService
         $this->aplicarStatus($agendamento, $tipo, $novo);
         $agendamento->refresh();
 
-        $statusEfetivo = $tipo === 'total'
-            ? $agendamento->mp_total_status
-            : $agendamento->sinal_status;
+        $statusEfetivo = match ($tipo) {
+            'total'   => $agendamento->mp_total_status,
+            'gorjeta' => $agendamento->mp_gorjeta_status,
+            default   => $agendamento->sinal_status,
+        };
 
-        if ($statusEfetivo === 'pago' && $agendamento->statusEnum() === AgendamentoStatus::Aguardando) {
+        // Gorjeta não altera status do agendamento (já concluído).
+        if ($tipo !== 'gorjeta'
+            && $statusEfetivo === 'pago'
+            && $agendamento->statusEnum() === AgendamentoStatus::Aguardando) {
             $agendamento->update([
                 'status'        => AgendamentoStatus::Confirmado->value,
                 'confirmado_em' => now(),
@@ -331,7 +363,11 @@ class MercadoPagoService
 
     private function aplicarStatus(Agendamento $agendamento, string $tipo, string $status): void
     {
-        $campo = $tipo === 'total' ? 'mp_total_status' : 'sinal_status';
+        $campo = match ($tipo) {
+            'total'   => 'mp_total_status',
+            'gorjeta' => 'mp_gorjeta_status',
+            default   => 'sinal_status',
+        };
         $atual = $agendamento->{$campo};
 
         // Não regredir pagamento aprovado → pendente (webhook/consulta atrasada).
@@ -353,15 +389,29 @@ class MercadoPagoService
             return;
         }
 
-        $valor = $tipo === 'total'
-            ? (float) $agendamento->mp_total_valor
-            : (float) $agendamento->sinal_valor;
+        $valor = match ($tipo) {
+            'total'   => (float) $agendamento->mp_total_valor,
+            'gorjeta' => (float) $agendamento->mp_gorjeta_valor,
+            default   => (float) $agendamento->sinal_valor,
+        };
 
         if ($valor <= 0) {
             return;
         }
 
         $comanda = $this->comandaService->obterOuCriar($agendamento);
+
+        if ($tipo === 'gorjeta') {
+            $gorjetaAtual = (float) ($comanda->gorjeta ?? 0);
+            $novaGorjeta = $gorjetaAtual + $valor;
+            $base = (float) $comanda->valor_servicos
+                + (float) $comanda->valor_produtos
+                - (float) $comanda->desconto;
+            $comanda->update([
+                'gorjeta' => $novaGorjeta,
+                'total'   => max(0, $base + $novaGorjeta),
+            ]);
+        }
 
         Pagamento::create([
             'comanda_id'     => $comanda->id,
@@ -371,9 +421,11 @@ class MercadoPagoService
             'valor'          => $valor,
             'status'         => PagamentoStatus::Confirmado->value,
             'referencia'     => (string) $paymentId,
-            'observacoes'    => $tipo === 'total'
-                ? 'Pix online (valor total/restante)'
-                : 'Pix online (sinal)',
+            'observacoes'    => match ($tipo) {
+                'total'   => 'Pix online (valor total/restante)',
+                'gorjeta' => 'Pix online (gorjeta)',
+                default   => 'Pix online (sinal)',
+            },
         ]);
     }
 

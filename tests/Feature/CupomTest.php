@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Agendamento;
 use App\Models\ConfiguracaoSalao;
 use App\Models\Cupom;
 use App\Models\DisponibilidadeManicure;
@@ -12,6 +13,7 @@ use App\Services\AgendaService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -206,10 +208,10 @@ test('cupom expirado não pode ser aplicado', function () {
     $inicio = slotLivre(now());
 
     expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $inicio)))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect((int) $cupom->fresh()->uso_atual)->toBe(0);
-    expect(\App\Models\Agendamento::count())->toBe(0);
+    expect(Agendamento::count())->toBe(0);
 });
 
 test('cupom esgotado não pode ser aplicado', function () {
@@ -226,10 +228,10 @@ test('cupom esgotado não pode ser aplicado', function () {
     $inicio = slotLivre(now());
 
     expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $inicio)))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect((int) $cupom->fresh()->uso_atual)->toBe(2);
-    expect(\App\Models\Agendamento::count())->toBe(0);
+    expect(Agendamento::count())->toBe(0);
 });
 
 test('cupom de outro salão não pode ser aplicado', function () {
@@ -247,10 +249,10 @@ test('cupom de outro salão não pode ser aplicado', function () {
     $inicio = slotLivre(now());
 
     expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupomOutro->id, $inicio)))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect((int) $cupomOutro->fresh()->uso_atual)->toBe(0);
-    expect(\App\Models\Agendamento::count())->toBe(0);
+    expect(Agendamento::count())->toBe(0);
 });
 
 test('uso_maximo=1: segundo apply é rejeitado (race-safe consume)', function () {
@@ -272,10 +274,10 @@ test('uso_maximo=1: segundo apply é rejeitado (race-safe consume)', function ()
     expect((int) $cupom->fresh()->uso_atual)->toBe(1);
 
     expect(fn () => $this->agendaService->criarAgendamento(payloadAgendamento($this, $cupom->id, $segundo)))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect((int) $cupom->fresh()->uso_atual)->toBe(1);
-    expect(\App\Models\Agendamento::count())->toBe(1);
+    expect(Agendamento::count())->toBe(1);
 });
 
 test('isValido rejeita salão errado, expirado e esgotado', function () {

@@ -17,9 +17,9 @@ class RelatorioController extends Controller
     public function index(Request $request)
     {
         $dados = $this->reports->gerarRelatorio(
-            salaoId:    $request->salao_id,
+            salaoId: $request->salao_id,
             dataInicio: $request->data_inicio ? Carbon::parse($request->data_inicio) : null,
-            dataFim:    $request->data_fim ? Carbon::parse($request->data_fim) : null,
+            dataFim: $request->data_fim ? Carbon::parse($request->data_fim) : null,
         );
 
         return view('admin.relatorios.index', array_merge($dados, [
@@ -31,25 +31,25 @@ class RelatorioController extends Controller
     public function exportPdf(Request $request)
     {
         $dados = $this->reports->gerarRelatorio(
-            salaoId:    $request->salao_id,
+            salaoId: $request->salao_id,
             dataInicio: $request->data_inicio ? Carbon::parse($request->data_inicio) : null,
-            dataFim:    $request->data_fim ? Carbon::parse($request->data_fim) : null,
+            dataFim: $request->data_fim ? Carbon::parse($request->data_fim) : null,
         );
 
         $pdf = Pdf::loadView('pdf.relatorio', $dados)
             ->setPaper('a4', 'landscape');
 
         return $pdf->download(
-            'relatorio-'.$dados['dataInicio']->format('Y-m-d').'-'.$dados['dataFim']->format('Y-m-d').'.pdf'
+            'relatorio-'.$dados['dataInicio']->format('Y-m-d').'-'.$dados['dataFim']->format('Y-m-d').'.pdf',
         );
     }
 
     public function exportCsv(Request $request): StreamedResponse
     {
         $dados = $this->reports->gerarRelatorio(
-            salaoId:    $request->salao_id,
+            salaoId: $request->salao_id,
             dataInicio: $request->data_inicio ? Carbon::parse($request->data_inicio) : null,
-            dataFim:    $request->data_fim ? Carbon::parse($request->data_fim) : null,
+            dataFim: $request->data_fim ? Carbon::parse($request->data_fim) : null,
         );
 
         $filename = 'relatorio-'.$dados['dataInicio']->format('Y-m-d').'-'.$dados['dataFim']->format('Y-m-d').'.csv';
@@ -75,14 +75,14 @@ class RelatorioController extends Controller
                 fputcsv($out, [
                     $ag->data_hora_inicio->format('Y-m-d'),
                     $ag->data_hora_inicio->format('H:i'),
-                    $ag->nome_cliente_exibido ?? $ag->cliente?->nome ?? '',
-                    $ag->manicure?->nome ?? '',
+                    $ag->nome_cliente_exibido ?? $ag->cliente->nome ?? '',
+                    $ag->manicure->nome ?? '',
                     $ag->servicos->pluck('nome')->implode(', '),
                     $ag->status,
                     number_format((float) $ag->valor_total, 2, '.', ''),
                     number_format((float) $ag->valor_desconto, 2, '.', ''),
                     number_format((float) $ag->valor_total - (float) $ag->valor_desconto, 2, '.', ''),
-                    $ag->salao?->nome ?? '',
+                    $ag->salao->nome ?? '',
                 ], ';');
             }
 

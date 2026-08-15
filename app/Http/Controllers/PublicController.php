@@ -97,17 +97,17 @@ class PublicController extends Controller
 
         try {
             $agendamento = $this->agendaService->criarAgendamento([
-                'salao_id'         => $salao->id,
-                'manicure_id'      => $request->integer('manicure_id'),
-                'servico_ids'      => $request->input('servico_ids'),
-                'servico_variacoes'=> $request->input('servico_variacoes', []),
-                'data_hora_inicio' => $request->input('data_hora_inicio'),
-                'cliente_id'       => $cliente->id,
-                'nome_cliente'     => $cliente->nome,
-                'telefone_cliente' => $cliente->telefone,
-                'observacoes'      => $request->input('observacoes'),
-                'origem'           => 'guest',
-                'status'           => AgendamentoStatus::Aguardando->value,
+                'salao_id'          => $salao->id,
+                'manicure_id'       => $request->integer('manicure_id'),
+                'servico_ids'       => $request->input('servico_ids'),
+                'servico_variacoes' => $request->input('servico_variacoes', []),
+                'data_hora_inicio'  => $request->input('data_hora_inicio'),
+                'cliente_id'        => $cliente->id,
+                'nome_cliente'      => $cliente->nome,
+                'telefone_cliente'  => $cliente->telefone,
+                'observacoes'       => $request->input('observacoes'),
+                'origem'            => 'guest',
+                'status'            => AgendamentoStatus::Aguardando->value,
             ]);
         } catch (\Throwable $e) {
             return $this->domainExceptionBack($e, 'Não foi possível criar o agendamento.', withInput: true);

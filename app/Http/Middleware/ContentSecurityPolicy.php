@@ -73,8 +73,8 @@ class ContentSecurityPolicy
         // sem mexer em scripts que já tenham nonce.
         $novo = preg_replace_callback(
             '/<script(?![^>]*\bnonce=)(?=[\s>])/i',
-            fn () => '<script nonce="' . $nonce . '"',
-            $content
+            fn () => '<script nonce="'.$nonce.'"',
+            $content,
         );
 
         // setContent() do Illuminate sobrescreve $response->original (a View);

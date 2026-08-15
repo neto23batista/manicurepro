@@ -16,20 +16,20 @@ beforeEach(function () {
     ConfiguracaoSalao::create(['salao_id' => $this->salao->id]);
 
     $this->dono = User::factory()->create([
-        'role' => 'dono',
+        'role'     => 'dono',
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 
     $this->userManicure = User::factory()->create([
-        'role' => 'manicure',
+        'role'     => 'manicure',
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->userManicure->id,
-        'ativo' => true,
+        'user_id'  => $this->userManicure->id,
+        'ativo'    => true,
     ]);
 
     $this->cliente = Cliente::factory()->create([
@@ -39,38 +39,38 @@ beforeEach(function () {
 
     $inicio = now()->addDay()->setTime(10, 0);
     $this->agendamento = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'cliente_id' => $this->cliente->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'cliente_id'       => $this->cliente->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(60),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(60),
+        'status'           => 'confirmado',
     ]);
 });
 
 test('dono salva ficha de unhas ao editar cliente', function () {
     $this->actingAs($this->dono)->put("/dono/clientes/{$this->cliente->id}", [
-        'nome' => $this->cliente->nome,
-        'notas_unhas' => 'Unhas curtas e frágeis',
+        'nome'             => $this->cliente->nome,
+        'notas_unhas'      => 'Unhas curtas e frágeis',
         'cores_preferidas' => 'Nude e rosa',
         'contraindicacoes' => 'Evitar gel',
-        'ultima_formula' => 'Risqué Nude 42 + base Strength',
-        'ativo' => 1,
+        'ultima_formula'   => 'Risqué Nude 42 + base Strength',
+        'ativo'            => 1,
     ])->assertRedirect('/dono/clientes');
 
     $this->assertDatabaseHas('clientes', [
-        'id' => $this->cliente->id,
-        'notas_unhas' => 'Unhas curtas e frágeis',
+        'id'               => $this->cliente->id,
+        'notas_unhas'      => 'Unhas curtas e frágeis',
         'cores_preferidas' => 'Nude e rosa',
         'contraindicacoes' => 'Evitar gel',
-        'ultima_formula' => 'Risqué Nude 42 + base Strength',
+        'ultima_formula'   => 'Risqué Nude 42 + base Strength',
     ]);
 });
 
 test('dono vê ficha de unhas no show do cliente', function () {
     $this->cliente->update([
         'cores_preferidas' => 'Vermelho clássico',
-        'ultima_formula' => 'Colorama 12',
+        'ultima_formula'   => 'Colorama 12',
     ]);
 
     $this->actingAs($this->dono)
@@ -85,10 +85,10 @@ test('manicure atualiza ficha pela agenda', function () {
     $this->actingAs($this->userManicure)
         ->from(route('manicure.agenda.show', $this->agendamento))
         ->patch(route('manicure.agenda.ficha', $this->agendamento), [
-            'notas_unhas' => 'Alongamento fibra',
+            'notas_unhas'      => 'Alongamento fibra',
             'cores_preferidas' => 'Branco francês',
             'contraindicacoes' => 'Sem acetona pura',
-            'ultima_formula' => 'Gel Ideal White',
+            'ultima_formula'   => 'Gel Ideal White',
             'registrar_visita' => 0,
         ])
         ->assertRedirect();
@@ -105,22 +105,22 @@ test('manicure atualiza ficha pela agenda', function () {
 test('manicure registra histórico da visita ao salvar ficha', function () {
     $this->actingAs($this->userManicure)
         ->patch(route('manicure.agenda.ficha', $this->agendamento), [
-            'notas_unhas' => 'Manutenção',
+            'notas_unhas'      => 'Manutenção',
             'cores_preferidas' => 'Rosa chá',
-            'ultima_formula' => 'Impala Rosa Chá',
+            'ultima_formula'   => 'Impala Rosa Chá',
             'registrar_visita' => 1,
-            'notas_visita' => 'Retoque nas laterais',
+            'notas_visita'     => 'Retoque nas laterais',
         ])
         ->assertRedirect();
 
     $this->assertDatabaseHas('cliente_ficha_historico', [
-        'cliente_id' => $this->cliente->id,
-        'salao_id' => $this->salao->id,
+        'cliente_id'     => $this->cliente->id,
+        'salao_id'       => $this->salao->id,
         'agendamento_id' => $this->agendamento->id,
-        'user_id' => $this->userManicure->id,
-        'cores' => 'Rosa chá',
-        'formula' => 'Impala Rosa Chá',
-        'notas' => 'Retoque nas laterais',
+        'user_id'        => $this->userManicure->id,
+        'cores'          => 'Rosa chá',
+        'formula'        => 'Impala Rosa Chá',
+        'notas'          => 'Retoque nas laterais',
     ]);
 });
 
@@ -141,14 +141,14 @@ test('manicure vê ficha no detalhe do agendamento', function () {
 test('manicure de outro salão não atualiza ficha', function () {
     $outroSalao = Salao::factory()->create();
     $outroUser = User::factory()->create([
-        'role' => 'manicure',
+        'role'     => 'manicure',
         'salao_id' => $outroSalao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
     Manicure::factory()->create([
         'salao_id' => $outroSalao->id,
-        'user_id' => $outroUser->id,
-        'ativo' => true,
+        'user_id'  => $outroUser->id,
+        'ativo'    => true,
     ]);
 
     $this->actingAs($outroUser)

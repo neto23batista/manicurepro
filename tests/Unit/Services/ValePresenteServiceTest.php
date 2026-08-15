@@ -5,6 +5,7 @@ use App\Models\Salao;
 use App\Models\ValePresente;
 use App\Services\ValePresenteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -17,7 +18,7 @@ function criarValeUnit(int $salaoId, float $valor = 100, array $attrs = []): Val
 {
     return ValePresente::create(array_merge([
         'salao_id' => $salaoId,
-        'codigo'   => 'VP-' . strtoupper(uniqid()),
+        'codigo'   => 'VP-'.strtoupper(uniqid()),
         'valor'    => $valor,
         'saldo'    => $valor,
         'status'   => ValePresente::STATUS_ATIVO,
@@ -59,21 +60,21 @@ test('double redeem após uso total é rejeitado', function () {
     $this->service->debitar($vale, 30);
 
     expect(fn () => $this->service->debitar($vale->fresh(), 10))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 test('vale cancelado não pode ser debitado', function () {
     $vale = criarValeUnit($this->salao->id, 50, ['status' => ValePresente::STATUS_CANCELADO]);
 
     expect(fn () => $this->service->debitar($vale, 10))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 test('vale expirado não pode ser debitado', function () {
     $vale = criarValeUnit($this->salao->id, 50, ['validade' => now()->subDay()->toDateString()]);
 
     expect(fn () => $this->service->debitar($vale, 10))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 test('vale já marcado como usado não pode ser debitado', function () {
@@ -83,17 +84,17 @@ test('vale já marcado como usado não pode ser debitado', function () {
     ]);
 
     expect(fn () => $this->service->debitar($vale, 10))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 test('valor de débito zero ou negativo é rejeitado', function () {
     $vale = criarValeUnit($this->salao->id, 50);
 
     expect(fn () => $this->service->debitar($vale, 0))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect(fn () => $this->service->debitar($vale, -5))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect((float) $vale->fresh()->saldo)->toBe(50.0);
 });
@@ -110,12 +111,12 @@ test('resgates parciais sucessivos até esgotar o saldo', function () {
         ->and($vale->status)->toBe(ValePresente::STATUS_USADO);
 
     expect(fn () => $this->service->debitar($vale, 1))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });
 
 test('criar rejeita valor abaixo do mínimo', function () {
     expect(fn () => $this->service->criar($this->salao->id, ['valor' => 0.5]))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 test('criar gera saldo igual ao valor e pagamento de venda', function () {
@@ -127,7 +128,7 @@ test('criar gera saldo igual ao valor e pagamento de venda', function () {
     expect($vale->codigo)->toStartWith('VP-')
         ->and((float) $vale->saldo)->toBe(80.0)
         ->and($vale->status)->toBe(ValePresente::STATUS_ATIVO)
-        ->and(Pagamento::where('referencia', 'vale:' . $vale->codigo)->exists())->toBeTrue();
+        ->and(Pagamento::where('referencia', 'vale:'.$vale->codigo)->exists())->toBeTrue();
 });
 
 test('validade no dia atual ainda permite débito (não expirado até fim do dia)', function () {

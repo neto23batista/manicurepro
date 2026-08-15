@@ -21,42 +21,42 @@ beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
 
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 0,
-        'antecedencia_maxima' => 30,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 30,
     ]);
 
     $userManicure = User::factory()->create(['role' => 'manicure', 'salao_id' => $this->salao->id]);
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $userManicure->id,
-        'ativo' => true,
+        'user_id'  => $userManicure->id,
+        'ativo'    => true,
     ]);
 
     // Horários de funcionamento: seg-sex 08:00-18:00
     for ($dia = 1; $dia <= 5; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id' => $this->salao->id,
-            'dia_semana' => $dia,
-            'hora_abertura' => '08:00:00',
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
             'hora_fechamento' => '18:00:00',
-            'ativo' => true,
+            'ativo'           => true,
         ]);
         DisponibilidadeManicure::create([
             'manicure_id' => $this->manicure->id,
-            'dia_semana' => $dia,
+            'dia_semana'  => $dia,
             'hora_inicio' => '08:00:00',
-            'hora_fim' => '18:00:00',
-            'ativo' => true,
+            'hora_fim'    => '18:00:00',
+            'ativo'       => true,
         ]);
     }
 
     $this->servico = Servico::factory()->create([
-        'salao_id' => $this->salao->id,
-        'preco' => 30.00,
-        'duracao' => 30,
-        'ativo' => true,
+        'salao_id'          => $this->salao->id,
+        'preco'             => 30.00,
+        'duracao'           => 30,
+        'ativo'             => true,
         'disponivel_online' => true,
     ]);
 
@@ -78,17 +78,17 @@ test('AgendaService detecta conflito de horário', function () {
 
     // Cria agendamento existente às 10:00
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $data,
-        'data_hora_fim' => $data->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $data->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $slots = $this->agendaService->getSlotsDisponiveis(
         $this->manicure,
         $data->copy()->startOfDay(),
-        30
+        30,
     );
 
     // O slot das 10:00 não deve aparecer
@@ -100,12 +100,12 @@ test('criação de agendamento funciona', function () {
     $data = Carbon::now()->next(Carbon::MONDAY)->setTime(9, 0);
 
     $ag = $this->agendaService->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $data->toDateTimeString(),
-        'origem' => 'web',
-        'status' => 'aguardando',
+        'origem'           => 'web',
+        'status'           => 'aguardando',
     ]);
 
     expect($ag)->toBeInstanceOf(Agendamento::class);
@@ -119,33 +119,33 @@ test('criação de agendamento conflitante lança exceção', function () {
 
     // Primeiro agendamento
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $data,
-        'data_hora_fim' => $data->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $data->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     // Tenta criar segundo agendamento no mesmo horário
-    expect(fn() => $this->agendaService->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+    expect(fn () => $this->agendaService->criarAgendamento([
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $data->toDateTimeString(),
-        'origem' => 'web',
-        'status' => 'aguardando',
-    ]))->toThrow(\Exception::class);
+        'origem'           => 'web',
+        'status'           => 'aguardando',
+    ]))->toThrow(Exception::class);
 });
 
 test('finalização de atendimento cria comanda e pagamento', function () {
     $data = Carbon::now()->subHour();
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $data,
-        'data_hora_fim' => $data->copy()->addMinutes(30),
-        'status' => 'em_andamento',
-        'valor_total' => 30.00,
+        'data_hora_fim'    => $data->copy()->addMinutes(30),
+        'status'           => 'em_andamento',
+        'valor_total'      => 30.00,
     ]);
     $ag->servicos()->attach($this->servico->id, ['preco' => 30.00, 'duracao' => 30]);
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use App\Models\Concerns\HasAvatar;
+use App\Services\PermissionService;
 use App\Support\WhatsApp;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -87,7 +88,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasExtraPermission(string $permission): bool
     {
-        return app(\App\Services\PermissionService::class)->hasGrant($this, $permission);
+        return app(PermissionService::class)->hasGrant($this, $permission);
     }
 
     /** @return BelongsTo<Salao, $this> */

@@ -8,6 +8,7 @@ use App\Models\Cliente;
 use App\Models\Cupom;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Validation\ValidationException;
 
@@ -26,19 +27,19 @@ class ClienteSegmentacao
     ];
 
     public const LABELS = [
-        'novo'         => 'Novo',
-        'recorrente'   => 'Recorrente',
-        'inativo'      => 'Inativo',
-        'vip'          => 'VIP',
-        'risco_churn'  => 'Risco churn',
+        'novo'        => 'Novo',
+        'recorrente'  => 'Recorrente',
+        'inativo'     => 'Inativo',
+        'vip'         => 'VIP',
+        'risco_churn' => 'Risco churn',
     ];
 
     public const CORES = [
-        'novo'         => 'info',
-        'recorrente'   => 'primary',
-        'inativo'      => 'secondary',
-        'vip'          => 'warning',
-        'risco_churn'  => 'danger',
+        'novo'        => 'info',
+        'recorrente'  => 'primary',
+        'inativo'     => 'secondary',
+        'vip'         => 'warning',
+        'risco_churn' => 'danger',
     ];
 
     public function label(string $segmento): string
@@ -155,8 +156,8 @@ class ClienteSegmentacao
     /**
      * Aplica filtro de segmento na listagem (sem N+1).
      *
-     * @param  Builder<\App\Models\Cliente>|Relation<\App\Models\Cliente, \Illuminate\Database\Eloquent\Model>  $query
-     * @return Builder<\App\Models\Cliente>|Relation<\App\Models\Cliente, \Illuminate\Database\Eloquent\Model>
+     * @param  Builder<Cliente>|Relation<Cliente, Model, mixed>  $query
+     * @return Builder<Cliente>|Relation<Cliente, Model, mixed>
      */
     public function aplicarFiltro(Builder|Relation $query, string $segmento): Builder|Relation
     {
@@ -212,8 +213,8 @@ class ClienteSegmentacao
     /**
      * Anexa última visita concluída em lote (evita N+1 na listagem).
      *
-     * @param  Builder<\App\Models\Cliente>|Relation<\App\Models\Cliente, \Illuminate\Database\Eloquent\Model>  $query
-     * @return Builder<\App\Models\Cliente>|Relation<\App\Models\Cliente, \Illuminate\Database\Eloquent\Model>
+     * @param  Builder<Cliente>|Relation<Cliente, Model, mixed>  $query
+     * @return Builder<Cliente>|Relation<Cliente, Model, mixed>
      */
     public function withUltimaVisita(Builder|Relation $query): Builder|Relation
     {
@@ -259,7 +260,7 @@ class ClienteSegmentacao
                 'COUNT(*) as visitas,'
                 .' COALESCE(SUM(valor_total - valor_desconto), 0) as ltv,'
                 .' COALESCE(AVG(valor_total - valor_desconto), 0) as ticket_medio,'
-                .' MAX(data_hora_inicio) as ultima_visita'
+                .' MAX(data_hora_inicio) as ultima_visita',
             )
             ->first();
 

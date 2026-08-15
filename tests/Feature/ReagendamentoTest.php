@@ -21,63 +21,63 @@ beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
 
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 0,
-        'antecedencia_maxima' => 30,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 30,
     ]);
 
     $userManicure = User::factory()->create(['role' => 'manicure', 'salao_id' => $this->salao->id]);
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $userManicure->id,
-        'ativo' => true,
+        'user_id'  => $userManicure->id,
+        'ativo'    => true,
     ]);
 
     for ($dia = 0; $dia <= 6; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id' => $this->salao->id,
-            'dia_semana' => $dia,
-            'hora_abertura' => '08:00:00',
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
             'hora_fechamento' => '18:00:00',
-            'ativo' => true,
+            'ativo'           => true,
         ]);
         DisponibilidadeManicure::create([
             'manicure_id' => $this->manicure->id,
-            'dia_semana' => $dia,
+            'dia_semana'  => $dia,
             'hora_inicio' => '08:00:00',
-            'hora_fim' => '18:00:00',
-            'ativo' => true,
+            'hora_fim'    => '18:00:00',
+            'ativo'       => true,
         ]);
     }
 
     $this->servico = Servico::factory()->create([
-        'salao_id' => $this->salao->id,
-        'preco' => 30.00,
-        'duracao' => 30,
-        'ativo' => true,
+        'salao_id'          => $this->salao->id,
+        'preco'             => 30.00,
+        'duracao'           => 30,
+        'ativo'             => true,
         'disponivel_online' => true,
     ]);
 
     $this->userCliente = User::factory()->create(['role' => 'cliente']);
     $this->cliente = Cliente::create([
-        'user_id' => $this->userCliente->id,
+        'user_id'  => $this->userCliente->id,
         'salao_id' => $this->salao->id,
-        'nome' => $this->userCliente->name,
-        'email' => $this->userCliente->email,
+        'nome'     => $this->userCliente->name,
+        'email'    => $this->userCliente->email,
     ]);
 });
 
 function criarAgendamentoBase($self, Carbon $inicio, string $status = 'confirmado'): Agendamento
 {
     $ag = Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'cliente_id' => $self->cliente->id,
-        'manicure_id' => $self->manicure->id,
-        'user_id' => $self->userCliente->id,
+        'salao_id'         => $self->salao->id,
+        'cliente_id'       => $self->cliente->id,
+        'manicure_id'      => $self->manicure->id,
+        'user_id'          => $self->userCliente->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
     ]);
     $ag->servicos()->attach($self->servico->id, ['preco' => 30.00, 'duracao' => 30]);
 

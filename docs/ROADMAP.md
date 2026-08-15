@@ -37,11 +37,11 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P1.7 | Contas a pagar / despesas | Model + controller + view + fluxo UI | **feito** |
 | P1.8 | Cobrança Pix do valor total | Service + config + controller + view + testes | **feito** |
 | P1.9 | NF-e real (SEFAZ) | Hoje stub local (`NotaFiscalService`) | **pendente** (stub feito; integração real não) |
-| P1.10 | Web Push de verdade | `minishlink/web-push` no lock + `sendToUser` real; UI off (`WEBPUSH_SUBSCRIBE_UI`) até validar | **parcial** (send pronto; UI escondida de propósito) |
+| P1.10 | Web Push de verdade | `minishlink/web-push` + send; UI auto com VAPID (`WEBPUSH_SUBSCRIBE_UI` override) | **feito** (validar VAPID em prod) |
 | P1.11 | Policies em todos os recursos sensíveis | Pacote/Vale/NF/AuditLog/Feriado/Fornecedor + grants JSON | **feito** (Spatie adiado) |
 | P1.12 | Indicação / no-show | Indicação + contador faltas + alerta config | **feito** |
 | P1.13 | Sync OAuth Google/Outlook | Só `.ics` + template URL | **pendente** |
-| P1.14 | Gorjeta / tip online via MP | Gorjeta só no fechar comanda presencial | **pendente** |
+| P1.14 | Gorjeta / tip online via MP | Pix pós-conclusão + comanda.gorjeta + `ClienteGorjetaOnlineTest` | **feito** |
 | P1.15 | UI única de booking | `booking-form.js` + `_slots_picker` (guest/cliente/dono/reagendar) | **feito** |
 | P1.16 | Estorno/refund UX | UI dono no show + audit `pagamento.estornado` + `DonoEstornoPixTest` | **feito** |
 | P1.17 | CRM segmentação | `ClienteSegmentacao` + filtros + métricas show + cupom reativação | **feito** |
@@ -54,7 +54,7 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P1.24 | Audit UI + permissions JSON + onboarding | Fase 8 | **feito** |
 | P1.25 | API polish + backup + `/admin/saude` | Fase 9 | **feito** |
 
-**Ainda falta (honestamente):** NF-e SEFAZ; ligar UI Web Push após validar VAPID; OAuth calendar; gorjeta online MP; a11y profunda; multi-empresa; pipeline deploy.
+**Ainda falta (honestamente):** NF-e SEFAZ; OAuth calendar; a11y auditoria WCAG; multi-empresa; pipeline deploy; upgrade Laravel 12 (advisories).
 
 ---
 
@@ -66,12 +66,12 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 | P2.2 | Auth/erros ainda CDN Bootstrap | Unificado no Vite | **feito** |
 | P2.3 | Footer social `href="#"` | `config('manicure.social.*')` + normalização de URL | **feito** |
 | P2.4 | Erros com `$e->getMessage()` ao usuário | `HandlesDomainExceptions` + mensagens genéricas | **feito** (Sentry opcional via DSN) |
-| P2.5 | API v1 fina vs web | Erros JSON + `/me/fidelidade` + filtros | **parcial** (polish feito; sem financeiro/estoque) |
+| P2.5 | API v1 fina vs web | Erros JSON + `/me/fidelidade` + filtros + financeiro/estoque/caixa RO | **parcial** (reads ops feitos; writes não) |
 | P2.6 | Avaliações sem moderação/listagem | Admin + média na página pública | **feito** |
 | P2.7 | `FinanceiroService::fluxoCaixa` sem UI | Exposto no painel financeiro | **feito** |
 | P2.8 | PHPStan / build no CI | Jobs no `ci.yml` | **feito** |
 | P2.9 | Docker Compose versionado | `docker-compose.yml` + [DOCKER.md](DOCKER.md) | **feito** |
-| P2.10 | Skip-link / foco modal / loading submits | + contraste muted + `:focus-visible` + slots ARIA | **parcial** (crítico feito; auditoria a11y completa não) |
+| P2.10 | Skip-link / foco modal / loading submits | + contraste muted + `:focus-visible` + slots ARIA + Pix ARIA | **parcial** (crítico feito; auditoria a11y completa não) |
 | P2.11 | Validação fluxo empresário E2E | `FluxoEmpresarioTest` + suíte regressão | **feito** |
 
 ---
@@ -92,8 +92,8 @@ Legenda de status: `feito` · `parcial` · `pendente` · `adiado`
 ## Ordem sugerida (pós Fase 10)
 
 1. Uso real em salão + hotfixes (smoke em [PRODUCAO.md](PRODUCAO.md)).
-2. Manter Web Push UI escondida até validar VAPID; NF-e off em prod.
-3. OAuth / fiscal real / multi-empresa só com escopo de produto explícito.
+2. Em prod: `FISCAL_ENABLED=false`; `WEBPUSH_SUBSCRIBE_UI=false` se quiser forçar off mesmo com VAPID; `GORJETA_ONLINE_HABILITADO` só após validar MP.
+3. OAuth / fiscal real / multi-empresa / Laravel 12 só com escopo explícito.
 
 ---
 

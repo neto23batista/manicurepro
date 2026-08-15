@@ -13,16 +13,16 @@ uses(RefreshDatabase::class);
 
 test('login api retorna token e user com shape consistente', function () {
     $user = User::factory()->create([
-        'email' => 'api@example.com',
+        'email'    => 'api@example.com',
         'password' => Hash::make('senha12345'),
-        'role' => 'cliente',
-        'ativo' => true,
-        'phone' => '11999990000',
+        'role'     => 'cliente',
+        'ativo'    => true,
+        'phone'    => '11999990000',
     ]);
 
     $this->postJson('/api/v1/login', [
-        'email' => 'api@example.com',
-        'password' => 'senha12345',
+        'email'       => 'api@example.com',
+        'password'    => 'senha12345',
         'device_name' => 'pest',
     ])
         ->assertOk()
@@ -36,13 +36,13 @@ test('login api retorna token e user com shape consistente', function () {
 
 test('login api rejeita usuário inativo', function () {
     User::factory()->create([
-        'email' => 'inativo-api@example.com',
+        'email'    => 'inativo-api@example.com',
         'password' => Hash::make('senha12345'),
-        'ativo' => false,
+        'ativo'    => false,
     ]);
 
     $this->postJson('/api/v1/login', [
-        'email' => 'inativo-api@example.com',
+        'email'    => 'inativo-api@example.com',
         'password' => 'senha12345',
     ])->assertStatus(422)
         ->assertJsonValidationErrors(['email']);
@@ -64,7 +64,7 @@ test('token de usuário inativo é rejeitado e revogado', function () {
 
 test('me retorna o mesmo shape de user do login', function () {
     $user = User::factory()->create([
-        'role' => 'cliente',
+        'role'  => 'cliente',
         'ativo' => true,
         'phone' => '11988887777',
     ]);
@@ -101,7 +101,7 @@ test('logout invalida o token atual', function () {
 
 test('troca de senha no perfil revoga todos os tokens sanctum', function () {
     $user = User::factory()->create([
-        'ativo' => true,
+        'ativo'    => true,
         'password' => Hash::make('atual12345'),
     ]);
     $user->createToken('mobile');
@@ -110,10 +110,10 @@ test('troca de senha no perfil revoga todos os tokens sanctum', function () {
     expect($user->tokens()->count())->toBe(2);
 
     $this->actingAs($user)->from('/perfil')->put('/perfil', [
-        'name' => $user->name,
-        'email' => $user->email,
-        'current_password' => 'atual12345',
-        'password' => 'nova123456',
+        'name'                  => $user->name,
+        'email'                 => $user->email,
+        'current_password'      => 'atual12345',
+        'password'              => 'nova123456',
         'password_confirmation' => 'nova123456',
     ])->assertRedirect();
 
@@ -126,7 +126,7 @@ test('atualização de perfil sem senha não revoga tokens', function () {
     $user->createToken('mobile');
 
     $this->actingAs($user)->from('/perfil')->put('/perfil', [
-        'name' => 'Nome Novo',
+        'name'  => 'Nome Novo',
         'email' => $user->email,
     ])->assertRedirect();
 
@@ -139,19 +139,19 @@ test('cancelar via api retorna AgendamentoResource com message', function () {
     $user = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $cliente = Cliente::factory()->create([
         'salao_id' => $salao->id,
-        'user_id' => $user->id,
+        'user_id'  => $user->id,
     ]);
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $agendamento = Agendamento::factory()->create([
-        'salao_id' => $salao->id,
-        'manicure_id' => $manicure->id,
-        'cliente_id' => $cliente->id,
-        'user_id' => $user->id,
+        'salao_id'         => $salao->id,
+        'manicure_id'      => $manicure->id,
+        'cliente_id'       => $cliente->id,
+        'user_id'          => $user->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'nome_cliente' => $user->name,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'nome_cliente'     => $user->name,
     ]);
 
     $token = $user->createToken('t')->plainTextToken;
@@ -166,7 +166,7 @@ test('cancelar via api retorna AgendamentoResource com message', function () {
             'data' => [
                 'id', 'status', 'status_label', 'status_color',
                 'data_hora_inicio', 'data_hora_fim',
-                'salao' => ['id', 'slug', 'nome', 'endereco'],
+                'salao'    => ['id', 'slug', 'nome', 'endereco'],
                 'manicure' => ['id', 'nome', 'foto_url', 'nota_media'],
                 'servicos',
                 'criado_em',

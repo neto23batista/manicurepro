@@ -1,47 +1,49 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoriaController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
+use App\Http\Controllers\Admin\ManicureController as AdminManicure;
+use App\Http\Controllers\Admin\RelatorioController as AdminRelatorio;
+use App\Http\Controllers\Admin\SalaoController;
+use App\Http\Controllers\Admin\SaudeController as AdminSaude;
+use App\Http\Controllers\Admin\ServicoController;
+use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\TwoFactorController;
-use App\Http\Controllers\Admin\CategoriaController;
-use App\Http\Controllers\Admin\DashboardController as AdminDashboard;
-use App\Http\Controllers\Admin\SalaoController;
-use App\Http\Controllers\Admin\ManicureController as AdminManicure;
-use App\Http\Controllers\Admin\ServicoController;
-use App\Http\Controllers\Admin\RelatorioController as AdminRelatorio;
-use App\Http\Controllers\Admin\UsuarioController;
-use App\Http\Controllers\Admin\SaudeController as AdminSaude;
-use App\Http\Controllers\Dono\DashboardController as DonoDashboard;
+use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Cliente\AgendamentoController as ClienteAgendamento;
+use App\Http\Controllers\Cliente\DashboardController as ClienteDashboard;
+use App\Http\Controllers\Cliente\FidelidadeController as ClienteFidelidade;
+use App\Http\Controllers\Cliente\ListaEsperaController as ClienteListaEspera;
+use App\Http\Controllers\ConfirmacaoController;
 use App\Http\Controllers\Dono\AgendamentoController as DonoAgendamento;
+use App\Http\Controllers\Dono\AuditoriaController as DonoAuditoria;
+use App\Http\Controllers\Dono\AvaliacaoController as DonoAvaliacao;
+use App\Http\Controllers\Dono\CaixaController as DonoCaixa;
 use App\Http\Controllers\Dono\ClienteController as DonoCliente;
 use App\Http\Controllers\Dono\ConfiguracaoController as DonoConfig;
 use App\Http\Controllers\Dono\CupomController as DonoCupom;
-use App\Http\Controllers\Dono\FolgaController as DonoFolga;
-use App\Http\Controllers\Dono\DisponibilidadeController as DonoDisponibilidade;
-use App\Http\Controllers\Dono\ProdutoController as DonoProduto;
-use App\Http\Controllers\Dono\FornecedorController as DonoFornecedor;
-use App\Http\Controllers\Dono\InventarioController as DonoInventario;
-use App\Http\Controllers\Dono\EstoqueRelatorioController as DonoEstoqueRelatorio;
-use App\Http\Controllers\Dono\GaleriaController as DonoGaleria;
-use App\Http\Controllers\Dono\AvaliacaoController as DonoAvaliacao;
-use App\Http\Controllers\Dono\FinanceiroController as DonoFinanceiro;
-use App\Http\Controllers\Dono\CaixaController as DonoCaixa;
+use App\Http\Controllers\Dono\DashboardController as DonoDashboard;
 use App\Http\Controllers\Dono\DespesaController as DonoDespesa;
+use App\Http\Controllers\Dono\DisponibilidadeController as DonoDisponibilidade;
+use App\Http\Controllers\Dono\EstoqueRelatorioController as DonoEstoqueRelatorio;
+use App\Http\Controllers\Dono\FinanceiroController as DonoFinanceiro;
+use App\Http\Controllers\Dono\FolgaController as DonoFolga;
+use App\Http\Controllers\Dono\FornecedorController as DonoFornecedor;
+use App\Http\Controllers\Dono\GaleriaController as DonoGaleria;
+use App\Http\Controllers\Dono\InventarioController as DonoInventario;
 use App\Http\Controllers\Dono\NotaFiscalController as DonoNotaFiscal;
-use App\Http\Controllers\Dono\ValePresenteController as DonoVale;
-use App\Http\Controllers\Dono\PacoteController as DonoPacote;
-use App\Http\Controllers\Dono\AuditoriaController as DonoAuditoria;
 use App\Http\Controllers\Dono\OnboardingController as DonoOnboarding;
-use App\Http\Controllers\Manicure\DashboardController as ManicureDashboard;
+use App\Http\Controllers\Dono\PacoteController as DonoPacote;
+use App\Http\Controllers\Dono\ProdutoController as DonoProduto;
+use App\Http\Controllers\Dono\ValePresenteController as DonoVale;
 use App\Http\Controllers\Manicure\AgendaController;
-use App\Http\Controllers\Manicure\FolgaController as ManicureFolga;
+use App\Http\Controllers\Manicure\DashboardController as ManicureDashboard;
 use App\Http\Controllers\Manicure\DisponibilidadeController as ManicureDisponibilidade;
-use App\Http\Controllers\Cliente\DashboardController as ClienteDashboard;
-use App\Http\Controllers\Cliente\AgendamentoController as ClienteAgendamento;
-use App\Http\Controllers\Cliente\ListaEsperaController as ClienteListaEspera;
-use App\Http\Controllers\Cliente\FidelidadeController as ClienteFidelidade;
+use App\Http\Controllers\Manicure\FolgaController as ManicureFolga;
+use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -73,12 +75,12 @@ Route::middleware('throttle:60,1')->group(function () {
 });
 
 // Confirmação de presença via link assinado (e-mail/WhatsApp), sem login
-Route::get('/agendamento/{agendamento}/confirmar', [\App\Http\Controllers\ConfirmacaoController::class, 'confirmar'])
+Route::get('/agendamento/{agendamento}/confirmar', [ConfirmacaoController::class, 'confirmar'])
     ->name('agendamento.confirmar')
     ->middleware('signed');
 
 // Webhook Mercado Pago (sem CSRF — ver exceção em bootstrap/app.php)
-Route::post('/webhooks/mercadopago', [\App\Http\Controllers\MercadoPagoWebhookController::class, 'handle'])
+Route::post('/webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
     ->middleware('throttle:60,1')
     ->name('webhooks.mercadopago');
 
@@ -93,9 +95,9 @@ Route::middleware('guest')->group(function () {
 
     // Recuperação de senha
     Route::get('/password/forgot', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
-    Route::post('/password/email',  [PasswordResetController::class, 'sendResetLink'])->name('password.email');
+    Route::post('/password/email', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
     Route::get('/password/reset/{token}', [PasswordResetController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/password/reset',  [PasswordResetController::class, 'reset'])->name('password.update');
+    Route::post('/password/reset', [PasswordResetController::class, 'reset'])->name('password.update');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
@@ -274,13 +276,13 @@ Route::prefix('dono')->name('dono.')->middleware(['auth', 'verified'])->group(fu
     });
 
     Route::middleware(['role_or_perm:dono,config.manage', 'check.salao'])->group(function () {
-        Route::get('/configuracao',          [DonoConfig::class, 'edit'])->name('config.edit');
-        Route::put('/configuracao/dados',    [DonoConfig::class, 'updateDados'])->name('config.dados');
+        Route::get('/configuracao', [DonoConfig::class, 'edit'])->name('config.edit');
+        Route::put('/configuracao/dados', [DonoConfig::class, 'updateDados'])->name('config.dados');
         Route::put('/configuracao/horarios', [DonoConfig::class, 'updateHorarios'])->name('config.horarios');
-        Route::put('/configuracao/config',   [DonoConfig::class, 'updateConfig'])->name('config.config');
+        Route::put('/configuracao/config', [DonoConfig::class, 'updateConfig'])->name('config.config');
         Route::put('/configuracao/permissoes', [DonoConfig::class, 'updatePermissoes'])->name('config.permissoes');
-        Route::delete('/configuracao/logo',  [DonoConfig::class, 'destroyLogo'])->name('config.logo.destroy');
-        Route::delete('/configuracao/capa',  [DonoConfig::class, 'destroyCapa'])->name('config.capa.destroy');
+        Route::delete('/configuracao/logo', [DonoConfig::class, 'destroyLogo'])->name('config.logo.destroy');
+        Route::delete('/configuracao/capa', [DonoConfig::class, 'destroyCapa'])->name('config.capa.destroy');
     });
 
     Route::middleware(['role_or_perm:dono,auditoria.view', 'check.salao'])->group(function () {
@@ -338,6 +340,10 @@ Route::prefix('cliente')->name('cliente.')->middleware(['auth', 'verified', 'rol
     Route::get('/agendamentos/{agendamento}/pagamento', [ClienteAgendamento::class, 'pagamento'])->name('agendamentos.pagamento');
     Route::post('/agendamentos/{agendamento}/pagamento/status', [ClienteAgendamento::class, 'pagamentoStatus'])
         ->middleware('throttle:30,1')->name('agendamentos.pagamento.status');
+    Route::match(['get', 'post'], '/agendamentos/{agendamento}/gorjeta', [ClienteAgendamento::class, 'gorjeta'])
+        ->name('agendamentos.gorjeta');
+    Route::post('/agendamentos/{agendamento}/gorjeta/status', [ClienteAgendamento::class, 'gorjetaStatus'])
+        ->middleware('throttle:30,1')->name('agendamentos.gorjeta.status');
 
     // Lista de espera
     Route::get('/lista-espera', [ClienteListaEspera::class, 'index'])->name('lista-espera.index');

@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Middleware\CheckSalao;
+use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ProtectPublicForms;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\RoleOrPermissionMiddleware;
+use App\Http\Middleware\SecurityHeaders;
 use App\Support\ApiError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -11,8 +14,10 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
@@ -33,10 +38,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-            \App\Http\Middleware\SecurityHeaders::class,
-            \App\Http\Middleware\ContentSecurityPolicy::class,
-            \App\Http\Middleware\ProtectPublicForms::class,
+            AddLinkHeadersForPreloadedAssets::class,
+            SecurityHeaders::class,
+            ContentSecurityPolicy::class,
+            ProtectPublicForms::class,
         ]);
 
         // Webhooks externos não enviam token CSRF
@@ -45,11 +50,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e) {
+        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();
         });
 
-        $exceptions->render(function (\Throwable $e, Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
             if (! $request->is('api/*')) {
                 return null;
             }
@@ -87,7 +92,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $status = $e->getStatusCode();
                 $message = $e->getMessage() !== ''
                     ? $e->getMessage()
-                    : (string) (\Symfony\Component\HttpFoundation\Response::$statusTexts[$status] ?? 'Erro');
+                    : (string) (Response::$statusTexts[$status] ?? 'Erro');
 
                 // Em 5xx não vaza detalhe interno.
                 if ($status >= 500) {

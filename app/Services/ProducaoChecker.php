@@ -63,7 +63,7 @@ class ProducaoChecker
         // Agendador (cron) — sempre aviso: não dá para detectar cron do SO daqui.
         $checks[] = $this->aviso(
             'Agendador',
-            'Lembrete permanente: configure cron "* * * * * php artisan schedule:run" (lembretes, aniversários, limpeza, CRM, backup).'
+            'Lembrete permanente: configure cron "* * * * * php artisan schedule:run" (lembretes, aniversários, limpeza, CRM, backup).',
         );
 
         // CSP
@@ -132,7 +132,7 @@ class ProducaoChecker
         if ($idadeDias > 7) {
             return $this->aviso(
                 'Backup',
-                "Último backup há {$idadeDias} dias. Agende manicure:backup diário e copie ZIPs para fora do servidor."
+                "Último backup há {$idadeDias} dias. Agende manicure:backup diário e copie ZIPs para fora do servidor.",
             );
         }
 

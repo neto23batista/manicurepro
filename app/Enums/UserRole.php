@@ -4,11 +4,11 @@ namespace App\Enums;
 
 enum UserRole: string
 {
-    case Admin     = 'admin';
-    case Dono      = 'dono';
+    case Admin = 'admin';
+    case Dono = 'dono';
     case Atendente = 'atendente';
-    case Manicure  = 'manicure';
-    case Cliente   = 'cliente';
+    case Manicure = 'manicure';
+    case Cliente = 'cliente';
 
     public function label(): string
     {
@@ -46,18 +46,18 @@ enum UserRole: string
     public function dashboardRoute(): string
     {
         return match ($this) {
-            self::Admin                  => 'admin.dashboard',
-            self::Dono, self::Atendente  => 'dono.dashboard',
-            self::Manicure               => 'manicure.dashboard',
-            self::Cliente                => 'cliente.dashboard',
+            self::Admin                 => 'admin.dashboard',
+            self::Dono, self::Atendente => 'dono.dashboard',
+            self::Manicure              => 'manicure.dashboard',
+            self::Cliente               => 'cliente.dashboard',
         };
     }
 
     public static function options(): array
     {
         return array_map(
-            fn(self $r) => ['value' => $r->value, 'label' => $r->label()],
-            self::cases()
+            fn (self $r) => ['value' => $r->value, 'label' => $r->label()],
+            self::cases(),
         );
     }
 }

@@ -26,7 +26,7 @@ return new class extends Migration
 
             $table->unique(
                 ['salao_id', 'manicure_id', 'periodo_inicio', 'periodo_fim'],
-                'comissao_pagamentos_periodo_unique'
+                'comissao_pagamentos_periodo_unique',
             );
             $table->index(['salao_id', 'pago_em']);
         });

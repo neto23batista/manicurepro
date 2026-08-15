@@ -59,7 +59,7 @@ class BackupCommand extends Command
             $dbPath = $connection['database'] ?? database_path('database.sqlite');
             if (! is_string($dbPath) || $dbPath === ':memory:' || ! File::exists($dbPath)) {
                 throw new \RuntimeException(
-                    'Backup SQLite exige arquivo em disco (DB_DATABASE apontando para um .sqlite). :memory: não é suportado.'
+                    'Backup SQLite exige arquivo em disco (DB_DATABASE apontando para um .sqlite). :memory: não é suportado.',
                 );
             }
             File::copy($dbPath, $workDir.DIRECTORY_SEPARATOR.'database.sqlite');
@@ -88,7 +88,7 @@ class BackupCommand extends Command
 
             if (! $process->isSuccessful()) {
                 throw new \RuntimeException(
-                    'mysqldump falhou. Confira se o binário está no PATH. '.$process->getErrorOutput()
+                    'mysqldump falhou. Confira se o binário está no PATH. '.$process->getErrorOutput(),
                 );
             }
 

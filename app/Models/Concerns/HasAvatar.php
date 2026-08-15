@@ -31,14 +31,15 @@ trait HasAvatar
         $column = $this->avatarColumn();
         $path = $this->{$column} ?? null;
 
-        if ($path && file_exists(public_path('storage/' . $path))) {
-            return asset('storage/' . $path);
+        if ($path && file_exists(public_path('storage/'.$path))) {
+            return asset('storage/'.$path);
         }
 
         $initials = urlencode(substr($this->avatarSourceName() ?? '?', 0, 2));
-        $bg   = config('manicure.ui_avatars.background', 'e91e8c');
-        $fg   = config('manicure.ui_avatars.color', 'fff');
+        $bg = config('manicure.ui_avatars.background', 'e91e8c');
+        $fg = config('manicure.ui_avatars.color', 'fff');
         $size = config('manicure.ui_avatars.size', 128);
+
         return "https://ui-avatars.com/api/?name={$initials}&background={$bg}&color={$fg}&size={$size}";
     }
 

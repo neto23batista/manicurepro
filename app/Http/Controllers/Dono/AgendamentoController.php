@@ -77,7 +77,7 @@ class AgendamentoController extends Controller
         $dias = collect(range(0, 6))->map(fn ($i) => $inicio->copy()->addDays($i));
 
         return view('dono.agendamentos.semana', compact(
-            'salao', 'manicures', 'dias', 'agendamentos', 'inicio', 'fim', 'manicureId'
+            'salao', 'manicures', 'dias', 'agendamentos', 'inicio', 'fim', 'manicureId',
         ));
     }
 
@@ -134,19 +134,19 @@ class AgendamentoController extends Controller
         $validated = $request->validated();
 
         $dados = [
-            'salao_id'         => $salao->id,
-            'manicure_id'      => $validated['manicure_id'],
-            'servico_ids'      => $validated['servico_ids'],
-            'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
-            'data_hora_inicio' => $validated['data_hora_inicio'],
-            'cliente_id'       => $validated['cliente_id'] ?? null,
-            'nome_cliente'     => $validated['nome_cliente'] ?? null,
-            'telefone_cliente' => $validated['telefone_cliente'] ?? null,
-            'observacoes'      => $validated['observacoes'] ?? null,
-            'origem'           => 'balcao',
-            'status'           => 'confirmado',
-            'user_id'          => auth()->id(),
-            'encaixe'          => (bool) ($validated['encaixe'] ?? false),
+            'salao_id'          => $salao->id,
+            'manicure_id'       => $validated['manicure_id'],
+            'servico_ids'       => $validated['servico_ids'],
+            'servico_variacoes' => $validated['servico_variacoes'] ?? [],
+            'data_hora_inicio'  => $validated['data_hora_inicio'],
+            'cliente_id'        => $validated['cliente_id'] ?? null,
+            'nome_cliente'      => $validated['nome_cliente'] ?? null,
+            'telefone_cliente'  => $validated['telefone_cliente'] ?? null,
+            'observacoes'       => $validated['observacoes'] ?? null,
+            'origem'            => 'balcao',
+            'status'            => 'confirmado',
+            'user_id'           => auth()->id(),
+            'encaixe'           => (bool) ($validated['encaixe'] ?? false),
         ];
 
         // Encaixe: só dono/atendente; força horário informado (conflito duro no service).

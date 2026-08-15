@@ -109,23 +109,23 @@ class DemoAgendamentosSeeder extends Seeder
         $fim = $inicio->copy()->addMinutes($servico->duracao);
 
         $ag = Agendamento::create([
-            'salao_id' => $salao->id,
-            'cliente_id' => $cliente->id,
-            'manicure_id' => $manicure->id,
-            'user_id' => $cliente->user_id,
-            'data_hora_inicio' => $inicio,
-            'data_hora_fim' => $fim,
-            'status' => $status,
-            'valor_total' => $servico->preco,
-            'valor_desconto' => 0,
-            'origem' => $origem,
+            'salao_id'             => $salao->id,
+            'cliente_id'           => $cliente->id,
+            'manicure_id'          => $manicure->id,
+            'user_id'              => $cliente->user_id,
+            'data_hora_inicio'     => $inicio,
+            'data_hora_fim'        => $fim,
+            'status'               => $status,
+            'valor_total'          => $servico->preco,
+            'valor_desconto'       => 0,
+            'origem'               => $origem,
             'observacoes_internas' => self::MARKER,
-            'confirmado_em' => in_array($status, ['confirmado', 'concluido', 'em_andamento'], true) ? $inicio->copy()->subDay() : null,
+            'confirmado_em'        => in_array($status, ['confirmado', 'concluido', 'em_andamento'], true) ? $inicio->copy()->subDay() : null,
         ]);
 
         $ag->servicos()->syncWithoutDetaching([
             $servico->id => [
-                'preco' => $servico->preco,
+                'preco'   => $servico->preco,
                 'duracao' => $servico->duracao,
             ],
         ]);

@@ -33,7 +33,7 @@ test('PacotePolicy: dono e atendente do salão; IDOR bloqueado', function () {
     $pacote = Pacote::factory()->create(['salao_id' => $this->salao->id]);
     $outro = Pacote::factory()->create();
 
-    $policy = new PacotePolicy();
+    $policy = new PacotePolicy;
     expect($policy->viewAny($this->dono))->toBeTrue();
     expect($policy->viewAny($this->atendente))->toBeTrue();
     expect($policy->update($this->dono, $pacote))->toBeTrue();
@@ -49,7 +49,7 @@ test('ValePresentePolicy: atendente sem grant não acessa', function () {
         'status'   => ValePresente::STATUS_ATIVO,
     ]);
 
-    $policy = new ValePresentePolicy();
+    $policy = new ValePresentePolicy;
     expect($policy->viewAny($this->dono))->toBeTrue();
     expect($policy->viewAny($this->atendente))->toBeFalse();
     expect($policy->view($this->dono, $vale))->toBeTrue();
@@ -126,8 +126,8 @@ test('dono salva permissões extras na configuração', function () {
 test('sanitizePayload ignora grants de cliente e manicure', function () {
     $svc = app(PermissionService::class);
     $payload = $svc->sanitizePayload([
-        'cliente' => ['grant' => ['financeiro.view']],
-        'manicure' => ['grant' => ['config.manage']],
+        'cliente'   => ['grant' => ['financeiro.view']],
+        'manicure'  => ['grant' => ['config.manage']],
         'atendente' => ['grant' => ['financeiro.view']],
     ]);
 
@@ -145,9 +145,9 @@ test('cliente com grant no JSON não acessa financeiro do dono', function () {
     ConfiguracaoSalao::esquecerCache($this->salao->id);
 
     $cliente = User::factory()->create([
-        'role' => 'cliente',
-        'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'role'              => 'cliente',
+        'salao_id'          => $this->salao->id,
+        'ativo'             => true,
         'email_verified_at' => now(),
     ]);
 

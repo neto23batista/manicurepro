@@ -23,7 +23,7 @@ class Servico extends Model
         'preco'               => 'decimal:2',
         'custo_estimado'      => 'decimal:2',
         'comissao_percentual' => 'decimal:2',
-        'comissao_fixo'      => 'decimal:2',
+        'comissao_fixo'       => 'decimal:2',
         'combo'               => 'boolean',
         'disponivel_online'   => 'boolean',
         'ativo'               => 'boolean',

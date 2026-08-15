@@ -71,10 +71,10 @@ Itens com código, mas incompletos.
 
 | Item | O que existe | O que falta | Arquivos-chave |
 |------|--------------|-------------|----------------|
-| **Web Push** | `minishlink/web-push` no composer + `sendToUser` real; UI **escondida** (`WEBPUSH_SUBSCRIBE_UI`) | Validar VAPID ponta a ponta e ligar UI | `WebPushService.php` |
+| **Web Push** | `minishlink/web-push` + send real; UI **auto** com VAPID (override `WEBPUSH_SUBSCRIBE_UI`) | Validar ponta a ponta em prod | `WebPushService.php` |
 | **NF-e** | Rascunho local, UI dono (flag `fiscal.enabled`) | Emissão SEFAZ / provedor | `NotaFiscalService.php` |
-| **API v1** | Auth + salão/slots + agendamentos + fidelidade + erros JSON | Paridade web (financeiro, estoque, caixa) | `routes/api.php` |
-| **A11y** | Skip-link + foco modal + contraste/`focus-visible` + slots ARIA | Auditoria completa WCAG | layouts + CSS |
+| **API v1** | Auth + salão/slots + agendamentos + fidelidade + **financeiro/estoque/caixa read-only** | Writes ops / paridade total | `routes/api.php` |
+| **A11y** | Skip-link + foco + contraste + slots ARIA + Pix `aria-live`/`aria-label` | Auditoria completa WCAG | layouts + CSS |
 
 ---
 
@@ -84,17 +84,18 @@ Ainda não há implementação utilizável (ou só estratégia em doc).
 
 - [ ] **Emissor fiscal real** (SEFAZ / eNotas etc.) — substituir stub
 - [ ] **Sync OAuth** Google/Outlook (hoje só `.ics` + template URL)
-- [ ] **Gorjeta via Mercado Pago**
+- [x] **Gorjeta via Mercado Pago** — Pix pós-conclusão (`GORJETA_ONLINE_HABILITADO`)
 - [ ] **Pipeline de deploy** (staging + automático) — hoje manual via PRODUCAO.md
 - [ ] **Multi-empresa / filiais** — ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md); **não migrar agora**
 - [ ] **Spatie Permission** — só se as 5 roles + JSON leve não bastarem
 - [ ] App nativo (hoje PWA + API parcial)
+- [ ] **Upgrade Laravel 12** — advisories de signed URL / email rule (patch em 12.x)
 
 ---
 
 ## Ordem sugerida (pós Fases 1–10)
 
-1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md).
+1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md). Inventário vivo: [`docs/BUGS.md`](docs/BUGS.md).
 2. Push UI: manter escondida até validar; NF-e continuar `FISCAL_ENABLED=false` em prod.
 3. OAuth / fiscal real / multi-empresa só com escopo explícito.
 

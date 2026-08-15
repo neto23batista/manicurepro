@@ -18,25 +18,25 @@ beforeEach(function () {
     $this->user = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->cliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->user->id,
+        'user_id'  => $this->user->id,
     ]);
 
     $this->outroUser = User::factory()->create(['role' => 'cliente', 'ativo' => true]);
     $this->outroCliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->outroUser->id,
+        'user_id'  => $this->outroUser->id,
     ]);
 
     $inicio = Carbon::now()->subDay()->setTime(10, 0);
     $this->agendamento = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'cliente_id' => $this->cliente->id,
-        'user_id' => $this->user->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'cliente_id'       => $this->cliente->id,
+        'user_id'          => $this->user->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'concluido',
-        'nome_cliente' => $this->user->name,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'concluido',
+        'nome_cliente'     => $this->user->name,
     ]);
 });
 
@@ -45,7 +45,7 @@ test('cliente dono pode avaliar agendamento concluído via API', function () {
 
     $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson('/api/v1/agendamentos/'.$this->agendamento->id.'/avaliar', [
-            'nota' => 5,
+            'nota'       => 5,
             'comentario' => 'Excelente atendimento',
         ])
         ->assertCreated()
@@ -55,11 +55,11 @@ test('cliente dono pode avaliar agendamento concluído via API', function () {
 
     $this->assertDatabaseHas('avaliacoes', [
         'agendamento_id' => $this->agendamento->id,
-        'cliente_id' => $this->cliente->id,
-        'manicure_id' => $this->manicure->id,
-        'salao_id' => $this->salao->id,
-        'nota' => 5,
-        'comentario' => 'Excelente atendimento',
+        'cliente_id'     => $this->cliente->id,
+        'manicure_id'    => $this->manicure->id,
+        'salao_id'       => $this->salao->id,
+        'nota'           => 5,
+        'comentario'     => 'Excelente atendimento',
     ]);
 });
 
@@ -96,10 +96,10 @@ test('só permite avaliar agendamento concluído', function () {
 test('não permite avaliar duas vezes o mesmo agendamento', function () {
     Avaliacao::create([
         'agendamento_id' => $this->agendamento->id,
-        'cliente_id' => $this->cliente->id,
-        'manicure_id' => $this->manicure->id,
-        'salao_id' => $this->salao->id,
-        'nota' => 4,
+        'cliente_id'     => $this->cliente->id,
+        'manicure_id'    => $this->manicure->id,
+        'salao_id'       => $this->salao->id,
+        'nota'           => 4,
     ]);
 
     $token = $this->user->createToken('t')->plainTextToken;
@@ -142,7 +142,7 @@ test('manicure não avalia o próprio atendimento via API', function () {
 
     $this->withHeader('Authorization', 'Bearer '.$token)
         ->postJson('/api/v1/agendamentos/'.$this->agendamento->id.'/avaliar', [
-            'nota' => 5,
+            'nota'       => 5,
             'comentario' => 'Autoavaliação',
         ])
         ->assertForbidden();

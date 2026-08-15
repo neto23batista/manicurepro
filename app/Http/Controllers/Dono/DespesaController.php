@@ -42,7 +42,7 @@ class DespesaController extends Controller
                 ->whereNotNull('pago_em')
                 ->whereBetween('pago_em', [now()->copy()->startOfMonth(), now()->copy()->endOfMonth()])
                 ->sum('valor'),
-            'vencidas'  => (int) Despesa::where('salao_id', $salao->id)
+            'vencidas' => (int) Despesa::where('salao_id', $salao->id)
                 ->pendentes()
                 ->whereDate('vencimento', '<', today())
                 ->count(),

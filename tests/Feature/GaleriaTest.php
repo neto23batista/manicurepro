@@ -19,7 +19,7 @@ function novaFoto(int $salaoId, array $attrs = []): GaleriaFoto
 {
     return GaleriaFoto::create(array_merge([
         'salao_id' => $salaoId,
-        'caminho'  => 'galeria/' . $salaoId . '/exemplo.jpg',
+        'caminho'  => 'galeria/'.$salaoId.'/exemplo.jpg',
         'titulo'   => 'Trabalho',
         'publicar' => true,
     ], $attrs));
@@ -116,7 +116,7 @@ test('dono edita título e profissional da foto', function () {
 });
 
 test('remover foto apaga registro e arquivo', function () {
-    $path = UploadedFile::fake()->image('x.jpg', 400, 400)->store('galeria/' . $this->salao->id, 'public');
+    $path = UploadedFile::fake()->image('x.jpg', 400, 400)->store('galeria/'.$this->salao->id, 'public');
     $foto = novaFoto($this->salao->id, ['caminho' => $path]);
     Storage::disk('public')->assertExists($path);
 

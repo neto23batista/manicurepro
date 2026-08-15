@@ -11,7 +11,7 @@ class CategoriaServicoFactory extends Factory
     {
         return [
             'salao_id'  => Salao::factory(),
-            'nome'      => fake()->randomElement(['Manicure', 'Pedicure', 'Tratamentos', 'Spa', 'Nail Art']) . ' ' . fake()->randomNumber(3),
+            'nome'      => fake()->randomElement(['Manicure', 'Pedicure', 'Tratamentos', 'Spa', 'Nail Art']).' '.fake()->randomNumber(3),
             'descricao' => fake()->optional()->sentence(),
             'cor'       => fake()->hexColor(),
             'icone'     => 'fa-spa',

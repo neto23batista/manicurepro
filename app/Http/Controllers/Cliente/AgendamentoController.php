@@ -68,18 +68,18 @@ class AgendamentoController extends Controller
 
         try {
             $agendamento = $this->agendaService->criarAgendamento([
-                'salao_id'         => $validated['salao_id'],
-                'manicure_id'      => $validated['manicure_id'],
-                'servico_ids'      => $validated['servico_ids'],
-                'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
-                'data_hora_inicio' => $validated['data_hora_inicio'],
-                'cliente_id'       => $cliente->id,
-                'user_id'          => $user->id,
-                'nome_cliente'     => $user->name,
-                'telefone_cliente' => $user->phone,
-                'observacoes'      => $validated['observacoes'] ?? null,
-                'origem'           => 'web',
-                'status'           => AgendamentoStatus::Aguardando->value,
+                'salao_id'          => $validated['salao_id'],
+                'manicure_id'       => $validated['manicure_id'],
+                'servico_ids'       => $validated['servico_ids'],
+                'servico_variacoes' => $validated['servico_variacoes'] ?? [],
+                'data_hora_inicio'  => $validated['data_hora_inicio'],
+                'cliente_id'        => $cliente->id,
+                'user_id'           => $user->id,
+                'nome_cliente'      => $user->name,
+                'telefone_cliente'  => $user->phone,
+                'observacoes'       => $validated['observacoes'] ?? null,
+                'origem'            => 'web',
+                'status'            => AgendamentoStatus::Aguardando->value,
             ]);
             // Notificações: enviadas pelo listener NotificarAgendamentoCriado.
 
@@ -251,6 +251,76 @@ class AgendamentoController extends Controller
     }
 
     public function pagamentoStatus(Agendamento $agendamento)
+    {
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
+
+        $pix = $mp->consultarPix($agendamento);
+        $pago = ($pix['status'] ?? null) === 'pago';
+
+        return response()->json([
+            'status'   => $pix['status'],
+            'pago'     => $pago,
+            'redirect' => $pago ? route('cliente.agendamentos.show', $agendamento) : null,
+        ]);
+    }
+
+    public function gorjeta(Request $request, Agendamento $agendamento)
+    {
+        $this->authorize('view', $agendamento);
+        $mp = app(MercadoPagoService::class);
+
+        if (! $mp->gorjetaHabilitado()) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->withErrors(['error' => 'Gorjeta via Pix não está disponível no momento.']);
+        }
+
+        if ($agendamento->gorjetaOnlinePaga()) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->with('success', 'A gorjeta deste agendamento já foi paga. 💚');
+        }
+
+        if (! $agendamento->precisaGorjetaOnline()
+            && ! ($agendamento->mp_cobranca_tipo === 'gorjeta' && $agendamento->mp_payment_id)) {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->withErrors(['error' => 'Gorjeta Pix só está disponível após a conclusão do atendimento.']);
+        }
+
+        $agendamento->load(['manicure', 'salao']);
+
+        if ($agendamento->mp_cobranca_tipo === 'gorjeta' && $agendamento->mp_payment_id) {
+            $pix = $mp->consultarPix($agendamento);
+
+            if (($pix['status'] ?? null) === 'pago') {
+                return redirect()->route('cliente.agendamentos.show', $agendamento)
+                    ->with('success', 'Gorjeta confirmada! Obrigada 💚');
+            }
+
+            return view('cliente.agendamentos.gorjeta', compact('agendamento', 'pix'));
+        }
+
+        if ($request->isMethod('get') && ! $request->filled('valor')) {
+            return view('cliente.agendamentos.gorjeta', ['agendamento' => $agendamento, 'pix' => null]);
+        }
+
+        $data = $request->validate([
+            'valor' => 'required|numeric|min:1|max:9999',
+        ], [
+            'valor.required' => 'Informe o valor da gorjeta.',
+            'valor.min'      => 'A gorjeta mínima é R$ 1,00.',
+        ]);
+
+        $pix = $mp->criarPixGorjeta($agendamento, (float) $data['valor']);
+
+        if (($pix['status'] ?? null) === 'pago') {
+            return redirect()->route('cliente.agendamentos.show', $agendamento)
+                ->with('success', 'Gorjeta confirmada! Obrigada 💚');
+        }
+
+        return view('cliente.agendamentos.gorjeta', compact('agendamento', 'pix'));
+    }
+
+    public function gorjetaStatus(Agendamento $agendamento)
     {
         $this->authorize('view', $agendamento);
         $mp = app(MercadoPagoService::class);

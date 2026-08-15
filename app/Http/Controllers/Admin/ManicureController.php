@@ -17,12 +17,14 @@ class ManicureController extends Controller
     public function index()
     {
         $manicures = Manicure::with('salao')->paginate(20);
+
         return view('admin.manicures.index', compact('manicures'));
     }
 
     public function create()
     {
         $saloes = Salao::where('ativo', true)->orderBy('nome')->get();
+
         return view('admin.manicures.create', compact('saloes'));
     }
 
@@ -63,6 +65,7 @@ class ManicureController extends Controller
     public function edit(Manicure $manicure)
     {
         $saloes = Salao::where('ativo', true)->orderBy('nome')->get();
+
         return view('admin.manicures.edit', compact('manicure', 'saloes'));
     }
 
@@ -97,7 +100,7 @@ class ManicureController extends Controller
                 'phone'    => $data['telefone'] ?? null,
                 'ativo'    => $request->boolean('ativo'),
             ];
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $userUpdate['password'] = Hash::make($data['password']);
             }
             $manicure->user->update($userUpdate);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Salao;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreServicoRequest extends FormRequest
@@ -14,7 +15,7 @@ class StoreServicoRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Instalação single-tenant: o salão é sempre o principal, definido no servidor.
-        $this->merge(['salao_id' => \App\Models\Salao::principalId()]);
+        $this->merge(['salao_id' => Salao::principalId()]);
     }
 
     public function rules(): array
@@ -27,18 +28,18 @@ class StoreServicoRequest extends FormRequest
             'preco'               => ['required', 'numeric', 'min:0', 'max:9999.99'],
             'duracao'             => ['required', 'integer', 'min:5', 'max:600'],
             'comissao_percentual' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'comissao_fixo'      => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'comissao_fixo'       => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'custo_estimado'      => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'imagem'              => ['nullable', 'image', 'max:2048'],
             'combo'               => ['sometimes', 'boolean'],
             'disponivel_online'   => ['sometimes', 'boolean'],
             'ativo'               => ['sometimes', 'boolean'],
-            'variacoes'                    => ['nullable', 'array'],
-            'variacoes.*.nome'             => ['required_with:variacoes', 'string', 'max:100'],
-            'variacoes.*.preco'            => ['required_with:variacoes', 'numeric', 'min:0', 'max:9999.99'],
-            'variacoes.*.duracao'          => ['required_with:variacoes', 'integer', 'min:5', 'max:600'],
-            'variacoes.*.ordem'            => ['nullable', 'integer', 'min:0'],
-            'variacoes.*.ativo'            => ['sometimes', 'boolean'],
+            'variacoes'           => ['nullable', 'array'],
+            'variacoes.*.nome'    => ['required_with:variacoes', 'string', 'max:100'],
+            'variacoes.*.preco'   => ['required_with:variacoes', 'numeric', 'min:0', 'max:9999.99'],
+            'variacoes.*.duracao' => ['required_with:variacoes', 'integer', 'min:5', 'max:600'],
+            'variacoes.*.ordem'   => ['nullable', 'integer', 'min:0'],
+            'variacoes.*.ativo'   => ['sometimes', 'boolean'],
         ];
     }
 
@@ -64,9 +65,9 @@ class StoreServicoRequest extends FormRequest
     {
         $data = $this->validated();
         unset($data['variacoes'], $data['imagem']);
-        $data['combo']             = $this->boolean('combo');
+        $data['combo'] = $this->boolean('combo');
         $data['disponivel_online'] = $this->boolean('disponivel_online', true);
-        $data['ativo']             = $this->boolean('ativo', true);
+        $data['ativo'] = $this->boolean('ativo', true);
         $data['comissao_percentual'] = $this->filled('comissao_percentual')
             ? $data['comissao_percentual']
             : null;

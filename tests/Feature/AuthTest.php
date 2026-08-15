@@ -14,14 +14,14 @@ test('página de login é acessível', function () {
 
 test('usuário pode fazer login com credenciais corretas', function () {
     $user = User::factory()->create([
-        'email' => 'test@example.com',
+        'email'    => 'test@example.com',
         'password' => bcrypt('password123'),
-        'role' => 'cliente',
-        'ativo' => true,
+        'role'     => 'cliente',
+        'ativo'    => true,
     ]);
 
     $response = $this->post('/login', [
-        'email' => 'test@example.com',
+        'email'    => 'test@example.com',
         'password' => 'password123',
     ]);
 
@@ -31,7 +31,7 @@ test('usuário pode fazer login com credenciais corretas', function () {
 
 test('login falha com credenciais incorretas', function () {
     $response = $this->post('/login', [
-        'email' => 'naoexiste@example.com',
+        'email'    => 'naoexiste@example.com',
         'password' => 'wrongpass',
     ]);
 
@@ -41,14 +41,14 @@ test('login falha com credenciais incorretas', function () {
 
 test('usuário inativo não pode fazer login', function () {
     User::factory()->create([
-        'email' => 'inativo@example.com',
+        'email'    => 'inativo@example.com',
         'password' => bcrypt('password123'),
-        'role' => 'cliente',
-        'ativo' => false,
+        'role'     => 'cliente',
+        'ativo'    => false,
     ]);
 
     $response = $this->post('/login', [
-        'email' => 'inativo@example.com',
+        'email'    => 'inativo@example.com',
         'password' => 'password123',
     ]);
 
@@ -58,7 +58,7 @@ test('usuário inativo não pode fazer login', function () {
 
 test('admin é redirecionado para dashboard admin após login', function () {
     $admin = User::factory()->create([
-        'role' => 'admin',
+        'role'  => 'admin',
         'ativo' => true,
     ]);
 
@@ -78,11 +78,11 @@ test('registro de novo cliente funciona', function () {
     $salao = Salao::factory()->create(['ativo' => true]);
 
     $response = $this->post('/register', [
-        'name' => 'Nova Usuária',
-        'email' => 'nova@test.com',
-        'password' => 'minhasenha123',
+        'name'                  => 'Nova Usuária',
+        'email'                 => 'nova@test.com',
+        'password'              => 'minhasenha123',
         'password_confirmation' => 'minhasenha123',
-        'salao_id' => $salao->id,
+        'salao_id'              => $salao->id,
     ]);
 
     $this->assertDatabaseHas('users', ['email' => 'nova@test.com', 'role' => 'cliente']);

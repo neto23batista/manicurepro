@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ConfiguracaoSalao;
 use App\Models\Salao;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -21,12 +22,12 @@ test('página pública aplica cor_primaria do salão (DB) sobre o config', funct
     config(['manicure.tema.cor_primaria' => '#abcdef']);
 
     $salao = Salao::factory()->create(['ativo' => true, 'nome' => 'Salão Tema']);
-    \App\Models\ConfiguracaoSalao::create([
-        'salao_id' => $salao->id,
-        'cor_primaria' => '#ff5500',
-        'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 1,
-        'antecedencia_maxima' => 30,
+    ConfiguracaoSalao::create([
+        'salao_id'                    => $salao->id,
+        'cor_primaria'                => '#ff5500',
+        'intervalo_agendamento'       => 30,
+        'antecedencia_minima'         => 1,
+        'antecedencia_maxima'         => 30,
         'permitir_agendamento_online' => true,
     ]);
 
@@ -50,9 +51,9 @@ test('página pública aplica cor_primaria nas CSS variables', function () {
 test('footer público oculta links sociais quando config está vazia', function () {
     config([
         'manicure.social.instagram' => null,
-        'manicure.social.facebook' => null,
-        'manicure.social.tiktok' => null,
-        'manicure.social.whatsapp' => null,
+        'manicure.social.facebook'  => null,
+        'manicure.social.tiktok'    => null,
+        'manicure.social.whatsapp'  => null,
     ]);
 
     $html = view('components.public-footer', ['compact' => false, 'salao' => null])->render();

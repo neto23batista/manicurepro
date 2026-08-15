@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\Salao;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -28,7 +31,7 @@ test('usuário não-verificado é redirecionado do dashboard do cliente para ver
 test('middleware verified redireciona não-verificados dos painéis protegidos', function (string $role, string $uri) {
     $attrs = ['role' => $role, 'ativo' => true];
     if (in_array($role, ['dono', 'atendente', 'manicure'], true)) {
-        $salao = \App\Models\Salao::factory()->create(['ativo' => true]);
+        $salao = Salao::factory()->create(['ativo' => true]);
         $attrs['salao_id'] = $salao->id;
     }
 
@@ -62,7 +65,7 @@ test('link de verificação assinado marca e-mail como verificado', function () 
     $url = URL::temporarySignedRoute(
         'verification.verify',
         now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)]
+        ['id' => $user->id, 'hash' => sha1($user->email)],
     );
 
     $this->actingAs($user)->get($url)->assertRedirect(route('cliente.dashboard'));
@@ -78,7 +81,7 @@ test('reenviar e-mail dispara notificação', function () {
     $this->actingAs($user)->post('/email/verification-notification')
         ->assertRedirect();
 
-    Notification::assertSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class);
+    Notification::assertSentTo($user, VerifyEmail::class);
 });
 
 test('throttle bloqueia reenvio excessivo', function () {
@@ -101,5 +104,5 @@ test('registro dispara evento Registered', function () {
         'password_confirmation' => 'senha12345',
     ]);
 
-    Event::assertDispatched(\Illuminate\Auth\Events\Registered::class);
+    Event::assertDispatched(Registered::class);
 });

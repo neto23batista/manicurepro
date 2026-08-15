@@ -4,6 +4,7 @@ use App\Models\Agendamento;
 use App\Models\Manicure;
 use App\Models\Pagamento;
 use App\Models\Salao;
+use App\Models\WebhookEvent;
 use App\Services\ComandaService;
 use App\Services\MercadoPagoService;
 use Carbon\Carbon;
@@ -14,13 +15,13 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => 'TEST-TOKEN',
         'manicure.pagamento.mercadopago.webhook_secret' => 'segredo-teste',
-        'manicure.pagamento.sinal.habilitado' => true,
-        'manicure.pagamento.sinal.tipo' => 'percentual',
-        'manicure.pagamento.sinal.valor' => 30,
-        'manicure.pagamento.total.habilitado' => true,
+        'manicure.pagamento.sinal.habilitado'           => true,
+        'manicure.pagamento.sinal.tipo'                 => 'percentual',
+        'manicure.pagamento.sinal.valor'                => 30,
+        'manicure.pagamento.total.habilitado'           => true,
     ]);
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
@@ -31,14 +32,15 @@ beforeEach(function () {
 function novoAgendamentoPix($self, float $valor = 100.0, string $status = 'aguardando'): Agendamento
 {
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
+
     return Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'manicure_id' => $self->manicure->id,
+        'salao_id'         => $self->salao->id,
+        'manicure_id'      => $self->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
-        'valor_total' => $valor,
-        'valor_desconto' => 0,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
+        'valor_total'      => $valor,
+        'valor_desconto'   => 0,
     ]);
 }
 
@@ -49,7 +51,7 @@ function assinaturaWebhook(string $dataId, string $reqId = 'req-abc', ?string $t
 
     return [
         'headers' => [
-            'x-signature' => "ts={$ts},v1={$v1}",
+            'x-signature'  => "ts={$ts},v1={$v1}",
             'x-request-id' => $reqId,
         ],
         'query' => $dataId,
@@ -67,13 +69,13 @@ test('calcula sinal percentual e fixo', function () {
 test('cria cobrança Pix e persiste a referência', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 999001,
-            'status' => 'pending',
+            'id'                   => 999001,
+            'status'               => 'pending',
             'point_of_interaction' => [
                 'transaction_data' => [
-                    'qr_code' => '00020126pix-copia-cola',
+                    'qr_code'        => '00020126pix-copia-cola',
                     'qr_code_base64' => 'aGVsbG8=',
-                    'ticket_url' => 'https://mp/ticket/999001',
+                    'ticket_url'     => 'https://mp/ticket/999001',
                 ],
             ],
         ], 201),
@@ -95,11 +97,11 @@ test('cria cobrança Pix e persiste a referência', function () {
 test('cria cobrança Pix do valor total', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 999010,
-            'status' => 'pending',
+            'id'                   => 999010,
+            'status'               => 'pending',
             'point_of_interaction' => [
                 'transaction_data' => [
-                    'qr_code' => 'pix-total',
+                    'qr_code'        => 'pix-total',
                     'qr_code_base64' => 'dG90YWw=',
                 ],
             ],
@@ -121,8 +123,8 @@ test('cria cobrança Pix do valor total', function () {
 test('cria cobrança Pix do restante após sinal pago', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 999011,
-            'status' => 'pending',
+            'id'                   => 999011,
+            'status'               => 'pending',
             'point_of_interaction' => [
                 'transaction_data' => ['qr_code' => 'pix-restante'],
             ],
@@ -132,8 +134,8 @@ test('cria cobrança Pix do restante após sinal pago', function () {
     $ag = novoAgendamentoPix($this, 100.0);
     $ag->update([
         'sinal_status' => 'pago',
-        'sinal_valor' => 30,
-        'status' => 'confirmado',
+        'sinal_valor'  => 30,
+        'status'       => 'confirmado',
     ]);
 
     expect($this->mp->calcularValorTotal($ag))->toBe(70.0);
@@ -146,15 +148,15 @@ test('cria cobrança Pix do restante após sinal pago', function () {
 test('webhook aprovado marca sinal como pago e confirma o agendamento', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'aguardando');
     $ag->update([
-        'mp_payment_id' => '999002',
+        'mp_payment_id'    => '999002',
         'mp_cobranca_tipo' => 'sinal',
-        'sinal_status' => 'pendente',
-        'sinal_valor' => 30,
+        'sinal_status'     => 'pendente',
+        'sinal_valor'      => 30,
     ]);
 
     Http::fake([
         'api.mercadopago.com/v1/payments/999002' => Http::response([
-            'id' => 999002,
+            'id'     => 999002,
             'status' => 'approved',
         ], 200),
     ]);
@@ -162,7 +164,7 @@ test('webhook aprovado marca sinal como pago e confirma o agendamento', function
     $sig = assinaturaWebhook('999002');
 
     $this->withHeaders($sig['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=999002', [
+        ->postJson(route('webhooks.mercadopago').'?data.id=999002', [
             'type' => 'payment',
             'data' => ['id' => '999002'],
         ])
@@ -180,7 +182,7 @@ test('webhook de outro tópico é ignorado', function () {
     $sig = assinaturaWebhook('x');
 
     $this->withHeaders($sig['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=x', [
+        ->postJson(route('webhooks.mercadopago').'?data.id=x', [
             'type' => 'plan',
             'data' => ['id' => 'x'],
         ])
@@ -193,10 +195,10 @@ test('webhook de outro tópico é ignorado', function () {
 test('webhook duplicado ainda sincroniza status (pending→approved)', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'aguardando');
     $ag->update([
-        'mp_payment_id' => '999050',
+        'mp_payment_id'    => '999050',
         'mp_cobranca_tipo' => 'sinal',
-        'sinal_status' => 'pendente',
-        'sinal_valor' => 30,
+        'sinal_status'     => 'pendente',
+        'sinal_valor'      => 30,
     ]);
 
     Http::fake([
@@ -212,21 +214,21 @@ test('webhook duplicado ainda sincroniza status (pending→approved)', function 
     ];
 
     $this->withHeaders($sig['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=999050', $payload)
+        ->postJson(route('webhooks.mercadopago').'?data.id=999050', $payload)
         ->assertOk()
         ->assertJsonMissing(['duplicate' => true]);
 
     expect($ag->fresh()->sinal_status)->toBe('pendente');
-    expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
+    expect(WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
 
     // Segunda entrega: duplicate=true, mas ainda sincroniza pending→approved.
     $this->withHeaders($sig['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=999050', $payload)
+        ->postJson(route('webhooks.mercadopago').'?data.id=999050', $payload)
         ->assertOk()
         ->assertJson(['ok' => true, 'duplicate' => true]);
 
     expect($ag->fresh()->sinal_status)->toBe('pago');
-    expect(\App\Models\WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
+    expect(WebhookEvent::where('provider', 'mercadopago')->where('event_id', '999050')->count())->toBe(1);
 });
 
 test('webhook sem agendamento libera reserva para reentrega', function () {
@@ -237,13 +239,13 @@ test('webhook sem agendamento libera reserva para reentrega', function () {
     ];
 
     $this->withHeaders($sig['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=999051', $payload)
+        ->postJson(route('webhooks.mercadopago').'?data.id=999051', $payload)
         ->assertOk();
 
-    expect(\App\Models\WebhookEvent::where('event_id', '999051')->exists())->toBeFalse();
+    expect(WebhookEvent::where('event_id', '999051')->exists())->toBeFalse();
 
     $this->withHeaders(assinaturaWebhook('999051', 'req-retry')['headers'])
-        ->postJson(route('webhooks.mercadopago') . '?data.id=999051', $payload)
+        ->postJson(route('webhooks.mercadopago').'?data.id=999051', $payload)
         ->assertOk()
         ->assertJsonMissing(['duplicate' => true]);
 });
@@ -251,15 +253,15 @@ test('webhook sem agendamento libera reserva para reentrega', function () {
 test('sincronizarStatus não regride pagamento pago para pendente', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'confirmado');
     $ag->update([
-        'mp_payment_id' => '999060',
+        'mp_payment_id'    => '999060',
         'mp_cobranca_tipo' => 'sinal',
-        'sinal_status' => 'pago',
-        'sinal_valor' => 30,
+        'sinal_status'     => 'pago',
+        'sinal_valor'      => 30,
     ]);
 
     Http::fake([
         'api.mercadopago.com/v1/payments/999060' => Http::response([
-            'id' => 999060,
+            'id'     => 999060,
             'status' => 'pending',
         ], 200),
     ]);
@@ -273,10 +275,10 @@ test('sincronizarStatus não regride pagamento pago para pendente', function () 
 test('cancelarOuEstornar cancela cobrança pendente', function () {
     $ag = novoAgendamentoPix($this, 100.0);
     $ag->update([
-        'mp_payment_id' => '999020',
+        'mp_payment_id'    => '999020',
         'mp_cobranca_tipo' => 'sinal',
-        'sinal_status' => 'pendente',
-        'sinal_valor' => 30,
+        'sinal_status'     => 'pendente',
+        'sinal_valor'      => 30,
     ]);
 
     Http::fake([
@@ -301,23 +303,23 @@ test('cancelarOuEstornar cancela cobrança pendente', function () {
 test('cancelarOuEstornar estorna pagamento aprovado', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'confirmado');
     $ag->update([
-        'mp_payment_id' => '999021',
+        'mp_payment_id'    => '999021',
         'mp_cobranca_tipo' => 'total',
-        'mp_total_status' => 'pago',
-        'mp_total_valor' => 100,
+        'mp_total_status'  => 'pago',
+        'mp_total_valor'   => 100,
     ]);
 
     Pagamento::create([
         'agendamento_id' => $ag->id,
-        'salao_id' => $ag->salao_id,
-        'forma' => 'pix',
-        'valor' => 100,
-        'status' => 'confirmado',
-        'referencia' => '999021',
+        'salao_id'       => $ag->salao_id,
+        'forma'          => 'pix',
+        'valor'          => 100,
+        'status'         => 'confirmado',
+        'referencia'     => '999021',
     ]);
 
     Http::fake([
-        'api.mercadopago.com/v1/payments/999021' => Http::response(['id' => 999021, 'status' => 'approved'], 200),
+        'api.mercadopago.com/v1/payments/999021'         => Http::response(['id' => 999021, 'status' => 'approved'], 200),
         'api.mercadopago.com/v1/payments/999021/refunds' => Http::response(['id' => 1, 'status' => 'approved'], 201),
     ]);
 
@@ -332,7 +334,7 @@ test('cancelarOuEstornar estorna pagamento aprovado', function () {
 test('fechar comanda aceita gorjeta no total e no pagamento', function () {
     $ag = novoAgendamentoPix($this, 100.0, 'em_andamento');
     $comanda = app(ComandaService::class)->fecharComanda($ag, [
-        'forma' => 'dinheiro',
+        'forma'   => 'dinheiro',
         'gorjeta' => 15,
     ]);
 

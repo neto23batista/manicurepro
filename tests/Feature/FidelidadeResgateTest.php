@@ -6,6 +6,7 @@ use App\Models\Salao;
 use App\Models\User;
 use App\Services\FidelidadeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -15,8 +16,8 @@ beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
     $this->userCliente = User::factory()->create(['role' => 'cliente']);
     $this->cliente = Cliente::factory()->create([
-        'salao_id' => $this->salao->id,
-        'user_id' => $this->userCliente->id,
+        'salao_id'          => $this->salao->id,
+        'user_id'           => $this->userCliente->id,
         'pontos_fidelidade' => 250,
     ]);
     $this->fidelidade = app(FidelidadeService::class);
@@ -32,16 +33,16 @@ test('resgate gera cupom fixo e debita os pontos', function () {
 
     $this->assertDatabaseHas('fidelidade_pontos', [
         'cliente_id' => $this->cliente->id,
-        'tipo' => 'resgatado',
-        'pontos' => -100,
+        'tipo'       => 'resgatado',
+        'pontos'     => -100,
     ]);
 });
 
 test('resgate sem pontos suficientes lança exceção', function () {
     $this->cliente->update(['pontos_fidelidade' => 50]);
 
-    expect(fn() => $this->fidelidade->resgatar($this->cliente, 1))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect(fn () => $this->fidelidade->resgatar($this->cliente, 1))
+        ->toThrow(ValidationException::class);
 });
 
 test('segunda instância do cliente não resgata os mesmos pontos', function () {
@@ -51,7 +52,7 @@ test('segunda instância do cliente não resgata os mesmos pontos', function () 
     $this->fidelidade->resgatar($this->cliente, 1);
 
     expect(fn () => $this->fidelidade->resgatar($stale, 1))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 
     expect($this->cliente->fresh()->pontos_fidelidade)->toBe(0);
     expect(Cupom::where('cliente_id', $this->cliente->id)->where('origem', 'fidelidade')->count())->toBe(1);

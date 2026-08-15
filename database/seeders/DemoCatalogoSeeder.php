@@ -16,17 +16,17 @@ class DemoCatalogoSeeder extends Seeder
         $salao = Salao::where('slug', DemoSalaoSeeder::SLUG)->firstOrFail();
 
         $categorias = [
-            'Manicure' => ['cor' => '#e91e8c', 'icone' => 'fa-hand-sparkles', 'ordem' => 1],
-            'Pedicure' => ['cor' => '#9c27b0', 'icone' => 'fa-spa', 'ordem' => 2],
+            'Manicure'              => ['cor' => '#e91e8c', 'icone' => 'fa-hand-sparkles', 'ordem' => 1],
+            'Pedicure'              => ['cor' => '#9c27b0', 'icone' => 'fa-spa', 'ordem' => 2],
             'Tratamentos Especiais' => ['cor' => '#e91e8c', 'icone' => 'fa-star', 'ordem' => 3],
-            'Combos' => ['cor' => '#ff6b9d', 'icone' => 'fa-gift', 'ordem' => 4],
+            'Combos'                => ['cor' => '#ff6b9d', 'icone' => 'fa-gift', 'ordem' => 4],
         ];
 
         $catIds = [];
         foreach ($categorias as $nome => $meta) {
             $cat = CategoriaServico::updateOrCreate(
                 ['salao_id' => $salao->id, 'nome' => $nome],
-                array_merge($meta, ['ativo' => true])
+                array_merge($meta, ['ativo' => true]),
             );
             $catIds[$nome] = $cat->id;
         }
@@ -49,14 +49,14 @@ class DemoCatalogoSeeder extends Seeder
             Servico::updateOrCreate(
                 ['salao_id' => $salao->id, 'nome' => $s['nome']],
                 [
-                    'categoria_id' => $catIds[$s['categoria']],
-                    'descricao' => $s['descricao'],
-                    'preco' => $s['preco'],
-                    'duracao' => $s['duracao'],
-                    'combo' => $s['combo'],
+                    'categoria_id'      => $catIds[$s['categoria']],
+                    'descricao'         => $s['descricao'],
+                    'preco'             => $s['preco'],
+                    'duracao'           => $s['duracao'],
+                    'combo'             => $s['combo'],
                     'disponivel_online' => true,
-                    'ativo' => true,
-                ]
+                    'ativo'             => true,
+                ],
             );
         }
 
@@ -78,47 +78,47 @@ class DemoCatalogoSeeder extends Seeder
                 ['salao_id' => $salao->id, 'codigo' => $p['codigo']],
                 array_merge($p, [
                     'descricao' => $p['nome'],
-                    'ativo' => true,
-                ])
+                    'ativo'     => true,
+                ]),
             );
         }
 
         $cupons = [
             [
-                'codigo' => 'BEMVINDA',
-                'tipo' => 'percentual',
-                'valor' => 15,
-                'minimo_pedido' => 50,
+                'codigo'          => 'BEMVINDA',
+                'tipo'            => 'percentual',
+                'valor'           => 15,
+                'minimo_pedido'   => 50,
                 'maximo_desconto' => 30,
-                'uso_maximo' => 100,
-                'validade' => now()->addMonths(3)->toDateString(),
+                'uso_maximo'      => 100,
+                'validade'        => now()->addMonths(3)->toDateString(),
             ],
             [
-                'codigo' => 'FIDELIDADE10',
-                'tipo' => 'percentual',
-                'valor' => 10,
-                'minimo_pedido' => 40,
+                'codigo'          => 'FIDELIDADE10',
+                'tipo'            => 'percentual',
+                'valor'           => 10,
+                'minimo_pedido'   => 40,
                 'maximo_desconto' => 25,
-                'uso_maximo' => null,
-                'validade' => now()->addMonths(6)->toDateString(),
+                'uso_maximo'      => null,
+                'validade'        => now()->addMonths(6)->toDateString(),
             ],
             [
-                'codigo' => 'DESCONTO20',
-                'tipo' => 'fixo',
-                'valor' => 20,
-                'minimo_pedido' => 80,
+                'codigo'          => 'DESCONTO20',
+                'tipo'            => 'fixo',
+                'valor'           => 20,
+                'minimo_pedido'   => 80,
                 'maximo_desconto' => null,
-                'uso_maximo' => 50,
-                'validade' => now()->addMonths(2)->toDateString(),
+                'uso_maximo'      => 50,
+                'validade'        => now()->addMonths(2)->toDateString(),
             ],
             [
-                'codigo' => 'ANIVERSARIO',
-                'tipo' => 'percentual',
-                'valor' => 25,
-                'minimo_pedido' => 0,
+                'codigo'          => 'ANIVERSARIO',
+                'tipo'            => 'percentual',
+                'valor'           => 25,
+                'minimo_pedido'   => 0,
                 'maximo_desconto' => 40,
-                'uso_maximo' => 200,
-                'validade' => now()->addYear()->toDateString(),
+                'uso_maximo'      => 200,
+                'validade'        => now()->addYear()->toDateString(),
             ],
         ];
 
@@ -127,8 +127,8 @@ class DemoCatalogoSeeder extends Seeder
                 ['codigo' => $c['codigo']],
                 array_merge($c, [
                     'salao_id' => $salao->id,
-                    'ativo' => true,
-                ])
+                    'ativo'    => true,
+                ]),
             );
         }
     }

@@ -40,11 +40,11 @@ test('dono cadastra fornecedor e vincula ao produto', function () {
     expect($fornecedor->salao_id)->toBe($this->salao->id);
 
     $this->actingAs($this->dono)->post('/dono/produtos', [
-        'nome'           => 'Base Coat',
-        'preco_venda'    => 40,
-        'estoque_atual'  => 5,
-        'unidade'        => 'un',
-        'fornecedor_id'  => $fornecedor->id,
+        'nome'          => 'Base Coat',
+        'preco_venda'   => 40,
+        'estoque_atual' => 5,
+        'unidade'       => 'un',
+        'fornecedor_id' => $fornecedor->id,
     ])->assertRedirect('/dono/produtos');
 
     $produto = Produto::where('nome', 'Base Coat')->first();
@@ -202,5 +202,5 @@ test('manicure nao acessa fornecedores nem inventario', function () {
 
     $this->actingAs($manicure)->get('/dono/fornecedores')->assertForbidden();
     $this->actingAs($manicure)->get('/dono/estoque/inventario')->assertForbidden();
-    $this->actingAs($manicure)->put("/dono/fornecedores/1", ['nome' => 'Hack'])->assertForbidden();
+    $this->actingAs($manicure)->put('/dono/fornecedores/1', ['nome' => 'Hack'])->assertForbidden();
 });

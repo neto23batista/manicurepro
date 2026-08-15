@@ -72,11 +72,11 @@ class OnboardingService
         $total = count($items);
 
         return [
-            'items'      => $items,
-            'done'       => $done,
-            'total'      => $total,
-            'percent'    => $total > 0 ? (int) round(($done / $total) * 100) : 100,
-            'complete'   => $done === $total,
+            'items'    => $items,
+            'done'     => $done,
+            'total'    => $total,
+            'percent'  => $total > 0 ? (int) round(($done / $total) * 100) : 100,
+            'complete' => $done === $total,
         ];
     }
 

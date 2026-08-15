@@ -39,7 +39,7 @@ class RoleOrPermissionMiddleware
             abort(403, 'Acesso não autorizado.');
         }
 
-        $allowed = self::HIERARCHY[$userRole->value] ?? [];
+        $allowed = self::HIERARCHY[$userRole->value];
         $requiredEnum = UserRole::tryFrom($role);
 
         if ($requiredEnum && in_array($requiredEnum, $allowed, true)) {

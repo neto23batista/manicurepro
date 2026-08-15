@@ -13,8 +13,11 @@ namespace App\Notifications\Messages;
 final class WhatsAppMessage
 {
     public ?string $body = null;
+
     public ?string $templateName = null;
+
     public string $templateLanguage = 'pt_BR';
+
     public array $templateParams = [];
 
     public static function create(string $body = ''): self
@@ -54,14 +57,14 @@ final class WhatsAppMessage
                 'messaging_product' => 'whatsapp',
                 'to'                => $to,
                 'type'              => 'template',
-                'template' => [
-                    'name'     => $this->templateName,
-                    'language' => ['code' => $this->templateLanguage],
+                'template'          => [
+                    'name'       => $this->templateName,
+                    'language'   => ['code' => $this->templateLanguage],
                     'components' => $this->templateParams ? [[
-                        'type' => 'body',
+                        'type'       => 'body',
                         'parameters' => array_map(
                             fn ($p) => ['type' => 'text', 'text' => (string) $p],
-                            $this->templateParams
+                            $this->templateParams,
                         ),
                     ]] : [],
                 ],

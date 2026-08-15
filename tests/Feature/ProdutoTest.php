@@ -69,7 +69,7 @@ test('saída acima do estoque é rejeitada e não altera o saldo', function () {
 
 test('estoque_baixo sinaliza quando no mínimo ou abaixo', function () {
     $baixo = novoProduto($this->salao->id, ['estoque_atual' => 2, 'estoque_minimo' => 3]);
-    $ok    = novoProduto($this->salao->id, ['estoque_atual' => 10, 'estoque_minimo' => 3]);
+    $ok = novoProduto($this->salao->id, ['estoque_atual' => 10, 'estoque_minimo' => 3]);
 
     expect($baixo->estoque_baixo)->toBeTrue();
     expect($ok->estoque_baixo)->toBeFalse();

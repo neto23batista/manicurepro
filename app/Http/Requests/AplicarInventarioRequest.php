@@ -14,7 +14,7 @@ class AplicarInventarioRequest extends FormRequest
 
     public function rules(): array
     {
-        $salaoId = (int) ($this->user()?->salao_id ?? 0);
+        $salaoId = (int) ($this->user()->salao_id ?? 0);
 
         return [
             'contagens' => [

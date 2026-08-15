@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -18,10 +19,10 @@ test('manicure:backup gera zip com sqlite e storage_public', function () {
     $pdo = null;
 
     config([
-        'database.default' => 'sqlite',
+        'database.default'                     => 'sqlite',
         'database.connections.sqlite.database' => $dbPath,
     ]);
-    Illuminate\Support\Facades\DB::purge('sqlite');
+    DB::purge('sqlite');
 
     File::ensureDirectoryExists(storage_path('app/public'));
     File::put(storage_path('app/public/health-check.txt'), 'ok');

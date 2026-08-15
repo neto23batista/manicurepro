@@ -15,41 +15,41 @@ class DemoEquipeSeeder extends Seeder
         $salao = Salao::where('slug', DemoSalaoSeeder::SLUG)->firstOrFail();
 
         $this->upsertUser([
-            'email' => 'admin@fernandasilvanails.com',
-            'name' => 'Administradora',
+            'email'    => 'admin@fernandasilvanails.com',
+            'name'     => 'Administradora',
             'password' => 'admin123',
-            'role' => 'admin',
+            'role'     => 'admin',
             'salao_id' => null,
-            'phone' => null,
+            'phone'    => null,
         ]);
 
         $this->upsertUser([
-            'email' => 'fernanda@fernandasilvanails.com',
-            'name' => 'Fernanda Silva',
+            'email'    => 'fernanda@fernandasilvanails.com',
+            'name'     => 'Fernanda Silva',
             'password' => 'dono123',
-            'role' => 'dono',
+            'role'     => 'dono',
             'salao_id' => $salao->id,
-            'phone' => '(11) 99999-1234',
+            'phone'    => '(11) 99999-1234',
         ]);
 
         $this->upsertUser([
-            'email' => 'atendente@fernandasilvanails.com',
-            'name' => 'Ana Atendente',
+            'email'    => 'atendente@fernandasilvanails.com',
+            'name'     => 'Ana Atendente',
             'password' => 'atendente123',
-            'role' => 'atendente',
+            'role'     => 'atendente',
             'salao_id' => $salao->id,
-            'phone' => '(11) 98888-0001',
+            'phone'    => '(11) 98888-0001',
         ]);
 
         $manicures = [
             [
-                'nome' => 'Fernanda Silva',
-                'email' => 'fernanda.profissional@fernandasilvanails.com',
-                'telefone' => '(11) 99999-1234',
-                'comissao' => 100,
-                'bio' => 'Nail designer e proprietária do estúdio, com mais de 8 anos de experiência em alongamentos e nail art.',
+                'nome'           => 'Fernanda Silva',
+                'email'          => 'fernanda.profissional@fernandasilvanails.com',
+                'telefone'       => '(11) 99999-1234',
+                'comissao'       => 100,
+                'bio'            => 'Nail designer e proprietária do estúdio, com mais de 8 anos de experiência em alongamentos e nail art.',
                 'especialidades' => ['Alongamento', 'Nail Art', 'Gel'],
-                'horarios' => [
+                'horarios'       => [
                     1 => ['09:00:00', '19:00:00'],
                     2 => ['09:00:00', '19:00:00'],
                     3 => ['09:00:00', '19:00:00'],
@@ -59,13 +59,13 @@ class DemoEquipeSeeder extends Seeder
                 ],
             ],
             [
-                'nome' => 'Camila Santos',
-                'email' => 'camila@fernandasilvanails.com',
-                'telefone' => '(11) 98888-2222',
-                'comissao' => 50,
-                'bio' => 'Especialista em manicure clássica, pedicure e spa dos pés.',
+                'nome'           => 'Camila Santos',
+                'email'          => 'camila@fernandasilvanails.com',
+                'telefone'       => '(11) 98888-2222',
+                'comissao'       => 50,
+                'bio'            => 'Especialista em manicure clássica, pedicure e spa dos pés.',
                 'especialidades' => ['Manicure', 'Pedicure', 'Spa'],
-                'horarios' => [
+                'horarios'       => [
                     1 => ['09:00:00', '18:00:00'],
                     2 => ['09:00:00', '18:00:00'],
                     3 => ['09:00:00', '18:00:00'],
@@ -75,13 +75,13 @@ class DemoEquipeSeeder extends Seeder
                 ],
             ],
             [
-                'nome' => 'Juliana Oliveira',
-                'email' => 'juliana@fernandasilvanails.com',
-                'telefone' => '(11) 97777-3333',
-                'comissao' => 45,
-                'bio' => 'Focada em esmaltação em gel e blindagem com acabamento duradouro.',
+                'nome'           => 'Juliana Oliveira',
+                'email'          => 'juliana@fernandasilvanails.com',
+                'telefone'       => '(11) 97777-3333',
+                'comissao'       => 45,
+                'bio'            => 'Focada em esmaltação em gel e blindagem com acabamento duradouro.',
                 'especialidades' => ['Gel', 'Blindagem', 'Fibra'],
-                'horarios' => [
+                'horarios'       => [
                     2 => ['10:00:00', '19:00:00'],
                     3 => ['10:00:00', '19:00:00'],
                     4 => ['10:00:00', '19:00:00'],
@@ -93,25 +93,25 @@ class DemoEquipeSeeder extends Seeder
 
         foreach ($manicures as $md) {
             $user = $this->upsertUser([
-                'email' => $md['email'],
-                'name' => $md['nome'],
+                'email'    => $md['email'],
+                'name'     => $md['nome'],
                 'password' => 'manicure123',
-                'role' => 'manicure',
+                'role'     => 'manicure',
                 'salao_id' => $salao->id,
-                'phone' => $md['telefone'],
+                'phone'    => $md['telefone'],
             ]);
 
             $manicure = Manicure::updateOrCreate(
                 ['salao_id' => $salao->id, 'email' => $md['email']],
                 [
-                    'user_id' => $user->id,
-                    'nome' => $md['nome'],
-                    'telefone' => $md['telefone'],
-                    'comissao' => $md['comissao'],
-                    'bio' => $md['bio'],
+                    'user_id'        => $user->id,
+                    'nome'           => $md['nome'],
+                    'telefone'       => $md['telefone'],
+                    'comissao'       => $md['comissao'],
+                    'bio'            => $md['bio'],
                     'especialidades' => $md['especialidades'],
-                    'ativo' => true,
-                ]
+                    'ativo'          => true,
+                ],
             );
 
             foreach ($md['horarios'] as $dia => [$inicio, $fim]) {
@@ -119,9 +119,9 @@ class DemoEquipeSeeder extends Seeder
                     ['manicure_id' => $manicure->id, 'dia_semana' => $dia],
                     [
                         'hora_inicio' => $inicio,
-                        'hora_fim' => $fim,
-                        'ativo' => true,
-                    ]
+                        'hora_fim'    => $fim,
+                        'ativo'       => true,
+                    ],
                 );
             }
 
@@ -140,22 +140,22 @@ class DemoEquipeSeeder extends Seeder
         $user = User::firstOrCreate(
             ['email' => $data['email']],
             [
-                'name' => $data['name'],
-                'password' => $data['password'],
-                'role' => $data['role'],
-                'salao_id' => $data['salao_id'],
-                'phone' => $data['phone'],
-                'ativo' => true,
+                'name'              => $data['name'],
+                'password'          => $data['password'],
+                'role'              => $data['role'],
+                'salao_id'          => $data['salao_id'],
+                'phone'             => $data['phone'],
+                'ativo'             => true,
                 'email_verified_at' => now(),
-            ]
+            ],
         );
 
         $user->fill([
-            'name' => $data['name'],
-            'role' => $data['role'],
-            'salao_id' => $data['salao_id'],
-            'phone' => $data['phone'],
-            'ativo' => true,
+            'name'              => $data['name'],
+            'role'              => $data['role'],
+            'salao_id'          => $data['salao_id'],
+            'phone'             => $data['phone'],
+            'ativo'             => true,
             'email_verified_at' => $user->email_verified_at ?? now(),
         ])->save();
 

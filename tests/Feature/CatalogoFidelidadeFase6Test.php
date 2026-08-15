@@ -18,6 +18,7 @@ use App\Services\FidelidadeService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -114,14 +115,14 @@ test('com variação: booking usa preço e duração da variação', function ()
 
     $inicio = fase6Slot(now());
     $ag = $this->agenda->criarAgendamento([
-        'salao_id'            => $this->salao->id,
-        'manicure_id'         => $this->manicure->id,
-        'servico_ids'         => [$this->servico->id],
-        'servico_variacoes'   => [$this->servico->id => $gel->id],
-        'data_hora_inicio'    => $inicio->toDateTimeString(),
-        'cliente_id'          => $this->cliente->id,
-        'origem'              => 'web',
-        'status'              => 'aguardando',
+        'salao_id'          => $this->salao->id,
+        'manicure_id'       => $this->manicure->id,
+        'servico_ids'       => [$this->servico->id],
+        'servico_variacoes' => [$this->servico->id => $gel->id],
+        'data_hora_inicio'  => $inicio->toDateTimeString(),
+        'cliente_id'        => $this->cliente->id,
+        'origem'            => 'web',
+        'status'            => 'aguardando',
     ]);
 
     expect((float) $ag->valor_total)->toBe(80.0);
@@ -148,7 +149,7 @@ test('variação de outro serviço é rejeitada', function () {
         'data_hora_inicio'  => $inicio->toDateTimeString(),
         'origem'            => 'web',
         'status'            => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
 
 test('cupom primeira compra rejeita cliente com atendimento concluído', function () {
@@ -179,7 +180,7 @@ test('cupom primeira compra rejeita cliente com atendimento concluído', functio
         'cupom_id'         => $cupom->id,
         'origem'           => 'web',
         'status'           => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
 
 test('cupom de cliente específico rejeita outro cliente', function () {
@@ -211,7 +212,7 @@ test('cupom de cliente específico rejeita outro cliente', function () {
         'cupom_id'         => $cupom->id,
         'origem'           => 'web',
         'status'           => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
 
 test('cupom de serviço específico exige o serviço no booking', function () {
@@ -236,19 +237,19 @@ test('cupom de serviço específico exige o serviço no booking', function () {
         'cupom_id'         => $cupom->id,
         'origem'           => 'web',
         'status'           => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
 
 test('cupom respeita valor mínimo e uso por cliente', function () {
     $cupom = Cupom::factory()->create([
-        'salao_id'              => $this->salao->id,
-        'tipo'                  => 'fixo',
-        'valor'                 => 10,
-        'minimo_pedido'         => 100,
-        'uso_maximo_por_cliente'=> 1,
+        'salao_id'               => $this->salao->id,
+        'tipo'                   => 'fixo',
+        'valor'                  => 10,
+        'minimo_pedido'          => 100,
+        'uso_maximo_por_cliente' => 1,
         'uso_maximo'             => 10,
-        'ativo'                 => true,
-        'validade'              => now()->addMonth(),
+        'ativo'                  => true,
+        'validade'               => now()->addMonth(),
     ]);
 
     $inicio = fase6Slot(now());
@@ -263,7 +264,7 @@ test('cupom respeita valor mínimo e uso por cliente', function () {
         'cupom_id'         => $cupom->id,
         'origem'           => 'web',
         'status'           => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 
     $caro = Servico::factory()->create([
         'salao_id' => $this->salao->id,
@@ -294,7 +295,7 @@ test('cupom respeita valor mínimo e uso por cliente', function () {
         'cupom_id'         => $cupom->id,
         'origem'           => 'web',
         'status'           => 'aguardando',
-    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    ]))->toThrow(ValidationException::class);
 });
 
 test('anti-stacking: cupom promocional não credita pontos de fidelidade', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Salao;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateManicureRequest extends FormRequest
@@ -14,7 +15,7 @@ class UpdateManicureRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Instalação single-tenant: o salão é sempre o principal, definido no servidor.
-        $this->merge(['salao_id' => \App\Models\Salao::principalId()]);
+        $this->merge(['salao_id' => Salao::principalId()]);
     }
 
     public function rules(): array

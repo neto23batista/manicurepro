@@ -50,8 +50,8 @@ test('fila sync gera aviso', function () {
 test('em produção, MP_ENABLED sem webhook secret é erro crítico', function () {
     $this->app['env'] = 'production';
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => 'TEST-TOKEN',
         'manicure.pagamento.mercadopago.webhook_secret' => '',
     ]);
 
@@ -61,8 +61,8 @@ test('em produção, MP_ENABLED sem webhook secret é erro crítico', function (
 
 test('fora de produção, MP_ENABLED sem webhook secret é aviso', function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => 'TEST-TOKEN',
         'manicure.pagamento.mercadopago.webhook_secret' => '',
     ]);
 
@@ -72,8 +72,8 @@ test('fora de produção, MP_ENABLED sem webhook secret é aviso', function () {
 test('em produção, MP_ENABLED sem access token é erro crítico', function () {
     $this->app['env'] = 'production';
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => '',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => '',
         'manicure.pagamento.mercadopago.webhook_secret' => 'segredo',
     ]);
 
@@ -83,8 +83,8 @@ test('em produção, MP_ENABLED sem access token é erro crítico', function () 
 
 test('MP_ENABLED com token e webhook secret fica OK', function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => 'TEST-TOKEN',
         'manicure.pagamento.mercadopago.webhook_secret' => 'segredo',
     ]);
 
@@ -92,6 +92,14 @@ test('MP_ENABLED com token e webhook secret fica OK', function () {
 });
 
 test('backup sem ZIP gera aviso', function () {
+    // BackupCommandTest (e runs locais) podem deixar ZIPs em storage/app/backups.
+    $dir = storage_path('app/backups');
+    if (is_dir($dir)) {
+        foreach (glob($dir.'/manicurepro_*.zip') ?: [] as $zip) {
+            @unlink($zip);
+        }
+    }
+
     expect(checkItem('Backup')['nivel'])->toBe(ProducaoChecker::AVISO);
 });
 

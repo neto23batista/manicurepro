@@ -4,10 +4,10 @@ namespace App\Enums;
 
 enum PagamentoStatus: string
 {
-    case Pendente   = 'pendente';
+    case Pendente = 'pendente';
     case Confirmado = 'confirmado';
-    case Cancelado  = 'cancelado';
-    case Estornado  = 'estornado';
+    case Cancelado = 'cancelado';
+    case Estornado = 'estornado';
 
     public function label(): string
     {
