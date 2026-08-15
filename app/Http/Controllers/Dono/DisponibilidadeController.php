@@ -13,7 +13,7 @@ class DisponibilidadeController extends Controller
     public function index()
     {
         $salao = auth()->user()->salao;
-        abort_unless($salao, 404);
+        abort_unless($salao !== null, 404);
 
         $manicures = $salao->todasManicures()
             ->where('ativo', true)
@@ -49,7 +49,7 @@ class DisponibilidadeController extends Controller
                     'hora_fim'     => $ativo ? ($dados['hora_fim'] ?? '18:00') : ($dados['hora_fim'] ?? '18:00'),
                     'pausa_inicio' => ($ativo && $pausaIni && $pausaFim) ? $pausaIni : null,
                     'pausa_fim'    => ($ativo && $pausaIni && $pausaFim) ? $pausaFim : null,
-                ]
+                ],
             );
         }
 

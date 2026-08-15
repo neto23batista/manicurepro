@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\EstoqueMovimentacao;
 use App\Models\Produto;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -61,8 +62,7 @@ class EstoqueService
             $novo = match (true) {
                 in_array($tipo, self::TIPOS_ENTRADA, true) => $atual + $quantidade,
                 in_array($tipo, self::TIPOS_SAIDA, true)   => $atual - $quantidade,
-                $tipo === 'ajuste'                         => $quantidade,
-                default                                    => $atual,
+                default                                    => $quantidade, // ajuste
             };
 
             if ($tipo === 'ajuste' && $novo < 0) {
@@ -131,16 +131,16 @@ class EstoqueService
             }
 
             AuditLogger::log('estoque.inventario', null, [
-                'salao_id'        => $salaoId,
-                'ajustes'         => $movimentacoes->count(),
-                'referencia'      => $referencia,
-                'produto_ids'     => $movimentacoes->pluck('produto_id')->values()->all(),
+                'salao_id'    => $salaoId,
+                'ajustes'     => $movimentacoes->count(),
+                'referencia'  => $referencia,
+                'produto_ids' => $movimentacoes->pluck('produto_id')->values()->all(),
             ]);
 
             return [
-                'ajustes'        => $movimentacoes->count(),
-                'movimentacoes'  => $movimentacoes,
-                'referencia'     => $referencia,
+                'ajustes'       => $movimentacoes->count(),
+                'movimentacoes' => $movimentacoes,
+                'referencia'    => $referencia,
             ];
         });
     }
@@ -151,7 +151,36 @@ class EstoqueService
      * @return array{
      *   periodo_dias: int,
      *   dias_parado: int,
-     *   itens: Collection<int, object>
+     *   itens: list<array{
+     *     produto: Produto,
+     *     preco_custo: float,
+     *     preco_venda: float,
+     *     estoque_atual: float,
+     *     margem_pct: float|null,
+     *     margem_valor: float,
+     *     saidas_periodo: float,
+     *     giro: float,
+     *     parado: bool,
+     *     ultima_mov: mixed
+     *   }>,
+     *   parados: list<array{
+     *     produto: Produto,
+     *     preco_custo: float,
+     *     preco_venda: float,
+     *     estoque_atual: float,
+     *     margem_pct: float|null,
+     *     margem_valor: float,
+     *     saidas_periodo: float,
+     *     giro: float,
+     *     parado: bool,
+     *     ultima_mov: mixed
+     *   }>,
+     *   resumo: array{
+     *     produtos: int,
+     *     parados: int,
+     *     baixo_estoque: int,
+     *     margem_media: float|int|null
+     *   }
      * }
      */
     public function relatorio(int $salaoId, int $periodoDias = 30, ?int $diasParado = null): array
@@ -181,7 +210,8 @@ class EstoqueService
             ->groupBy('produto_id')
             ->pluck('ultima', 'produto_id');
 
-        $itens = $produtos->map(function (Produto $p) use ($saidas, $ultimaMov, $limiteParado) {
+        $itens = [];
+        foreach ($produtos as $p) {
             $custo = (float) $p->preco_custo;
             $venda = (float) $p->preco_venda;
             $estoque = (float) $p->estoque_atual;
@@ -197,9 +227,9 @@ class EstoqueService
                 : ($qtdSaida > 0 ? round($qtdSaida, 2) : 0.0);
 
             $parado = $ultima === null
-                || \Carbon\Carbon::parse($ultima)->lt($limiteParado);
+                || Carbon::parse($ultima)->lt($limiteParado);
 
-            return (object) [
+            $itens[] = [
                 'produto'        => $p,
                 'preco_custo'    => $custo,
                 'preco_venda'    => $venda,
@@ -211,18 +241,24 @@ class EstoqueService
                 'parado'         => $parado,
                 'ultima_mov'     => $ultima,
             ];
-        });
+        }
+
+        $parados = array_values(array_filter($itens, fn (array $i) => $i['parado']));
+        $comMargem = array_values(array_filter($itens, fn (array $i) => $i['margem_pct'] !== null));
+        $margemMedia = $comMargem === []
+            ? null
+            : array_sum(array_column($comMargem, 'margem_pct')) / count($comMargem);
 
         return [
             'periodo_dias' => $periodoDias,
             'dias_parado'  => $diasParado,
             'itens'        => $itens,
-            'parados'      => $itens->where('parado', true)->values(),
+            'parados'      => $parados,
             'resumo'       => [
-                'produtos'       => $itens->count(),
-                'parados'        => $itens->where('parado', true)->count(),
-                'baixo_estoque'  => $itens->filter(fn ($i) => $i->produto->estoque_baixo)->count(),
-                'margem_media'   => $itens->whereNotNull('margem_pct')->avg('margem_pct'),
+                'produtos'      => count($itens),
+                'parados'       => count($parados),
+                'baixo_estoque' => count(array_filter($itens, fn (array $i) => $i['produto']->estoque_baixo)),
+                'margem_media'  => $margemMedia,
             ],
         ];
     }

@@ -38,11 +38,11 @@ class FidelidadeController extends Controller
             ->limit(20)
             ->get()
             ->map(fn ($p) => [
-                'id'          => $p->id,
-                'pontos'      => (int) $p->pontos,
-                'tipo'        => $p->tipo,
-                'descricao'   => $p->descricao,
-                'criado_em'   => $p->created_at?->toIso8601String(),
+                'id'        => $p->id,
+                'pontos'    => (int) $p->pontos,
+                'tipo'      => $p->tipo,
+                'descricao' => $p->descricao,
+                'criado_em' => $p->created_at?->toIso8601String(),
             ]);
 
         return response()->json([
@@ -55,7 +55,7 @@ class FidelidadeController extends Controller
                 'pontos_para_proximo' => $podeResgatar
                     ? 0
                     : max(0, $pontosPorBloco - $pontos),
-                'ativo' => (bool) ($cliente->salao?->configuracao?->fidelidade_ativo ?? false),
+                'ativo'     => (bool) ($cliente->salao?->configuracao->fidelidade_ativo ?? false),
                 'historico' => $historico,
             ],
         ]);

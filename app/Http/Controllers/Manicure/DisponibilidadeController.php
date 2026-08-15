@@ -12,7 +12,7 @@ class DisponibilidadeController extends Controller
     public function edit()
     {
         $manicure = auth()->user()->manicure;
-        abort_unless($manicure, 403);
+        abort_unless($manicure !== null, 403);
 
         $manicure->load('disponibilidades');
         $disp = $manicure->disponibilidades->keyBy('dia_semana');
@@ -24,7 +24,7 @@ class DisponibilidadeController extends Controller
     public function update(UpdateDisponibilidadeManicureRequest $request)
     {
         $manicure = auth()->user()->manicure;
-        abort_unless($manicure, 403);
+        abort_unless($manicure !== null, 403);
 
         foreach ((array) $request->input('dias', []) as $diaSemana => $dados) {
             $diaSemana = (int) $diaSemana;
@@ -44,7 +44,7 @@ class DisponibilidadeController extends Controller
                     'hora_fim'     => $dados['hora_fim'] ?? '18:00',
                     'pausa_inicio' => ($ativo && $pausaIni && $pausaFim) ? $pausaIni : null,
                     'pausa_fim'    => ($ativo && $pausaIni && $pausaFim) ? $pausaFim : null,
-                ]
+                ],
             );
         }
 

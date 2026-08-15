@@ -82,23 +82,23 @@
                 <tbody>
                     @forelse($r['itens'] as $item)
                         <tr>
-                            <td class="fw-semibold">{{ $item->produto->nome }}</td>
-                            <td class="text-muted">{{ $item->produto->fornecedor?->nome ?? '—' }}</td>
-                            <td class="text-end">{{ rtrim(rtrim(number_format($item->estoque_atual, 3, ',', '.'), '0'), ',') }} {{ $item->produto->unidade }}</td>
+                            <td class="fw-semibold">{{ $item['produto']->nome }}</td>
+                            <td class="text-muted">{{ $item['produto']->fornecedor?->nome ?? '—' }}</td>
+                            <td class="text-end">{{ rtrim(rtrim(number_format($item['estoque_atual'], 3, ',', '.'), '0'), ',') }} {{ $item['produto']->unidade }}</td>
                             <td class="text-end">
-                                @if($item->margem_pct !== null)
-                                    {{ number_format($item->margem_pct, 1, ',', '.') }}%
-                                    <small class="text-muted d-block">@money($item->margem_valor)</small>
+                                @if($item['margem_pct'] !== null)
+                                    {{ number_format($item['margem_pct'], 1, ',', '.') }}%
+                                    <small class="text-muted d-block">@money($item['margem_valor'])</small>
                                 @else
                                     —
                                 @endif
                             </td>
-                            <td class="text-end">{{ rtrim(rtrim(number_format($item->saidas_periodo, 3, ',', '.'), '0'), ',') }}</td>
-                            <td class="text-end">{{ number_format($item->giro, 2, ',', '.') }}</td>
+                            <td class="text-end">{{ rtrim(rtrim(number_format($item['saidas_periodo'], 3, ',', '.'), '0'), ',') }}</td>
+                            <td class="text-end">{{ number_format($item['giro'], 2, ',', '.') }}</td>
                             <td>
-                                @if($item->produto->estoque_baixo)
+                                @if($item['produto']->estoque_baixo)
                                     <span class="badge bg-danger">Baixo</span>
-                                @elseif($item->parado)
+                                @elseif($item['parado'])
                                     <span class="badge bg-warning text-dark">Parado</span>
                                 @else
                                     <span class="badge bg-success">Ok</span>

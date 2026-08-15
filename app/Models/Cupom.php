@@ -98,7 +98,7 @@ class Cupom extends Model
      */
     public function assertElegivel(?int $clienteId, array $servicoIds = [], float $valorPedido = 0): void
     {
-        if ($this->minimo_pedido !== null && $valorPedido > 0 && $valorPedido < (float) $this->minimo_pedido) {
+        if ($valorPedido > 0 && $valorPedido < (float) $this->minimo_pedido) {
             throw ValidationException::withMessages([
                 'error' => 'Pedido abaixo do valor mínimo do cupom.',
             ]);

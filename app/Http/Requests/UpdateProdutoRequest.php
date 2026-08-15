@@ -18,7 +18,7 @@ class UpdateProdutoRequest extends FormRequest
 
     public function rules(): array
     {
-        $salaoId = (int) ($this->user()?->salao_id ?? 0);
+        $salaoId = (int) ($this->user()->salao_id ?? 0);
 
         // O estoque não é alterado por aqui — usa-se a movimentação de estoque.
         return [
