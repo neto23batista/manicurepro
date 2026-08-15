@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\CalendarOAuthController;
 use App\Http\Controllers\Cliente\AgendamentoController as ClienteAgendamento;
 use App\Http\Controllers\Cliente\DashboardController as ClienteDashboard;
 use App\Http\Controllers\Cliente\FidelidadeController as ClienteFidelidade;
@@ -130,6 +131,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/perfil/2fa', [TwoFactorController::class, 'setup'])->name('2fa.setup');
     Route::post('/perfil/2fa', [TwoFactorController::class, 'enable'])->name('2fa.enable');
     Route::delete('/perfil/2fa', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+
+    // Calendário OAuth (Google / Outlook)
+    Route::get('/perfil/calendario/{provider}/conectar', [CalendarOAuthController::class, 'redirect'])
+        ->whereIn('provider', ['google', 'outlook'])
+        ->name('calendar.oauth.redirect');
+    Route::get('/perfil/calendario/{provider}/callback', [CalendarOAuthController::class, 'callback'])
+        ->whereIn('provider', ['google', 'outlook'])
+        ->name('calendar.oauth.callback');
+    Route::delete('/perfil/calendario/{provider}', [CalendarOAuthController::class, 'disconnect'])
+        ->whereIn('provider', ['google', 'outlook'])
+        ->name('calendar.oauth.disconnect');
 
     // Web Push — subscription do service worker (opcional; exige VAPID no .env)
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])

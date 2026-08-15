@@ -15,22 +15,22 @@
 <body class="auth-body">
     <x-skip-link />
     <div class="auth-container">
-        <div class="auth-card" id="mainContent" tabindex="-1">
+        <main class="auth-card" id="mainContent" tabindex="-1">
             <div class="auth-logo">
-                <div class="auth-logo-icon">F</div>
+                <div class="auth-logo-icon" aria-hidden="true">F</div>
                 <div class="auth-logo-text">{{ config('app.name') }}</div>
                 <div class="auth-logo-sub">@yield('subtitle', 'Sistema de Gestão')</div>
             </div>
 
             @yield('content')
-        </div>
+        </main>
 
-        <div class="auth-footer">
+        <footer class="auth-footer">
             <p class="mb-0">
-                <i class="fas fa-hand-sparkles text-pink"></i>
+                <i class="fas fa-hand-sparkles text-pink" aria-hidden="true"></i>
                 &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
             </p>
-        </div>
+        </footer>
     </div>
 
     {{-- Toasts globais --}}

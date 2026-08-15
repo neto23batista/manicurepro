@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\NotaFiscalProvider;
 use App\Enums\NotaFiscalStatus;
 use App\Models\Agendamento;
 use App\Models\Cliente;
@@ -8,8 +9,11 @@ use App\Models\Manicure;
 use App\Models\NotaFiscal;
 use App\Models\Salao;
 use App\Models\User;
+use App\Services\Fiscal\HttpNotaFiscalProvider;
+use App\Services\Fiscal\StubNotaFiscalProvider;
 use App\Services\NotaFiscalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -58,6 +62,11 @@ function agendamentoComComanda(int $salaoId, int $manicureId, int $clienteId, st
 
 test('fiscal fica desabilitado por padrão', function () {
     expect(config('manicure.fiscal.enabled'))->toBeFalse();
+    expect(config('manicure.fiscal.driver'))->toBe('stub');
+});
+
+test('binding padrão usa StubNotaFiscalProvider', function () {
+    expect(app(NotaFiscalProvider::class))->toBeInstanceOf(StubNotaFiscalProvider::class);
 });
 
 test('emitRascunho cria stub local sem chave SEFAZ', function () {
@@ -120,3 +129,23 @@ test('rota fiscal aborta com módulo desligado', function () {
     $this->actingAs($this->dono)
         ->get(route('dono.notas-fiscais.index'));
 })->throws(NotFoundHttpException::class);
+
+test('driver http sem token cai no stub com erro no payload', function () {
+    config([
+        'manicure.fiscal.driver'   => 'http',
+        'manicure.fiscal.base_url' => 'https://api.fiscal.test',
+        'manicure.fiscal.token'    => '',
+    ]);
+
+    Http::fake();
+
+    $ag = agendamentoComComanda($this->salao->id, $this->manicure->id, $this->cliente->id);
+    $nota = app(NotaFiscalService::class)->emitRascunho($this->salao->id, $ag, $ag->comanda);
+
+    expect(app(NotaFiscalProvider::class))->toBeInstanceOf(HttpNotaFiscalProvider::class);
+    expect($nota->payload['stub'])->toBeTrue();
+    expect($nota->payload['sefaz'])->toBeFalse();
+    expect($nota->payload['erro'] ?? '')->toContain('incompleta');
+    expect($nota->chave)->toBeNull();
+    Http::assertNothingSent();
+});

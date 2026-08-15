@@ -4,34 +4,57 @@
 @section('subtitle', 'Acesse sua conta')
 
 @section('content')
-<form method="POST" action="{{ route('login.post') }}">
+<form method="POST" action="{{ route('login.post') }}" novalidate>
     @csrf
     <x-honeypot />
 
+    <x-form-errors class="mb-3" />
+
     <div class="mb-3">
         <label for="email" class="form-label fw-semibold">
-            <i class="fas fa-envelope me-1 text-pink"></i> E-mail
+            <i class="fas fa-envelope me-1 text-pink" aria-hidden="true"></i> E-mail
         </label>
-        <input type="email" class="form-control form-control-lg @error('email') is-invalid @enderror"
-               id="email" name="email" value="{{ old('email') }}" placeholder="seu@email.com" required autofocus>
+        <input type="email"
+               class="form-control form-control-lg @error('email') is-invalid @enderror"
+               id="email"
+               name="email"
+               value="{{ old('email') }}"
+               placeholder="seu@email.com"
+               required
+               autofocus
+               autocomplete="username"
+               aria-required="true"
+               @error('email') aria-invalid="true" aria-describedby="email-error" @enderror>
         @error('email')
-            <div class="invalid-feedback">{{ $message }}</div>
+            <div class="invalid-feedback" id="email-error">{{ $message }}</div>
         @enderror
     </div>
 
     <div class="mb-4">
         <label for="password" class="form-label fw-semibold">
-            <i class="fas fa-lock me-1 text-pink"></i> Senha
+            <i class="fas fa-lock me-1 text-pink" aria-hidden="true"></i> Senha
         </label>
         <div class="input-group">
-            <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror"
-                   id="password" name="password" placeholder="••••••••" required>
-            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                <i class="fas fa-eye"></i>
+            <input type="password"
+                   class="form-control form-control-lg @error('password') is-invalid @enderror"
+                   id="password"
+                   name="password"
+                   placeholder="••••••••"
+                   required
+                   autocomplete="current-password"
+                   aria-required="true"
+                   @error('password') aria-invalid="true" aria-describedby="password-error" @enderror>
+            <button class="btn btn-outline-secondary"
+                    type="button"
+                    id="togglePassword"
+                    aria-label="Mostrar senha"
+                    aria-controls="password"
+                    aria-pressed="false">
+                <i class="fas fa-eye" aria-hidden="true"></i>
             </button>
         </div>
         @error('password')
-            <div class="text-danger small mt-1">{{ $message }}</div>
+            <div class="text-danger small mt-1" id="password-error" role="alert">{{ $message }}</div>
         @enderror
     </div>
 
@@ -46,7 +69,7 @@
     </div>
 
     <button type="submit" class="btn btn-pink btn-lg w-100">
-        <i class="fas fa-sign-in-alt me-2"></i> Entrar
+        <i class="fas fa-sign-in-alt me-2" aria-hidden="true"></i> Entrar
     </button>
 
     <div class="text-center mt-4">
@@ -60,13 +83,11 @@
 document.getElementById('togglePassword').addEventListener('click', function () {
     const pwd = document.getElementById('password');
     const icon = this.querySelector('i');
-    if (pwd.type === 'password') {
-        pwd.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-        pwd.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-    }
+    const showing = pwd.type === 'password';
+    pwd.type = showing ? 'text' : 'password';
+    icon.classList.replace(showing ? 'fa-eye' : 'fa-eye-slash', showing ? 'fa-eye-slash' : 'fa-eye');
+    this.setAttribute('aria-pressed', showing ? 'true' : 'false');
+    this.setAttribute('aria-label', showing ? 'Ocultar senha' : 'Mostrar senha');
 });
 </script>
 @endsection

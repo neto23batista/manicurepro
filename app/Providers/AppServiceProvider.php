@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\NotaFiscalProvider;
 use App\Events\AgendamentoCanceladoEvent;
 use App\Events\AgendamentoCriado;
 use App\Events\AgendamentoFinalizado;
@@ -15,8 +16,11 @@ use App\Listeners\NotificarAgendamentoReagendado;
 use App\Listeners\NotificarEstoqueZerado;
 use App\Listeners\NotificarListaEspera;
 use App\Listeners\PedirAvaliacaoPosAtendimento;
+use App\Listeners\SincronizarCalendarioAgendamento;
 use App\Models\User;
 use App\Observers\UserObserver;
+use App\Services\Fiscal\HttpNotaFiscalProvider;
+use App\Services\Fiscal\StubNotaFiscalProvider;
 use App\View\Composers\NotificacoesComposer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
@@ -31,7 +35,15 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(StubNotaFiscalProvider::class);
+
+        $this->app->bind(NotaFiscalProvider::class, function ($app) {
+            $driver = (string) config('manicure.fiscal.driver', 'stub');
+
+            return $driver === 'http'
+                ? $app->make(HttpNotaFiscalProvider::class)
+                : $app->make(StubNotaFiscalProvider::class);
+        });
     }
 
     public function boot(): void
@@ -55,12 +67,14 @@ class AppServiceProvider extends ServiceProvider
 
         // Event listeners para agendamentos
         Event::listen(AgendamentoCriado::class, NotificarAgendamentoCriado::class);
+        Event::listen(AgendamentoCriado::class, SincronizarCalendarioAgendamento::class);
         Event::listen(AgendamentoFinalizado::class, PedirAvaliacaoPosAtendimento::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarAgendamentoCancelado::class);
         Event::listen(AgendamentoCanceladoEvent::class, NotificarListaEspera::class);
         Event::listen(AgendamentoCanceladoEvent::class, InvalidarCacheSlotsAgendamento::class);
         Event::listen(AgendamentoCanceladoEvent::class, CancelarPagamentoMercadoPago::class);
         Event::listen(AgendamentoReagendado::class, NotificarAgendamentoReagendado::class);
+        Event::listen(AgendamentoReagendado::class, SincronizarCalendarioAgendamento::class);
         Event::listen(EstoqueZerado::class, NotificarEstoqueZerado::class);
 
         // Mantém Manicure/Cliente sincronizados com o User

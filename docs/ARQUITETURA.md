@@ -1,8 +1,8 @@
 # Arquitetura — ManicurePro
 
-**Data:** 2026-08-10  
-**Estado atual:** Laravel 11 **single-tenant** (um salão por instalação).  
-**Este documento não migra nada** — só descreve o presente e um caminho futuro multi-empresa.
+**Data:** 2026-08-15  
+**Estado atual:** Laravel 12 **single-tenant** (um salão por instalação), com foundation multi-empresa (`companies` + `saloes.company_id` nullable) ainda não usada no runtime.  
+**Este documento descreve o presente e o caminho futuro multi-empresa.**
 
 ---
 
@@ -138,7 +138,7 @@ saloes (alter)
 
 ### O que **não** fazer agora
 
-- Não adicionar `company_id` “por precaução” sem produto multi-empresa.
+- Foundation `companies` / `company_id` já existe — **não** ligar scopes/middleware até haver produto multi-empresa.
 - Não quebrar `Salao::principal()` até haver resolução de tenant.
 - Não fingir que o app já é SaaS: a home e o seeder são de um único salão.
 

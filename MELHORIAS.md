@@ -60,8 +60,13 @@ Não reabrir como backlog.
 - Erros genéricos ao usuário (`HandlesDomainExceptions` — sem vazar `$e->getMessage()`)
 - Skip-link em layouts app/auth/público/erros; foco no modal de confirmação
 - Loading automático em submits (`btn-loading` em `app.js`)
-- A11y pontual: contraste `.text-muted`, `:focus-visible`, slots com `aria-selected` / `aria-live`
-- Smoke empresário: `FluxoEmpresarioTest` (caixa→agenda→comanda→fechar; cancelamento; no-show; double booking; estoque zerado; atendente 403; IDOR)
+- A11y: contraste `.text-muted`, `:focus-visible`, slots ARIA, Pix ARIA, auth `aria-invalid`/`form-errors`, landmarks `<main>`
+- Smoke empresário: `FluxoEmpresarioTest`
+- **Laravel 12** + Pest 3 (`composer audit` limpo)
+- **Calendar OAuth** Google/Outlook (Perfil + sync)
+- **Fiscal provider** stub/HTTP
+- **companies** foundation
+- Deploy staging workflow (template)
 
 ---
 
@@ -71,33 +76,32 @@ Itens com código, mas incompletos.
 
 | Item | O que existe | O que falta | Arquivos-chave |
 |------|--------------|-------------|----------------|
-| **Web Push** | `minishlink/web-push` + send real; UI **auto** com VAPID (override `WEBPUSH_SUBSCRIBE_UI`) | Validar ponta a ponta em prod | `WebPushService.php` |
-| **NF-e** | Rascunho local, UI dono (flag `fiscal.enabled`) | Emissão SEFAZ / provedor | `NotaFiscalService.php` |
-| **API v1** | Auth + salão/slots + agendamentos + fidelidade + **financeiro/estoque/caixa read-only** | Writes ops / paridade total | `routes/api.php` |
-| **A11y** | Skip-link + foco + contraste + slots ARIA + Pix `aria-live`/`aria-label` | Auditoria completa WCAG | layouts + CSS |
+| **Web Push** | `minishlink/web-push` + send real; UI **auto** com VAPID | Validar ponta a ponta em prod | `WebPushService.php` |
+| **NF-e** | Provedor stub + HTTP (`FISCAL_DRIVER`) + UI dono | Emissão SEFAZ nativa / homologação | `Services/Fiscal/*` |
+| **API v1** | Auth + slots + agendamentos + fidelidade + financeiro/estoque/caixa RO | Writes ops / paridade total | `routes/api.php` |
+| **Multi-empresa** | `companies` + `company_id` | Switch tenant / billing / UI | `Company`, migrations |
+| **Deploy** | `deploy-staging.yml` smoke | SSH/host secrets reais | `.github/workflows/` |
 
 ---
 
 ## FUTURO
 
-Ainda não há implementação utilizável (ou só estratégia em doc).
-
-- [ ] **Emissor fiscal real** (SEFAZ / eNotas etc.) — substituir stub
-- [ ] **Sync OAuth** Google/Outlook (hoje só `.ics` + template URL)
-- [x] **Gorjeta via Mercado Pago** — Pix pós-conclusão (`GORJETA_ONLINE_HABILITADO`)
-- [ ] **Pipeline de deploy** (staging + automático) — hoje manual via PRODUCAO.md
-- [ ] **Multi-empresa / filiais** — ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md); **não migrar agora**
+- [ ] **Emissor fiscal SEFAZ nativo** (além do HTTP provider)
+- [x] **Sync OAuth** Google/Outlook
+- [x] **Gorjeta via Mercado Pago**
+- [x] **Pipeline de deploy** (template staging; SSH real pendente)
+- [ ] **Multi-empresa produto** — foundation pronta; ver [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md)
 - [ ] **Spatie Permission** — só se as 5 roles + JSON leve não bastarem
 - [ ] App nativo (hoje PWA + API parcial)
-- [ ] **Upgrade Laravel 12** — advisories de signed URL / email rule (patch em 12.x)
+- [x] **Upgrade Laravel 12**
 
 ---
 
 ## Ordem sugerida (pós Fases 1–10)
 
 1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md). Inventário vivo: [`docs/BUGS.md`](docs/BUGS.md).
-2. Push UI: manter escondida até validar; NF-e continuar `FISCAL_ENABLED=false` em prod.
-3. OAuth / fiscal real / multi-empresa só com escopo explícito.
+2. Em prod: `FISCAL_ENABLED=false` até homologar; configurar OAuth/VAPID; gorjeta online só após validar MP.
+3. Multi-empresa produto / SSH real só com escopo explícito.
 
 ---
 

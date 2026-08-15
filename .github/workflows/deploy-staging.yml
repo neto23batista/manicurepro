@@ -1,0 +1,79 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Staging deploy checklist
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_sqlite, sqlite3, gd, bcmath
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install Composer (prod)
+        run: composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      - name: Install npm & build
+        run: |
+          npm ci
+          npm run build
+
+      - name: App key & sqlite smoke
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Migrate (sqlite smoke)
+        env:
+          APP_ENV: local
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+        run: php artisan migrate --force
+
+      - name: Optimize caches
+        env:
+          APP_ENV: local
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+      - name: Produção checker (non-production = avisos ok)
+        env:
+          APP_ENV: local
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ${{ github.workspace }}/database/database.sqlite
+        run: php artisan manicure:verificar-producao
+
+      - name: Reminder — wire real host deploy
+        run: |
+          echo "Este job valida o pipeline (build/migrate/cache)."
+          echo "Para deploy real em staging, configure secrets SSH/FTP no environment 'staging'"
+          echo "e adicione um step de rsync/ssh conforme docs/PRODUCAO.md."

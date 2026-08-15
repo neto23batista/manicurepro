@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\AgendamentoStatus;
 use App\Http\Requests\UpdatePerfilRequest;
 use App\Models\ListaEspera;
+use App\Services\CalendarOAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,9 +14,18 @@ use Illuminate\Support\Facades\Storage;
 
 class PerfilController extends Controller
 {
+    public function __construct(private CalendarOAuthService $calendario) {}
+
     public function edit()
     {
-        return view('perfil.edit', ['user' => auth()->user()]);
+        $user = auth()->user()->load('calendarConnections');
+
+        return view('perfil.edit', [
+            'user'                => $user,
+            'calendarConnections' => $user->calendarConnections->keyBy('provider'),
+            'calendarGoogleOk'    => $this->calendario->configurado('google'),
+            'calendarOutlookOk'   => $this->calendario->configurado('outlook'),
+        ]);
     }
 
     public function update(UpdatePerfilRequest $request)

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\NotaFiscalProvider;
 use App\Enums\NotaFiscalStatus;
 use App\Models\Agendamento;
 use App\Models\Comanda;
@@ -10,15 +11,16 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
- * STUB fiscal / NF-e — NÃO emite na SEFAZ.
+ * Orquestra rascunhos fiscais via NotaFiscalProvider.
  *
- * Cria apenas rascunhos locais com payload marcado como stub.
- * Não há comunicação com autorizador, certificado digital ou webservice.
+ * NÃO emite na SEFAZ. O provedor (stub ou HTTP) só produz rascunhos.
  */
 class NotaFiscalService
 {
+    public function __construct(private NotaFiscalProvider $provider) {}
+
     /**
-     * Gera um rascunho local a partir de agendamento e/ou comanda.
+     * Gera um rascunho a partir de agendamento e/ou comanda.
      * Nunca autoriza nem transmite para a SEFAZ.
      */
     public function emitRascunho(int $salaoId, ?Agendamento $agendamento = null, ?Comanda $comanda = null): NotaFiscal
@@ -47,22 +49,32 @@ class NotaFiscalService
             ? (float) $comanda->total
             : (float) $agendamento->valor_total - (float) $agendamento->valor_desconto;
 
+        $cliente = ($agendamento !== null ? $agendamento->nome_cliente_exibido : null)
+            ?? ($comanda !== null && $comanda->cliente !== null ? $comanda->cliente->nome : null);
+
+        $resultado = $this->provider->criarRascunho([
+            'salao_id'       => $salaoId,
+            'agendamento_id' => $agendamento?->id,
+            'comanda_id'     => $comanda?->id,
+            'total'          => round($total, 2),
+            'cliente'        => $cliente,
+        ]);
+
+        $payload = $resultado['payload'];
+        if (! empty($resultado['provider_id'])) {
+            $payload['provider_id'] = $resultado['provider_id'];
+        }
+        // Garantia: nunca persistir sefaz=true a partir deste serviço.
+        $payload['sefaz'] = false;
+
         return NotaFiscal::create([
             'salao_id'       => $salaoId,
             'agendamento_id' => $agendamento?->id,
             'comanda_id'     => $comanda?->id,
-            'status'         => NotaFiscalStatus::Rascunho,
-            'numero'         => null,
-            'chave'          => null,
-            'payload'        => [
-                'stub'    => true,
-                'sefaz'   => false,
-                'aviso'   => 'Rascunho local — NÃO emitir SEFAZ. Módulo stub sem integração fiscal.',
-                'total'   => round($total, 2),
-                'cliente' => ($agendamento !== null ? $agendamento->nome_cliente_exibido : null)
-                    ?? ($comanda !== null && $comanda->cliente !== null ? $comanda->cliente->nome : null),
-                'criado_em' => now()->toIso8601String(),
-            ],
+            'status'         => NotaFiscalStatus::tryFrom((string) $resultado['status']) ?? NotaFiscalStatus::Rascunho,
+            'numero'         => $resultado['numero'],
+            'chave'          => $resultado['chave'],
+            'payload'        => $payload,
         ]);
     }
 

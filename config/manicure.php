@@ -201,12 +201,36 @@ return [
     ],
 
     /*
-     * Fiscal / NF-e — STUB apenas (NÃO emite na SEFAZ).
-     * Quando enabled=true, o dono pode criar rascunhos locais vinculados a
-     * agendamento/comanda. Não há certificado, autorização nem webservice.
+     * Fiscal / NF-e — rascunhos via provedor (stub|http). NÃO emite na SEFAZ.
+     * driver=stub: payload local. driver=http: POST ao draft_endpoint (FocusNFe/eNotas);
+     * sem token/base_url ou falha → fallback stub com erro no payload.
      */
     'fiscal' => [
-        'enabled' => env('FISCAL_ENABLED', false),
+        'enabled'        => env('FISCAL_ENABLED', false),
+        'driver'         => env('FISCAL_DRIVER', 'stub'), // stub|http
+        'base_url'       => env('FISCAL_BASE_URL'),
+        'token'          => env('FISCAL_TOKEN'),
+        'timeout'        => (int) env('FISCAL_TIMEOUT', 15),
+        'draft_endpoint' => env('FISCAL_DRAFT_ENDPOINT', '/v2/nfse'),
+    ],
+
+    /*
+     * OAuth de calendário (Google Calendar / Microsoft Graph).
+     * Sem client_id o fluxo retorna null/false graciosamente.
+     */
+    'calendar' => [
+        'google' => [
+            'enabled'       => env('CALENDAR_GOOGLE_ENABLED', false),
+            'client_id'     => env('CALENDAR_GOOGLE_CLIENT_ID'),
+            'client_secret' => env('CALENDAR_GOOGLE_CLIENT_SECRET'),
+            'redirect'      => env('CALENDAR_GOOGLE_REDIRECT'),
+        ],
+        'outlook' => [
+            'enabled'       => env('CALENDAR_OUTLOOK_ENABLED', false),
+            'client_id'     => env('CALENDAR_OUTLOOK_CLIENT_ID'),
+            'client_secret' => env('CALENDAR_OUTLOOK_CLIENT_SECRET'),
+            'redirect'      => env('CALENDAR_OUTLOOK_REDIRECT'),
+        ],
     ],
 
     /*

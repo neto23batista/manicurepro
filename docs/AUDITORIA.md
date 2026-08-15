@@ -1,6 +1,6 @@
 # Auditoria — o que existe de verdade
 
-**Data:** 2026-08-13 (pós plano de melhoria)  
+**Data:** 2026-08-15 (ciclo 3 — Laravel 12 + fiscal/OAuth/empresa)  
 **Repo:** ManicurePro / Fernanda Silva Nails  
 **Escopo:** mapa por módulo fiél ao código atual. Não inventa features da onda que falharam ou ficaram pela metade.
 
@@ -23,9 +23,8 @@ O núcleo do produto **está** no código. Fases 1–10 fecharam P0 (Pix total, 
 
 Buracos honestos que **ainda** restam:
 
-- **NF-e** — stub local, sem SEFAZ.
-- Upgrade **Laravel 12** (advisories de signed URL / email rule).
-- Multi-empresa / OAuth calendar = futuro (ver ARQUITETURA).
+- **NF-e SEFAZ nativo** — há provedor stub + HTTP; não emissor SEFAZ embutido.
+- Multi-empresa **produto** (switch/billing) — foundation `companies` existe; runtime ainda single-tenant.
 
 ## Mapa por módulo
 
@@ -155,14 +154,15 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 
 `Dono/GaleriaController`, `GaleriaFotoPolicy`, `ImageOptimizer`, `GaleriaTest`.
 
-### NF-e — STUB
+### NF-e — PARCIAL (provedor)
 
-**Não emite SEFAZ.** Só rascunho local com `payload.stub = true`.
+**Não é emissor SEFAZ nativo.** Stub local ou HTTP para API externa (`FISCAL_DRIVER=stub|http`).
 
+- Contract `NotaFiscalProvider`; `StubNotaFiscalProvider` / `HttpNotaFiscalProvider`
 - `NotaFiscalService`, `Dono/NotaFiscalController`, `NotaFiscalPolicy`, model `NotaFiscal`
-- Flag: `config('manicure.fiscal.enabled')` (`FISCAL_ENABLED`)
+- Flag: `config('manicure.fiscal.enabled')` (`FISCAL_ENABLED`); driver/url/token em config
 - Teste: `NotaFiscalStubTest`
-- Menu: label “Notas fiscais (stub)” em `Sidebar.php`
+- Menu: label “Notas fiscais” em `Sidebar.php`
 
 ### Web Push — FULL (send + UI auto com VAPID)
 
@@ -189,9 +189,9 @@ Cliente avalia (web + API `POST .../avaliar`, só o cliente dono). Dono/atendent
 
 Canal opcional; sem token/`enabled=false` → no-op. `WhatsAppChannelTest`.
 
-### iCal / Google Calendar template — FULL
+### iCal / Calendar OAuth — FULL
 
-`.ics` (cliente, dono, manicure) + link template Google (sem OAuth). `ICalService`, `ICalTest`. Sync OAuth: **AUSENTE**.
+`.ics` (cliente, dono, manicure) + link template Google + OAuth Google/Outlook (`CalendarOAuthService`, conexões em Perfil, sync ao criar/alterar). Testes: `ICalTest`, `CalendarOAuthTest`.
 
 ### Ficha de unhas / histórico — FULL
 
@@ -243,14 +243,19 @@ Dashboard, salão único (sem create/destroy), manicures, serviços, categorias,
 
 Valor no DB (`ConfiguracaoSalao`) e form do dono; `theme-vars` resolve cor do salão (prop / user / `Salao::principal`) com fallback `config('manicure.tema.cor_primaria')`. Teste: `TemaCssTest`.
 
-### A11y / erros seguros — PARCIAL (crítico feito)
+### A11y / erros seguros — FULL (prática)
 
-Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions`; contraste `.text-muted`; `:focus-visible`; slots com `aria-selected` / `aria-live`. Sentry opcional (`SENTRY_LARAVEL_DSN`). Auditoria WCAG completa: ainda aberta.
+Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions`; contraste `.text-muted`; `:focus-visible`; slots ARIA; Pix `aria-live`; auth landmarks + `aria-invalid`/`form-errors`; `A11yAuthTest`. Sentry opcional. Auditoria formal externa: opcional.
 
 ### Docker / CI — FULL
 
 - `docker-compose.yml` (Sail: app, MySQL, Redis, Mailpit) — [DOCKER.md](DOCKER.md)
 - `.github/workflows/ci.yml`: Pest (PHP 8.2/8.3), Pint, PHPStan, `npm ci && npm run build`
+- `.github/workflows/deploy-staging.yml`: template build/migrate/cache/smoke (SSH real ainda manual)
+
+### Multi-empresa — PARCIAL (foundation)
+
+Tabela `companies` + `saloes.company_id` nullable; model `Company`. Runtime continua `Salao::principal()` single-tenant. Ver [ARQUITETURA.md](ARQUITETURA.md).
 
 ---
 
@@ -273,11 +278,11 @@ Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions
 | Lista de espera | FULL |
 | Avaliações | FULL |
 | Galeria | FULL |
-| NF-e | STUB |
+| NF-e | PARCIAL (stub + HTTP provider) |
 | Web Push | FULL (send + UI auto VAPID) |
 | Mercado Pago | FULL (sinal+total+gorjeta+estorno dono) |
 | WhatsApp | FULL (opt-in) |
-| iCal | FULL |
+| iCal / Calendar OAuth | FULL |
 | Ficha unhas | FULL |
 | LGPD | FULL |
 | PWA | FULL |
@@ -288,11 +293,12 @@ Skip-link; foco no `confirm-modal`; loading em submits; `HandlesDomainExceptions
 | Backup | FULL (`manicure:backup` no schedule + restore docs) |
 | Slot cache | FULL |
 | Tema por salão | FULL |
-| A11y / erros seguros | PARCIAL (crítico feito + Sentry opcional) |
-| Docker / CI | FULL |
-| OAuth calendário | AUSENTE |
-| Multi-empresa | AUSENTE (ver [ARQUITETURA.md](ARQUITETURA.md)) |
+| A11y / erros seguros | FULL (prática) |
+| Docker / CI / deploy staging | FULL (SSH real parcial) |
+| OAuth calendário | FULL |
+| Multi-empresa | PARCIAL (foundation; ver [ARQUITETURA.md](ARQUITETURA.md)) |
 | Fluxo empresário smoke | FULL (`FluxoEmpresarioTest`) |
+| Stack | Laravel **12** + Pest 3 |
 
 ---
 

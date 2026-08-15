@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\ConfiguracaoSalao;
 use App\Models\HorarioFuncionamento;
 use App\Models\Salao;
@@ -13,24 +14,34 @@ class DemoSalaoSeeder extends Seeder
 
     public function run(): void
     {
+        $company = Company::query()->first();
+        if ($company === null) {
+            $company = Company::create([
+                'nome'      => 'Fernanda Silva Nails',
+                'documento' => null,
+                'ativo'     => true,
+            ]);
+        }
+
         $salao = Salao::updateOrCreate(
             ['slug' => self::SLUG],
             [
-                'nome'      => 'Fernanda Silva Nails',
-                'descricao' => 'Estúdio de unhas da Fernanda Silva — cuidado, capricho e acabamento impecável. Agende seu horário online.',
-                'endereco'  => 'Av. das Acácias',
-                'numero'    => '450',
-                'bairro'    => 'Centro',
-                'cidade'    => 'São Paulo',
-                'estado'    => 'SP',
-                'cep'       => '01310-100',
-                'telefone'  => '(11) 3333-4444',
-                'whatsapp'  => '(11) 99999-1234',
-                'email'     => 'contato@fernandasilvanails.com',
-                'instagram' => 'fernandasilvanails',
-                'latitude'  => -23.5505,
-                'longitude' => -46.6333,
-                'ativo'     => true,
+                'company_id' => $company->id,
+                'nome'       => 'Fernanda Silva Nails',
+                'descricao'  => 'Estúdio de unhas da Fernanda Silva — cuidado, capricho e acabamento impecável. Agende seu horário online.',
+                'endereco'   => 'Av. das Acácias',
+                'numero'     => '450',
+                'bairro'     => 'Centro',
+                'cidade'     => 'São Paulo',
+                'estado'     => 'SP',
+                'cep'        => '01310-100',
+                'telefone'   => '(11) 3333-4444',
+                'whatsapp'   => '(11) 99999-1234',
+                'email'      => 'contato@fernandasilvanails.com',
+                'instagram'  => 'fernandasilvanails',
+                'latitude'   => -23.5505,
+                'longitude'  => -46.6333,
+                'ativo'      => true,
             ],
         );
 
