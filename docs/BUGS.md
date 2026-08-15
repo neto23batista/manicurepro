@@ -1,7 +1,7 @@
 # Bugs e gaps restantes — inventário
 
-**Data:** 2026-08-15 (ciclo 2)  
-**Branch:** `cursor/fix-ci-bugs-cd0b`  
+**Data:** 2026-08-15 (ciclo 3)  
+**Branch:** `cursor/fiscal-empresa-calendar-3015` → merge `main`  
 **Método:** docs + CI + Pest local.
 
 ---
@@ -10,32 +10,31 @@
 
 | # | Item | Correção |
 |---|------|----------|
-| 1 | CI Composer / Vite / Pint / PHPStan | Ver ciclo 1 nesta PR |
-| 2 | **Dompdf advisories** | `barryvdh/laravel-dompdf` ^3 + `dompdf/dompdf` 3.1.6 |
-| 3 | **Web Push UI** | Auto com VAPID (omitir `WEBPUSH_SUBSCRIBE_UI`); `false` ainda força off |
-| 4 | **Gorjeta online MP** | `GORJETA_ONLINE_HABILITADO`, Pix pós-conclusão, webhook/comanda |
-| 5 | **API v1 ops** | `GET /financeiro`, `/estoque`, `/caixa`, `/caixa/{id}` (dono) |
-| 6 | **A11y pontual** | `aria-label` / `aria-live` em Pix (sinal/total/gorjeta) |
+| 1 | **Laravel 12** | `laravel/framework` ^12.66; Pest 3; `composer audit` limpo |
+| 2 | **Deploy staging** | `.github/workflows/deploy-staging.yml` (build/migrate/cache/smoke) |
+| 3 | **NF-e provedor** | `NotaFiscalProvider` + Stub + Http; `FISCAL_DRIVER` |
+| 4 | **OAuth calendário** | Google/Outlook via `CalendarOAuthService` + perfil + sync |
+| 5 | **Multi-empresa base** | `companies` + `saloes.company_id` nullable; `Salao::principal()` intacto |
+| 6 | **A11y WCAG pass** | Auth landmarks/ARIA; `x-form-errors`; toggle senha; `A11yAuthTest` |
 
-Estado local: Pest + Pint + PHPStan verdes após as mudanças.
+Ciclos 1–2 (já em `main`): CI Composer/Vite/Pint/PHPStan, Dompdf 3, Web Push auto-UI, gorjeta Pix, API ops RO.
 
 ---
 
-## Ainda aberto (adiado / escopo explícito)
+## Ainda aberto (escopo explícito / não produto completo)
 
 | Item | Notas |
 |------|--------|
-| **NF-e SEFAZ** | Stub local; manter `FISCAL_ENABLED=false` em prod |
-| **OAuth Google/Outlook** | Só `.ics` + template URL |
-| **Laravel 11 advisories** | Patches oficiais em 12.x — upgrade de major separado |
-| **A11y WCAG auditoria completa** | Crítico feito; auditoria formal aberta |
-| **Multi-empresa / Spatie / app nativo / deploy pipeline** | Adiado |
+| **NF-e SEFAZ nativo** | HTTP provider é integração estilo API; não é emissor SEFAZ embutido. `FISCAL_ENABLED=false` em prod até homologar |
+| **Multi-empresa produto** | Foundation só — UI/tenant switch/billing ainda single-tenant |
+| **Deploy SSH real** | Workflow é template; falta secret/host do servidor |
+| **Spatie / app nativo** | Fora de escopo |
 
 ---
 
 ## Ops
 
-- Prod: `GORJETA_ONLINE_HABILITADO=false` até validar MP; `WEBPUSH_SUBSCRIBE_UI=false` se quiser forçar off mesmo com VAPID.
+- Prod: `GORJETA_ONLINE_HABILITADO=false` até validar MP; `FISCAL_ENABLED=false`; configurar `CALENDAR_*` / VAPID conforme PRODUCAO.
 - Smoke: `docs/PRODUCAO.md`.
 
 *Atualizar quando o código mudar — não na intenção.*

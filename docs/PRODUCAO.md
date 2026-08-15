@@ -209,6 +209,6 @@ Não há `manicure:restore` automático de propósito — restore é destrutivo 
 ### Web Push / NF-e (honesto)
 
 Web Push: `minishlink/web-push` já no projeto; configure VAPID e só então `WEBPUSH_SUBSCRIBE_UI=true`.
-NF-e continua stub local (`FISCAL_ENABLED`) — **não** emite na SEFAZ; mantenha `false` em produção.
+NF-e usa provedor stub ou HTTP (`FISCAL_DRIVER`); **não** é emissor SEFAZ nativo — mantenha `FISCAL_ENABLED=false` em produção até homologar.
 
 Sentry: `sentry/sentry-laravel` no composer; ative com `SENTRY_LARAVEL_DSN` (opcional).
