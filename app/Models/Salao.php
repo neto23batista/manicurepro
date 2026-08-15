@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -16,6 +17,7 @@ class Salao extends Model
     protected $table = 'saloes';
 
     protected $fillable = [
+        'company_id',
         'nome', 'slug', 'descricao', 'endereco', 'numero', 'complemento',
         'bairro', 'cidade', 'estado', 'cep', 'telefone', 'whatsapp',
         'email', 'site', 'instagram', 'facebook', 'logo', 'foto_capa', 'ativo',
@@ -85,6 +87,12 @@ class Salao extends Model
         }
 
         return parent::resolveRouteBinding($value, $field);
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /** @return HasOne<ConfiguracaoSalao, $this> */

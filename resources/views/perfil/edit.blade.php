@@ -122,6 +122,53 @@
 
                     <hr class="my-4">
 
+                    <h6 class="fw-bold mb-3"><i class="fas fa-calendar text-pink me-2"></i>Calendário</h6>
+                    <p class="text-muted small mb-3">Conecte Google ou Outlook para sincronizar seus agendamentos (opcional).</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @php
+                            $googleConn = $calendarConnections['google'] ?? null;
+                            $outlookConn = $calendarConnections['outlook'] ?? null;
+                        @endphp
+
+                        @if($calendarGoogleOk ?? false)
+                            @if($googleConn)
+                                <form method="POST" action="{{ route('calendar.oauth.disconnect', 'google') }}" class="d-inline">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fab fa-google me-1"></i>Desconectar Google
+                                        @if($googleConn->email)<span class="text-muted">({{ $googleConn->email }})</span>@endif
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('calendar.oauth.redirect', 'google') }}" class="btn btn-outline-pink btn-sm">
+                                    <i class="fab fa-google me-1"></i>Conectar Google
+                                </a>
+                            @endif
+                        @endif
+
+                        @if($calendarOutlookOk ?? false)
+                            @if($outlookConn)
+                                <form method="POST" action="{{ route('calendar.oauth.disconnect', 'outlook') }}" class="d-inline">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fab fa-microsoft me-1"></i>Desconectar Outlook
+                                        @if($outlookConn->email)<span class="text-muted">({{ $outlookConn->email }})</span>@endif
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('calendar.oauth.redirect', 'outlook') }}" class="btn btn-outline-pink btn-sm">
+                                    <i class="fab fa-microsoft me-1"></i>Conectar Outlook
+                                </a>
+                            @endif
+                        @endif
+
+                        @if(! ($calendarGoogleOk ?? false) && ! ($calendarOutlookOk ?? false))
+                            <small class="text-muted">Nenhum provedor de calendário configurado no servidor.</small>
+                        @endif
+                    </div>
+
+                    <hr class="my-4">
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-pink">
                             <i class="fas fa-save me-1"></i>Salvar alterações

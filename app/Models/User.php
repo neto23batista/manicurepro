@@ -97,6 +97,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Salao::class);
     }
 
+    /** @return HasMany<CalendarConnection, $this> */
+    public function calendarConnections(): HasMany
+    {
+        return $this->hasMany(CalendarConnection::class);
+    }
+
     /** @return HasOne<Manicure, $this> */
     public function manicure(): HasOne
     {
