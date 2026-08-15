@@ -319,7 +319,7 @@ class CalendarOAuthService
                 'content'     => $this->descricaoEvento($agendamento),
             ],
             'location' => [
-                'displayName' => $agendamento->salao?->nome ?? '',
+                'displayName' => $agendamento->salao->nome ?? '',
             ],
             'start' => [
                 'dateTime' => $agendamento->data_hora_inicio->format('Y-m-d\TH:i:s'),
@@ -345,8 +345,8 @@ class CalendarOAuthService
     {
         $linhas = [
             'Cliente: '.($agendamento->nome_cliente_exibido ?? '—'),
-            'Profissional: '.($agendamento->manicure?->nome ?? '—'),
-            'Salão: '.($agendamento->salao?->nome ?? '—'),
+            'Profissional: '.(optional($agendamento->manicure)->nome ?? '—'),
+            'Salão: '.($agendamento->salao->nome ?? '—'),
         ];
 
         return implode("\n", $linhas);
