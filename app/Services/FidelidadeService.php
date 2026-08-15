@@ -7,6 +7,7 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\Cupom;
 use App\Models\FidelidadePonto;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -43,7 +44,7 @@ class FidelidadeService
         if ($creditarPontos) {
             $pontosBase = (int) floor($valorPago * $config->pontos_por_real);
             $nivel = $this->nivelPara($cliente);
-            $mult = (float) ($nivel['multiplicador'] ?? 1.0);
+            $mult = (float) $nivel['multiplicador'];
             $pontos = (int) floor($pontosBase * max(1.0, $mult));
 
             if ($pontos > 0) {
@@ -99,7 +100,7 @@ class FidelidadeService
         ];
     }
 
-    public function calcularExpiracao(): ?\Carbon\Carbon
+    public function calcularExpiracao(): ?Carbon
     {
         $dias = config('manicure.fidelidade.expiracao_dias');
         if ($dias === null || (int) $dias <= 0) {

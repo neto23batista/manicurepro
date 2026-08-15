@@ -41,7 +41,7 @@ class PedirAvaliacaoPosAtendimento implements ShouldQueue
         }
 
         Notification::route('mail', $email)
-            ->route('whatsapp', $agendamento->cliente?->telefone)
+            ->route('whatsapp', $agendamento->cliente->telefone)
             ->notify($notification);
     }
 }

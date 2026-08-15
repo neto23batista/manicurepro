@@ -17,7 +17,7 @@ class OnboardingController extends Controller
         abort_unless($user->isDono() || $user->isSuperAdmin(), 403);
 
         $salao = $user->salao;
-        abort_unless($salao, 404);
+        abort_unless($salao !== null, 404);
 
         $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
         $progress = $this->onboarding->progress($salao);
@@ -31,7 +31,7 @@ class OnboardingController extends Controller
         abort_unless($user->isDono() || $user->isSuperAdmin(), 403);
 
         $salao = $user->salao;
-        abort_unless($salao, 404);
+        abort_unless($salao !== null, 404);
 
         $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
         $this->onboarding->markCompleted($config);
@@ -47,7 +47,7 @@ class OnboardingController extends Controller
         abort_unless($user->isDono() || $user->isSuperAdmin(), 403);
 
         $salao = $user->salao;
-        abort_unless($salao, 404);
+        abort_unless($salao !== null, 404);
 
         $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
         $this->onboarding->dismiss($config);

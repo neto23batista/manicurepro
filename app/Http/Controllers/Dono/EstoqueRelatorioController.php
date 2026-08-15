@@ -59,17 +59,17 @@ class EstoqueRelatorioController extends Controller
 
             foreach ($relatorio['itens'] as $item) {
                 fputcsv($out, [
-                    $item->produto->nome,
-                    $item->produto->fornecedor?->nome ?? '',
-                    number_format($item->estoque_atual, 3, '.', ''),
-                    $item->produto->unidade,
-                    number_format($item->preco_custo, 2, '.', ''),
-                    number_format($item->preco_venda, 2, '.', ''),
-                    $item->margem_pct !== null ? number_format($item->margem_pct, 1, '.', '') : '',
-                    number_format($item->margem_valor, 2, '.', ''),
-                    number_format($item->saidas_periodo, 3, '.', ''),
-                    number_format($item->giro, 2, '.', ''),
-                    $item->parado ? 'sim' : 'nao',
+                    $item['produto']->nome,
+                    $item['produto']->fornecedor->nome ?? '',
+                    number_format($item['estoque_atual'], 3, '.', ''),
+                    $item['produto']->unidade,
+                    number_format($item['preco_custo'], 2, '.', ''),
+                    number_format($item['preco_venda'], 2, '.', ''),
+                    $item['margem_pct'] !== null ? number_format($item['margem_pct'], 1, '.', '') : '',
+                    number_format($item['margem_valor'], 2, '.', ''),
+                    number_format($item['saidas_periodo'], 3, '.', ''),
+                    number_format($item['giro'], 2, '.', ''),
+                    $item['parado'] ? 'sim' : 'nao',
                 ], ';');
             }
 

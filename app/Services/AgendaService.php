@@ -16,6 +16,7 @@ use App\Models\DisponibilidadeManicure;
 use App\Models\Feriado;
 use App\Models\Manicure;
 use App\Models\Servico;
+use App\Models\ServicoVariacao;
 use App\Models\SlotHold;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -372,7 +373,7 @@ class AgendaService
                 $variacao = null;
 
                 if ($variacaoId) {
-                    $variacao = \App\Models\ServicoVariacao::query()
+                    $variacao = ServicoVariacao::query()
                         ->whereKey($variacaoId)
                         ->where('servico_id', $servico->id)
                         ->where('ativo', true)
@@ -383,10 +384,14 @@ class AgendaService
                             'error' => "Variação inválida para o serviço {$servico->nome}.",
                         ]);
                     }
+
+                    $preco = (float) $variacao->preco;
+                    $duracao = (int) $variacao->duracao;
+                } else {
+                    $preco = (float) $servico->preco;
+                    $duracao = (int) $servico->duracao;
                 }
 
-                $preco = (float) ($variacao?->preco ?? $servico->preco);
-                $duracao = (int) ($variacao?->duracao ?? $servico->duracao);
                 $duracaoTotal += $duracao;
                 $valorTotal += $preco;
 
@@ -454,9 +459,9 @@ class AgendaService
 
             foreach ($linhas as $linha) {
                 $agendamento->servicos()->attach($linha['servico']->id, [
-                    'preco'                => $linha['preco'],
-                    'duracao'              => $linha['duracao'],
-                    'servico_variacao_id'  => $linha['variacao_id'],
+                    'preco'               => $linha['preco'],
+                    'duracao'             => $linha['duracao'],
+                    'servico_variacao_id' => $linha['variacao_id'],
                 ]);
             }
 

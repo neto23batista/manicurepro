@@ -101,7 +101,7 @@ class ServicoController extends Controller
         $keepIds = [];
 
         foreach (array_values($variacoes) as $i => $row) {
-            if (! is_array($row) || blank($row['nome'] ?? null)) {
+            if (blank($row['nome'] ?? null)) {
                 continue;
             }
 
@@ -120,6 +120,7 @@ class ServicoController extends Controller
                 if ($variacao) {
                     $variacao->update($payload);
                     $keepIds[] = $variacao->id;
+
                     continue;
                 }
             }
