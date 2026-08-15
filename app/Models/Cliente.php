@@ -23,12 +23,12 @@ class Cliente extends Model
     ];
 
     protected $casts = [
-        'data_nascimento'         => 'date',
-        'aniversario_enviado_em'  => 'date',
-        'reativacao_enviada_em'   => 'datetime',
-        'retorno_sugerido_em'     => 'datetime',
-        'ativo'                   => 'boolean',
-        'total_gasto'             => 'decimal:2',
+        'data_nascimento'        => 'date',
+        'aniversario_enviado_em' => 'date',
+        'reativacao_enviada_em'  => 'datetime',
+        'retorno_sugerido_em'    => 'datetime',
+        'ativo'                  => 'boolean',
+        'total_gasto'            => 'decimal:2',
     ];
 
     protected static function booted(): void

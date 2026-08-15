@@ -50,15 +50,15 @@ test('email já em uso por outro usuário é rejeitado', function () {
 
 test('usuário troca senha (com senha atual)', function () {
     $user = User::factory()->create([
-        'ativo' => true,
+        'ativo'    => true,
         'password' => Hash::make('atual12345'),
     ]);
 
     $this->actingAs($user)->from('/perfil')->put('/perfil', [
-        'name'     => $user->name,
-        'email'    => $user->email,
-        'current_password' => 'atual12345',
-        'password' => 'nova123456',
+        'name'                  => $user->name,
+        'email'                 => $user->email,
+        'current_password'      => 'atual12345',
+        'password'              => 'nova123456',
         'password_confirmation' => 'nova123456',
     ])->assertRedirect();
 
@@ -67,15 +67,15 @@ test('usuário troca senha (com senha atual)', function () {
 
 test('senha atual incorreta impede troca', function () {
     $user = User::factory()->create([
-        'ativo' => true,
+        'ativo'    => true,
         'password' => Hash::make('correta'),
     ]);
 
     $this->actingAs($user)->from('/perfil')->put('/perfil', [
-        'name'     => $user->name,
-        'email'    => $user->email,
-        'current_password' => 'errada',
-        'password' => 'nova123456',
+        'name'                  => $user->name,
+        'email'                 => $user->email,
+        'current_password'      => 'errada',
+        'password'              => 'nova123456',
         'password_confirmation' => 'nova123456',
     ])->assertSessionHasErrors(['current_password']);
 });

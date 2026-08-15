@@ -24,55 +24,55 @@ beforeEach(function () {
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 0,
-        'antecedencia_maxima' => 60,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 60,
     ]);
 
     $this->dono = User::factory()->create([
-        'role' => 'dono',
-        'ativo' => true,
-        'salao_id' => $this->salao->id,
+        'role'              => 'dono',
+        'ativo'             => true,
+        'salao_id'          => $this->salao->id,
         'email_verified_at' => now(),
     ]);
 
     $userManicure = User::factory()->create([
-        'role' => 'manicure',
-        'salao_id' => $this->salao->id,
+        'role'              => 'manicure',
+        'salao_id'          => $this->salao->id,
         'email_verified_at' => now(),
     ]);
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $userManicure->id,
-        'ativo' => true,
+        'user_id'  => $userManicure->id,
+        'ativo'    => true,
     ]);
     $this->manicureUser = $userManicure;
 
     for ($dia = 1; $dia <= 5; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id' => $this->salao->id,
-            'dia_semana' => $dia,
-            'hora_abertura' => '08:00:00',
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
             'hora_fechamento' => '18:00:00',
-            'ativo' => true,
+            'ativo'           => true,
         ]);
         DisponibilidadeManicure::create([
-            'manicure_id' => $this->manicure->id,
-            'dia_semana' => $dia,
-            'hora_inicio' => '08:00:00',
-            'hora_fim' => '18:00:00',
+            'manicure_id'  => $this->manicure->id,
+            'dia_semana'   => $dia,
+            'hora_inicio'  => '08:00:00',
+            'hora_fim'     => '18:00:00',
             'pausa_inicio' => '12:00:00',
-            'pausa_fim' => '13:00:00',
-            'ativo' => true,
+            'pausa_fim'    => '13:00:00',
+            'ativo'        => true,
         ]);
     }
 
     $this->servico = Servico::factory()->create([
-        'salao_id' => $this->salao->id,
-        'preco' => 30.00,
-        'duracao' => 30,
-        'ativo' => true,
+        'salao_id'          => $this->salao->id,
+        'preco'             => 30.00,
+        'duracao'           => 30,
+        'ativo'             => true,
         'disponivel_online' => true,
     ]);
 
@@ -89,11 +89,11 @@ test('feriado recorrente bloqueia slots no dia/mês correspondente', function ()
 
     Feriado::create([
         'salao_id' => $this->salao->id,
-        'nome' => 'Feriado teste',
-        'mes' => (int) $data->month,
-        'dia' => (int) $data->day,
+        'nome'     => 'Feriado teste',
+        'mes'      => (int) $data->month,
+        'dia'      => (int) $data->day,
         'dia_todo' => true,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 
     expect($this->agenda->getSlotsDisponiveis($this->manicure, $data, 30))->toBeEmpty();
@@ -103,14 +103,14 @@ test('feriado parcial só bloqueia janela informada', function () {
     $data = $this->proximaSegunda->copy();
 
     Feriado::create([
-        'salao_id' => $this->salao->id,
-        'nome' => 'Meio período',
-        'mes' => (int) $data->month,
-        'dia' => (int) $data->day,
-        'dia_todo' => false,
+        'salao_id'    => $this->salao->id,
+        'nome'        => 'Meio período',
+        'mes'         => (int) $data->month,
+        'dia'         => (int) $data->day,
+        'dia_todo'    => false,
         'hora_inicio' => '10:00',
-        'hora_fim' => '12:00',
-        'ativo' => true,
+        'hora_fim'    => '12:00',
+        'ativo'       => true,
     ]);
 
     $horas = $this->agenda->getSlotsDisponiveis($this->manicure, $data, 30)->pluck('hora')->all();
@@ -123,9 +123,9 @@ test('feriado parcial só bloqueia janela informada', function () {
 
 test('dono cria e remove feriado recorrente', function () {
     $this->actingAs($this->dono)->from('/dono/folgas')->post('/dono/feriados', [
-        'nome' => 'Natal',
-        'mes' => 12,
-        'dia' => 25,
+        'nome'     => 'Natal',
+        'mes'      => 12,
+        'dia'      => 25,
         'dia_todo' => '1',
     ])->assertRedirect('/dono/folgas');
 
@@ -144,11 +144,11 @@ test('criar feriado invalida cache de slots', function () {
 
     Feriado::create([
         'salao_id' => $this->salao->id,
-        'nome' => 'Cache feriado',
-        'mes' => (int) $data->month,
-        'dia' => (int) $data->day,
+        'nome'     => 'Cache feriado',
+        'mes'      => (int) $data->month,
+        'dia'      => (int) $data->day,
         'dia_todo' => true,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 
     expect($this->agenda->getSlotsDisponiveis($this->manicure, $data, 30))->toBeEmpty();
@@ -188,11 +188,11 @@ test('manicure atualiza própria disponibilidade com pausa', function () {
     $dias = [];
     for ($d = 0; $d <= 6; $d++) {
         $dias[$d] = [
-            'ativo' => $d >= 1 && $d <= 5 ? '1' : '0',
-            'hora_inicio' => '09:00',
-            'hora_fim' => '17:00',
+            'ativo'        => $d >= 1 && $d <= 5 ? '1' : '0',
+            'hora_inicio'  => '09:00',
+            'hora_fim'     => '17:00',
             'pausa_inicio' => $d >= 1 && $d <= 5 ? '12:30' : '',
-            'pausa_fim' => $d >= 1 && $d <= 5 ? '13:30' : '',
+            'pausa_fim'    => $d >= 1 && $d <= 5 ? '13:30' : '',
         ];
     }
 
@@ -212,13 +212,13 @@ test('encaixe permite horário na pausa sem overlap', function () {
     $inicio = $this->proximaSegunda->copy()->setTime(12, 0);
 
     $ag = $this->agenda->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
-        'encaixe' => true,
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
+        'encaixe'          => true,
     ]);
 
     expect($ag->encaixe)->toBeTrue()
@@ -229,13 +229,13 @@ test('sem encaixe rejeita horário na pausa', function () {
     $inicio = $this->proximaSegunda->copy()->setTime(12, 0);
 
     expect(fn () => $this->agenda->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'origem' => 'web',
-        'status' => 'aguardando',
-        'encaixe' => false,
+        'origem'           => 'web',
+        'status'           => 'aguardando',
+        'encaixe'          => false,
     ]))->toThrow(ValidationException::class);
 });
 
@@ -243,40 +243,40 @@ test('encaixe respeita conflito duro com outro agendamento', function () {
     $inicio = $this->proximaSegunda->copy()->setTime(10, 0);
 
     $this->agenda->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
     ]);
 
     expect(fn () => $this->agenda->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
-        'encaixe' => true,
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
+        'encaixe'          => true,
     ]))->toThrow(ValidationException::class);
 });
 
 test('cliente não pode enviar flag encaixe', function () {
     $cliente = User::factory()->create([
-        'role' => 'cliente',
-        'ativo' => true,
+        'role'              => 'cliente',
+        'ativo'             => true,
         'email_verified_at' => now(),
     ]);
 
     $inicio = $this->proximaSegunda->copy()->setTime(12, 0);
 
     $this->actingAs($cliente)->post('/cliente/agendamentos', [
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'encaixe' => true,
+        'encaixe'          => true,
     ])->assertSessionHasErrors(['encaixe']);
 });
 
@@ -284,11 +284,11 @@ test('dono cria encaixe via formulário', function () {
     $inicio = $this->proximaSegunda->copy()->setTime(12, 15);
 
     $this->actingAs($this->dono)->post('/dono/agendamentos', [
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'nome_cliente' => 'Cliente Encaixe',
-        'encaixe' => '1',
+        'nome_cliente'     => 'Cliente Encaixe',
+        'encaixe'          => '1',
     ])->assertRedirect();
 
     expect(Agendamento::where('encaixe', true)->where('nome_cliente', 'Cliente Encaixe')->exists())->toBeTrue();
@@ -299,12 +299,12 @@ test('dono cria encaixe via formulário', function () {
 test('dono acessa visão semanal da agenda', function () {
     $inicio = $this->proximaSegunda->copy()->setTime(9, 0);
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'nome_cliente' => 'Maria Semanal',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'nome_cliente'     => 'Maria Semanal',
     ]);
 
     $this->actingAs($this->dono)

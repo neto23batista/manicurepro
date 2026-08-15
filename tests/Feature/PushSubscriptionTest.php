@@ -4,6 +4,7 @@ use App\Models\PushSubscription;
 use App\Models\User;
 use App\Services\WebPushService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Minishlink\WebPush\WebPush;
 
 uses(RefreshDatabase::class);
 
@@ -12,7 +13,7 @@ test('usuário autenticado pode salvar push subscription', function () {
 
     $payload = [
         'endpoint' => 'https://fcm.googleapis.com/fcm/send/test-endpoint-abc',
-        'keys' => [
+        'keys'     => [
             'p256dh' => 'BNcRdytQsLG_p...',
             'auth'   => 'tBHItJI5svbpez7KI4CCXg==',
         ],
@@ -48,7 +49,7 @@ test('salvar o mesmo endpoint atualiza a subscription existente', function () {
     $this->actingAs($user)
         ->postJson(route('push-subscriptions.store'), [
             'endpoint' => $endpoint,
-            'keys' => [
+            'keys'     => [
                 'p256dh' => 'new-key',
                 'auth'   => 'new-auth',
             ],
@@ -67,7 +68,7 @@ test('salvar o mesmo endpoint atualiza a subscription existente', function () {
 test('convidado não pode salvar push subscription', function () {
     $this->postJson(route('push-subscriptions.store'), [
         'endpoint' => 'https://example.com/push/1',
-        'keys' => ['p256dh' => 'x', 'auth' => 'y'],
+        'keys'     => ['p256dh' => 'x', 'auth' => 'y'],
     ])->assertUnauthorized();
 });
 
@@ -101,7 +102,7 @@ test('usuário pode remover a própria push subscription', function () {
 
 test('WebPushService::sendToUser é no-op sem VAPID', function () {
     config([
-        'manicure.webpush.subscribe_ui' => true,
+        'manicure.webpush.subscribe_ui'      => true,
         'manicure.webpush.vapid.public_key'  => null,
         'manicure.webpush.vapid.private_key' => null,
     ]);
@@ -122,8 +123,8 @@ test('WebPushService::sendToUser é no-op sem VAPID', function () {
 
 test('WebPushService::envioDisponivel exige UI + VAPID + pacote', function () {
     config([
-        'manicure.webpush.subscribe_ui' => false,
-        'manicure.webpush.vapid.public_key' => 'BNcRdytQsLG',
+        'manicure.webpush.subscribe_ui'      => false,
+        'manicure.webpush.vapid.public_key'  => 'BNcRdytQsLG',
         'manicure.webpush.vapid.private_key' => 'private',
     ]);
 
@@ -132,5 +133,5 @@ test('WebPushService::envioDisponivel exige UI + VAPID + pacote', function () {
     config(['manicure.webpush.subscribe_ui' => true]);
 
     $disponivel = app(WebPushService::class)->envioDisponivel();
-    expect($disponivel)->toBe(class_exists(\Minishlink\WebPush\WebPush::class));
+    expect($disponivel)->toBe(class_exists(WebPush::class));
 });

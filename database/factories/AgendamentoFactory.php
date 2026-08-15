@@ -15,15 +15,15 @@ class AgendamentoFactory extends Factory
             ->setHour(fake()->numberBetween(8, 16))->setMinute(0)->setSecond(0);
 
         return [
-            'salao_id' => Salao::factory(),
-            'manicure_id' => Manicure::factory(),
+            'salao_id'         => Salao::factory(),
+            'manicure_id'      => Manicure::factory(),
             'data_hora_inicio' => $inicio,
-            'data_hora_fim' => $inicio->copy()->addMinutes(30),
-            'status' => 'aguardando',
-            'origem' => 'web',
-            'valor_total' => fake()->randomElement([25, 35, 45, 55, 80]),
-            'valor_desconto' => 0,
-            'nome_cliente' => fake('pt_BR')->name('female'),
+            'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+            'status'           => 'aguardando',
+            'origem'           => 'web',
+            'valor_total'      => fake()->randomElement([25, 35, 45, 55, 80]),
+            'valor_desconto'   => 0,
+            'nome_cliente'     => fake('pt_BR')->name('female'),
         ];
     }
 }

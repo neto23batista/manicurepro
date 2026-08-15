@@ -14,22 +14,22 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
-        'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
+        'manicure.pagamento.mercadopago.enabled'        => true,
+        'manicure.pagamento.mercadopago.access_token'   => 'TEST-TOKEN',
         'manicure.pagamento.mercadopago.webhook_secret' => 'segredo-teste',
     ]);
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
     $this->manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'ativo' => true]);
     $this->dono = User::factory()->dono()->create([
-        'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'salao_id'          => $this->salao->id,
+        'ativo'             => true,
         'email_verified_at' => now(),
     ]);
     $this->atendente = User::factory()->create([
-        'role' => 'atendente',
-        'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'role'              => 'atendente',
+        'salao_id'          => $this->salao->id,
+        'ativo'             => true,
         'email_verified_at' => now(),
     ]);
 });
@@ -39,17 +39,17 @@ function agendamentoComPixPago($self, array $extra = []): Agendamento
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
 
     return Agendamento::factory()->create(array_merge([
-        'salao_id' => $self->salao->id,
-        'manicure_id' => $self->manicure->id,
+        'salao_id'         => $self->salao->id,
+        'manicure_id'      => $self->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'valor_total' => 100,
-        'valor_desconto' => 0,
-        'mp_payment_id' => '999100',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'valor_total'      => 100,
+        'valor_desconto'   => 0,
+        'mp_payment_id'    => '999100',
         'mp_cobranca_tipo' => 'total',
-        'mp_total_status' => 'pago',
-        'mp_total_valor' => 100,
+        'mp_total_status'  => 'pago',
+        'mp_total_valor'   => 100,
     ], $extra));
 }
 
@@ -58,15 +58,15 @@ test('dono estorna pix aprovado sem cancelar agendamento', function () {
 
     Pagamento::create([
         'agendamento_id' => $ag->id,
-        'salao_id' => $ag->salao_id,
-        'forma' => 'pix',
-        'valor' => 100,
-        'status' => 'confirmado',
-        'referencia' => '999100',
+        'salao_id'       => $ag->salao_id,
+        'forma'          => 'pix',
+        'valor'          => 100,
+        'status'         => 'confirmado',
+        'referencia'     => '999100',
     ]);
 
     Http::fake([
-        'api.mercadopago.com/v1/payments/999100' => Http::response(['id' => 999100, 'status' => 'approved'], 200),
+        'api.mercadopago.com/v1/payments/999100'         => Http::response(['id' => 999100, 'status' => 'approved'], 200),
         'api.mercadopago.com/v1/payments/999100/refunds' => Http::response(['id' => 1, 'status' => 'approved'], 201),
     ]);
 
@@ -81,9 +81,9 @@ test('dono estorna pix aprovado sem cancelar agendamento', function () {
     expect(Pagamento::where('referencia', '999100')->value('status'))->toBe('estornado');
 
     $this->assertDatabaseHas('audit_logs', [
-        'action' => 'pagamento.estornado',
+        'action'       => 'pagamento.estornado',
         'auditable_id' => $ag->id,
-        'user_id' => $this->dono->id,
+        'user_id'      => $this->dono->id,
     ]);
 
     $meta = AuditLog::where('action', 'pagamento.estornado')->latest('id')->value('meta');
@@ -94,11 +94,11 @@ test('dono estorna pix aprovado sem cancelar agendamento', function () {
 test('dono cancela cobrança pix pendente', function () {
     $ag = agendamentoComPixPago($this, [
         'mp_cobranca_tipo' => 'sinal',
-        'sinal_status' => 'pendente',
-        'sinal_valor' => 30,
-        'mp_total_status' => null,
-        'mp_total_valor' => null,
-        'mp_payment_id' => '999101',
+        'sinal_status'     => 'pendente',
+        'sinal_valor'      => 30,
+        'mp_total_status'  => null,
+        'mp_total_valor'   => null,
+        'mp_payment_id'    => '999101',
     ]);
 
     Http::fake([
@@ -127,8 +127,8 @@ test('atendente sem grant financeiro recebe 403 no estorno', function () {
 test('dono de outro salão não estorna (policy)', function () {
     $outro = Salao::factory()->create(['ativo' => true]);
     $donoOutro = User::factory()->dono()->create([
-        'salao_id' => $outro->id,
-        'ativo' => true,
+        'salao_id'          => $outro->id,
+        'ativo'             => true,
         'email_verified_at' => now(),
     ]);
     $ag = agendamentoComPixPago($this);

@@ -18,13 +18,13 @@ class ServicoFactory extends Factory
         $s = fake()->randomElement($servicos);
 
         return [
-            'salao_id' => Salao::factory(),
-            'nome' => $s['nome'],
-            'preco' => $s['preco'],
-            'duracao' => $s['duracao'],
-            'combo' => false,
+            'salao_id'          => Salao::factory(),
+            'nome'              => $s['nome'],
+            'preco'             => $s['preco'],
+            'duracao'           => $s['duracao'],
+            'combo'             => false,
             'disponivel_online' => true,
-            'ativo' => true,
+            'ativo'             => true,
         ];
     }
 }

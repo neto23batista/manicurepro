@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\PushSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Minishlink\WebPush\Subscription;
+use Minishlink\WebPush\WebPush;
 
 /**
  * Web Push — opcional (VAPID + minishlink/web-push).
@@ -33,7 +35,7 @@ class WebPushService
             return false;
         }
 
-        return class_exists(\Minishlink\WebPush\WebPush::class);
+        return class_exists(WebPush::class);
     }
 
     /**
@@ -74,13 +76,13 @@ class WebPushService
         ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
         $enviados = 0;
-        $subscriptionClass = \Minishlink\WebPush\Subscription::class;
+        $subscriptionClass = Subscription::class;
 
         foreach ($subscriptions as $row) {
             $subscription = $subscriptionClass::create([
-                'endpoint' => $row->endpoint,
-                'publicKey' => $row->public_key,
-                'authToken' => $row->auth_token,
+                'endpoint'        => $row->endpoint,
+                'publicKey'       => $row->public_key,
+                'authToken'       => $row->auth_token,
                 'contentEncoding' => $row->content_encoding ?: 'aesgcm',
             ]);
 
@@ -121,10 +123,10 @@ class WebPushService
         $private = (string) config('manicure.webpush.vapid.private_key');
         $subject = (string) (config('manicure.webpush.vapid.subject') ?: config('app.url'));
 
-        return new \Minishlink\WebPush\WebPush([
+        return new WebPush([
             'VAPID' => [
-                'subject' => $subject,
-                'publicKey' => $public,
+                'subject'    => $subject,
+                'publicKey'  => $public,
                 'privateKey' => $private,
             ],
         ]);

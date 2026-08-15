@@ -23,20 +23,22 @@ class LoginController extends Controller
         $credentials = $request->validated();
 
         // Proteção contra força-bruta / credential stuffing (por e-mail + IP)
-        $throttleKey = Str::lower($credentials['email']) . '|' . $request->ip();
+        $throttleKey = Str::lower($credentials['email']).'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $segundos = RateLimiter::availableIn($throttleKey);
+
             return back()->withErrors([
                 'email' => "Muitas tentativas de login. Tente novamente em {$segundos} segundos.",
             ])->onlyInput('email');
         }
 
-        if (!Auth::attempt(
+        if (! Auth::attempt(
             ['email' => $credentials['email'], 'password' => $credentials['password']],
-            $request->boolean('remember')
+            $request->boolean('remember'),
         )) {
             RateLimiter::hit($throttleKey, 60);
+
             return back()->withErrors(['email' => 'E-mail ou senha incorretos.'])->onlyInput('email');
         }
 
@@ -45,8 +47,9 @@ class LoginController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (!$user->ativo) {
+        if (! $user->ativo) {
             Auth::logout();
+
             return back()->withErrors(['email' => 'Sua conta está inativa. Entre em contato com o suporte.']);
         }
 
@@ -56,6 +59,7 @@ class LoginController extends Controller
             Auth::logout();
             $request->session()->put('2fa:user', $user->id);
             $request->session()->put('2fa:remember', $remember);
+
             return redirect()->route('2fa.challenge');
         }
 
@@ -74,6 +78,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }

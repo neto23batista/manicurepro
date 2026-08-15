@@ -24,12 +24,12 @@ class UpdateDisponibilidadeManicureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'dias'                    => ['required', 'array'],
-            'dias.*.ativo'            => ['sometimes', 'boolean'],
-            'dias.*.hora_inicio'      => ['nullable', 'date_format:H:i'],
-            'dias.*.hora_fim'         => ['nullable', 'date_format:H:i'],
-            'dias.*.pausa_inicio'     => ['nullable', 'date_format:H:i'],
-            'dias.*.pausa_fim'        => ['nullable', 'date_format:H:i'],
+            'dias'                => ['required', 'array'],
+            'dias.*.ativo'        => ['sometimes', 'boolean'],
+            'dias.*.hora_inicio'  => ['nullable', 'date_format:H:i'],
+            'dias.*.hora_fim'     => ['nullable', 'date_format:H:i'],
+            'dias.*.pausa_inicio' => ['nullable', 'date_format:H:i'],
+            'dias.*.pausa_fim'    => ['nullable', 'date_format:H:i'],
         ];
     }
 
@@ -46,6 +46,7 @@ class UpdateDisponibilidadeManicureRequest extends FormRequest
                 $fim = $dados['hora_fim'] ?? null;
                 if (! $inicio || ! $fim) {
                     $v->errors()->add("dias.$dia.hora_inicio", 'Informe início e fim do expediente.');
+
                     continue;
                 }
                 if ($fim <= $inicio) {

@@ -15,6 +15,7 @@ class VerifyEmailController extends Controller
         if ($request->user()->hasVerifiedEmail()) {
             return redirect($this->dashboardFor($request->user()));
         }
+
         return view('auth.verify-email');
     }
 
@@ -48,10 +49,10 @@ class VerifyEmailController extends Controller
     private function dashboardFor($user): string
     {
         return match ($user->role) {
-            'admin'                 => route('admin.dashboard'),
-            'dono', 'atendente'     => route('dono.dashboard'),
-            'manicure'              => route('manicure.dashboard'),
-            default                 => route('cliente.dashboard'),
+            'admin'             => route('admin.dashboard'),
+            'dono', 'atendente' => route('dono.dashboard'),
+            'manicure'          => route('manicure.dashboard'),
+            default             => route('cliente.dashboard'),
         };
     }
 }

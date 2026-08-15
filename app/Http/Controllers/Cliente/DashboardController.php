@@ -36,7 +36,7 @@ class DashboardController extends Controller
 
         return view('cliente.dashboard', compact(
             'user', 'cliente', 'proximosAgendamentos',
-            'historico', 'totalVisitas', 'totalGasto', 'pontos'
+            'historico', 'totalVisitas', 'totalGasto', 'pontos',
         ));
     }
 }

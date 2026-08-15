@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Support\ApiError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -61,6 +62,6 @@ trait HandlesDomainExceptions
     ): JsonResponse {
         $this->reportUnlessFramework($e);
 
-        return \App\Support\ApiError::make($message, $status, 'domain_error');
+        return ApiError::make($message, $status, 'domain_error');
     }
 }

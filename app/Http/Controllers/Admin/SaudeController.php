@@ -145,7 +145,7 @@ class SaudeController extends Controller
                 'detail' => $count === 0
                     ? 'Nenhum job falhou.'
                     : "{$count} job(s) falho(s). Use `php artisan queue:failed` / `queue:retry`.",
-                'items'  => $items,
+                'items' => $items,
             ];
         } catch (\Throwable $e) {
             report($e);

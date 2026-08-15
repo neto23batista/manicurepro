@@ -28,7 +28,7 @@ class ConfiguracaoController extends Controller
         foreach ($roles as $role) {
             $rolePermissions[$role->value] = $this->permissions->normalizeRoleBucket(
                 $config->role_permissions,
-                $role->value
+                $role->value,
             );
         }
 
@@ -38,7 +38,7 @@ class ConfiguracaoController extends Controller
             'horarios',
             'permissionCatalog',
             'roles',
-            'rolePermissions'
+            'rolePermissions',
         ));
     }
 
@@ -91,7 +91,7 @@ class ConfiguracaoController extends Controller
                     'ativo'           => ($dados['ativo'] ?? '0') == '1',
                     'hora_abertura'   => $dados['hora_abertura'] ?? '09:00',
                     'hora_fechamento' => $dados['hora_fechamento'] ?? '18:00',
-                ]
+                ],
             );
         }
 
@@ -104,9 +104,9 @@ class ConfiguracaoController extends Controller
 
         $data = $request->validated();
         $data['permitir_agendamento_online'] = $request->boolean('permitir_agendamento_online');
-        $data['fidelidade_ativo']            = $request->boolean('fidelidade_ativo');
-        $data['notificar_email']             = $request->boolean('notificar_email');
-        $data['notificar_whatsapp']          = $request->boolean('notificar_whatsapp');
+        $data['fidelidade_ativo'] = $request->boolean('fidelidade_ativo');
+        $data['notificar_email'] = $request->boolean('notificar_email');
+        $data['notificar_whatsapp'] = $request->boolean('notificar_whatsapp');
 
         $config = $salao->configuracao ?? ConfiguracaoSalao::create(['salao_id' => $salao->id]);
         $config->update($data);

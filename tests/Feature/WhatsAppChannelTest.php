@@ -59,17 +59,18 @@ it('monta payload de texto e de template', function () {
 
 it('envia para a Graph API quando habilitado', function () {
     config([
-        'manicure.whatsapp.enabled' => true,
-        'manicure.whatsapp.token' => 'TESTE-TOKEN-SECRETO',
+        'manicure.whatsapp.enabled'         => true,
+        'manicure.whatsapp.token'           => 'TESTE-TOKEN-SECRETO',
         'manicure.whatsapp.phone_number_id' => '123456',
-        'manicure.whatsapp.api_version' => 'v21.0',
+        'manicure.whatsapp.api_version'     => 'v21.0',
     ]);
 
     Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.x']]], 200)]);
 
     $user = User::factory()->make(['phone' => '(11) 98888-7777']);
 
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
             return WhatsAppMessage::create('Olá!');
@@ -87,14 +88,15 @@ it('envia para a Graph API quando habilitado', function () {
 
 it('não envia quando a integração está desabilitada', function () {
     config([
-        'manicure.whatsapp.enabled' => false,
-        'manicure.whatsapp.token' => 'NAO-DEVE-USAR',
+        'manicure.whatsapp.enabled'         => false,
+        'manicure.whatsapp.token'           => 'NAO-DEVE-USAR',
         'manicure.whatsapp.phone_number_id' => '123456',
     ]);
     Http::fake();
 
     $user = User::factory()->make(['phone' => '11988887777']);
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
             return WhatsAppMessage::create('x');
@@ -108,14 +110,15 @@ it('não envia quando a integração está desabilitada', function () {
 
 it('não envia quando habilitado mas sem credenciais', function () {
     config([
-        'manicure.whatsapp.enabled' => true,
-        'manicure.whatsapp.token' => null,
+        'manicure.whatsapp.enabled'         => true,
+        'manicure.whatsapp.token'           => null,
         'manicure.whatsapp.phone_number_id' => '123456',
     ]);
     Http::fake();
 
     $user = User::factory()->make(['phone' => '11988887777']);
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
             return WhatsAppMessage::create('x');
@@ -131,18 +134,18 @@ it('loga falha da API sem vazar o token', function () {
     $token = 'SUPER-SECRET-WHATSAPP-TOKEN-XYZ';
 
     config([
-        'manicure.whatsapp.enabled' => true,
-        'manicure.whatsapp.token' => $token,
+        'manicure.whatsapp.enabled'         => true,
+        'manicure.whatsapp.token'           => $token,
         'manicure.whatsapp.phone_number_id' => '123456',
-        'manicure.whatsapp.api_version' => 'v21.0',
+        'manicure.whatsapp.api_version'     => 'v21.0',
     ]);
 
     Http::fake([
         'graph.facebook.com/*' => Http::response([
             'error' => [
                 'message' => 'Invalid OAuth access token. Bearer '.$token,
-                'type' => 'OAuthException',
-                'code' => 190,
+                'type'    => 'OAuthException',
+                'code'    => 190,
             ],
         ], 401),
     ]);
@@ -150,7 +153,8 @@ it('loga falha da API sem vazar o token', function () {
     Event::fake([MessageLogged::class]);
 
     $user = User::factory()->make(['phone' => '11988887777']);
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
             return WhatsAppMessage::create('Oi');
@@ -170,19 +174,20 @@ it('loga falha da API sem vazar o token', function () {
 
 it('falha com graça quando a Graph API lança exceção', function () {
     config([
-        'manicure.whatsapp.enabled' => true,
-        'manicure.whatsapp.token' => 'TOKEN-EXCECAO',
+        'manicure.whatsapp.enabled'         => true,
+        'manicure.whatsapp.token'           => 'TOKEN-EXCECAO',
         'manicure.whatsapp.phone_number_id' => '123456',
     ]);
 
     Http::fake(function () {
-        throw new \RuntimeException('cURL error with Bearer TOKEN-EXCECAO in message');
+        throw new RuntimeException('cURL error with Bearer TOKEN-EXCECAO in message');
     });
 
     Event::fake([MessageLogged::class]);
 
     $user = User::factory()->make(['phone' => '11988887777']);
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
             return WhatsAppMessage::create('Oi');
@@ -205,10 +210,11 @@ it('falha com graça quando desabilitado mesmo se toWhatsApp quebrar', function 
     Http::fake();
 
     $user = User::factory()->make(['phone' => '11988887777']);
-    $notification = new class extends Notification {
+    $notification = new class extends Notification
+    {
         public function toWhatsApp($n): WhatsAppMessage
         {
-            throw new \RuntimeException('não deveria ser chamado');
+            throw new RuntimeException('não deveria ser chamado');
         }
     };
 

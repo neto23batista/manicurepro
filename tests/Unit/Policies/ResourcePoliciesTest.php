@@ -2,6 +2,7 @@
 
 use App\Models\Folga;
 use App\Models\FolgaManicure;
+use App\Models\Fornecedor;
 use App\Models\GaleriaFoto;
 use App\Models\Manicure;
 use App\Models\Produto;
@@ -31,32 +32,32 @@ beforeEach(function () {
     $this->userManicure = $userManicure;
 
     $this->produtoA = Produto::create([
-        'salao_id' => $this->salaoA->id,
-        'nome' => 'Esmalte',
-        'preco_venda' => 10,
-        'estoque_atual' => 5,
+        'salao_id'       => $this->salaoA->id,
+        'nome'           => 'Esmalte',
+        'preco_venda'    => 10,
+        'estoque_atual'  => 5,
         'estoque_minimo' => 1,
-        'unidade' => 'un',
-        'ativo' => true,
+        'unidade'        => 'un',
+        'ativo'          => true,
     ]);
     $this->produtoB = Produto::create([
-        'salao_id' => $this->salaoB->id,
-        'nome' => 'Acetona',
-        'preco_venda' => 8,
-        'estoque_atual' => 3,
+        'salao_id'       => $this->salaoB->id,
+        'nome'           => 'Acetona',
+        'preco_venda'    => 8,
+        'estoque_atual'  => 3,
         'estoque_minimo' => 1,
-        'unidade' => 'un',
-        'ativo' => true,
+        'unidade'        => 'un',
+        'ativo'          => true,
     ]);
 
     $this->fotoA = GaleriaFoto::create([
         'salao_id' => $this->salaoA->id,
-        'caminho' => 'galeria/a.jpg',
+        'caminho'  => 'galeria/a.jpg',
         'publicar' => true,
     ]);
     $this->fotoB = GaleriaFoto::create([
         'salao_id' => $this->salaoB->id,
-        'caminho' => 'galeria/b.jpg',
+        'caminho'  => 'galeria/b.jpg',
         'publicar' => true,
     ]);
 
@@ -77,7 +78,7 @@ test('admin pode gerenciar produto via Gate (before)', function () {
 });
 
 test('dono só atualiza produto do próprio salão', function () {
-    $policy = new ProdutoPolicy();
+    $policy = new ProdutoPolicy;
     expect($policy->update($this->dono, $this->produtoA))->toBeTrue();
     expect($policy->update($this->dono, $this->produtoB))->toBeFalse();
 });
@@ -88,7 +89,7 @@ test('cliente não acessa produtos', function () {
 });
 
 test('manicure não gerencia produto nem fornecedor do próprio salão', function () {
-    $fornecedor = \App\Models\Fornecedor::create([
+    $fornecedor = Fornecedor::create([
         'salao_id' => $this->salaoA->id,
         'nome'     => 'Fornecedor A',
         'ativo'    => true,
@@ -96,7 +97,7 @@ test('manicure não gerencia produto nem fornecedor do próprio salão', functio
 
     expect($this->userManicure->can('viewAny', Produto::class))->toBeFalse();
     expect($this->userManicure->can('update', $this->produtoA))->toBeFalse();
-    expect($this->userManicure->can('viewAny', \App\Models\Fornecedor::class))->toBeFalse();
+    expect($this->userManicure->can('viewAny', Fornecedor::class))->toBeFalse();
     expect($this->userManicure->can('update', $fornecedor))->toBeFalse();
 });
 
@@ -108,7 +109,7 @@ test('admin pode gerenciar galeria via Gate (before)', function () {
 });
 
 test('dono só gerencia foto do próprio salão', function () {
-    $policy = new GaleriaFotoPolicy();
+    $policy = new GaleriaFotoPolicy;
     expect($policy->update($this->dono, $this->fotoA))->toBeTrue();
     expect($policy->delete($this->dono, $this->fotoB))->toBeFalse();
 });
@@ -120,7 +121,7 @@ test('admin pode remover folga do salão via Gate', function () {
 });
 
 test('dono só remove folga do próprio salão', function () {
-    $policy = new FolgaPolicy();
+    $policy = new FolgaPolicy;
     expect($policy->delete($this->dono, $this->folgaA))->toBeTrue();
     expect($policy->delete($this->dono, $this->folgaB))->toBeFalse();
 });
@@ -128,7 +129,7 @@ test('dono só remove folga do próprio salão', function () {
 // ---------- FolgaManicure ----------
 
 test('manicure só remove a própria folga', function () {
-    $policy = new FolgaManicurePolicy();
+    $policy = new FolgaManicurePolicy;
     expect($policy->delete($this->userManicure, $this->folgaManA))->toBeTrue();
     expect($policy->delete($this->userManicure, $this->folgaManB))->toBeFalse();
 });

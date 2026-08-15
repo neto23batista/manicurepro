@@ -16,32 +16,32 @@ class DemoClientesSeeder extends Seeder
         $user = User::firstOrCreate(
             ['email' => 'cliente@fernandasilvanails.com'],
             [
-                'name' => 'Maria Cliente',
-                'password' => 'cliente123',
-                'role' => 'cliente',
-                'salao_id' => $salao->id,
-                'ativo' => true,
+                'name'              => 'Maria Cliente',
+                'password'          => 'cliente123',
+                'role'              => 'cliente',
+                'salao_id'          => $salao->id,
+                'ativo'             => true,
                 'email_verified_at' => now(),
-            ]
+            ],
         );
 
         $user->fill([
-            'name' => 'Maria Cliente',
-            'role' => 'cliente',
-            'salao_id' => $salao->id,
-            'ativo' => true,
+            'name'              => 'Maria Cliente',
+            'role'              => 'cliente',
+            'salao_id'          => $salao->id,
+            'ativo'             => true,
             'email_verified_at' => $user->email_verified_at ?? now(),
         ])->save();
 
         Cliente::updateOrCreate(
             ['salao_id' => $salao->id, 'email' => 'cliente@fernandasilvanails.com'],
             [
-                'user_id' => $user->id,
-                'nome' => 'Maria Cliente',
-                'telefone' => '(11) 97777-0001',
+                'user_id'         => $user->id,
+                'nome'            => 'Maria Cliente',
+                'telefone'        => '(11) 97777-0001',
                 'data_nascimento' => '1990-05-15',
-                'ativo' => true,
-            ]
+                'ativo'           => true,
+            ],
         );
 
         $extras = [
@@ -58,7 +58,7 @@ class DemoClientesSeeder extends Seeder
         foreach ($extras as $c) {
             Cliente::updateOrCreate(
                 ['salao_id' => $salao->id, 'email' => $c['email']],
-                array_merge($c, ['ativo' => true])
+                array_merge($c, ['ativo' => true]),
             );
         }
     }

@@ -4,11 +4,11 @@ namespace App\Enums;
 
 enum AgendamentoStatus: string
 {
-    case Aguardando    = 'aguardando';
-    case Confirmado    = 'confirmado';
-    case EmAndamento   = 'em_andamento';
-    case Concluido     = 'concluido';
-    case Cancelado     = 'cancelado';
+    case Aguardando = 'aguardando';
+    case Confirmado = 'confirmado';
+    case EmAndamento = 'em_andamento';
+    case Concluido = 'concluido';
+    case Cancelado = 'cancelado';
     case NaoCompareceu = 'nao_compareceu';
 
     public function label(): string
@@ -67,6 +67,6 @@ enum AgendamentoStatus: string
 
     public static function ativosValues(): array
     {
-        return array_map(fn($s) => $s->value, self::ativos());
+        return array_map(fn ($s) => $s->value, self::ativos());
     }
 }

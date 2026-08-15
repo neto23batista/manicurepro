@@ -11,6 +11,7 @@ use App\Models\Produto;
 use App\Models\Salao;
 use App\Services\EstoqueService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class ProdutoController extends Controller
 {
@@ -139,7 +140,7 @@ class ProdutoController extends Controller
         return back()->with('success', 'Estoque atualizado!');
     }
 
-    /** @return \Illuminate\Support\Collection<int, Fornecedor> */
+    /** @return Collection<int, Fornecedor> */
     private function fornecedoresAtivos()
     {
         return Fornecedor::where('salao_id', $this->salaoId())

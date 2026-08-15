@@ -19,13 +19,13 @@ beforeEach(function () {
     $this->manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'ativo' => true]);
     $this->cliente = Cliente::factory()->create(['salao_id' => $this->salao->id]);
     $this->produto = Produto::create([
-        'salao_id'      => $this->salao->id,
-        'nome'          => 'Esmalte Vermelho',
-        'preco_venda'   => 20,
-        'estoque_atual' => 10,
+        'salao_id'       => $this->salao->id,
+        'nome'           => 'Esmalte Vermelho',
+        'preco_venda'    => 20,
+        'estoque_atual'  => 10,
         'estoque_minimo' => 1,
-        'unidade'       => 'un',
-        'ativo'         => true,
+        'unidade'        => 'un',
+        'ativo'          => true,
     ]);
 
     $inicio = now()->addDay()->setTime(10, 0);

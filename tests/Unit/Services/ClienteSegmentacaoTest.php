@@ -14,14 +14,14 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.crm.novo_dias' => 30,
-        'manicure.crm.recorrente_min_visitas' => 3,
-        'manicure.crm.inativo_dias' => 60,
-        'manicure.crm.risco_churn_dias' => 40,
-        'manicure.crm.vip_gasto_minimo' => 500,
-        'manicure.crm.vip_visitas_minimas' => 8,
-        'manicure.crm.reativacao.cupom_tipo' => 'percentual',
-        'manicure.crm.reativacao.cupom_valor' => 15,
+        'manicure.crm.novo_dias'                      => 30,
+        'manicure.crm.recorrente_min_visitas'         => 3,
+        'manicure.crm.inativo_dias'                   => 60,
+        'manicure.crm.risco_churn_dias'               => 40,
+        'manicure.crm.vip_gasto_minimo'               => 500,
+        'manicure.crm.vip_visitas_minimas'            => 8,
+        'manicure.crm.reativacao.cupom_tipo'          => 'percentual',
+        'manicure.crm.reativacao.cupom_valor'         => 15,
         'manicure.crm.reativacao.cupom_validade_dias' => 30,
     ]);
 

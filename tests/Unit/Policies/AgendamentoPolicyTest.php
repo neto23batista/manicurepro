@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->policy = new AgendamentoPolicy();
+    $this->policy = new AgendamentoPolicy;
     $this->salaoA = Salao::factory()->create();
     $this->salaoB = Salao::factory()->create();
 
@@ -62,7 +62,7 @@ test('cliente NÃO vê agendamento de outro cliente', function () {
     $outroUser = User::factory()->create(['role' => 'cliente']);
     $outroCliente = Cliente::create([
         'user_id' => $outroUser->id, 'salao_id' => $this->salaoA->id,
-        'nome' => 'Y', 'email' => 'y@y.com',
+        'nome'    => 'Y', 'email' => 'y@y.com',
     ]);
     $agOutro = Agendamento::factory()->create([
         'salao_id' => $this->salaoA->id, 'manicure_id' => $this->manicure->id, 'cliente_id' => $outroCliente->id,
@@ -73,10 +73,10 @@ test('cliente NÃO vê agendamento de outro cliente', function () {
 test('cliente sem cadastro NÃO vê agendamento de balcão (cliente_id null)', function () {
     $intruso = User::factory()->create(['role' => 'cliente']);
     $balcao = Agendamento::factory()->create([
-        'salao_id' => $this->salaoA->id,
+        'salao_id'    => $this->salaoA->id,
         'manicure_id' => $this->manicure->id,
-        'cliente_id' => null,
-        'user_id' => $this->dono->id,
+        'cliente_id'  => null,
+        'user_id'     => $this->dono->id,
     ]);
 
     expect($this->policy->view($intruso, $balcao))->toBeFalse();
@@ -86,7 +86,7 @@ test('cliente sem cadastro NÃO vê agendamento de balcão (cliente_id null)', f
 test('cancel retorna false se status não permite cancelamento', function () {
     $ag = Agendamento::factory()->create([
         'salao_id' => $this->salaoA->id, 'manicure_id' => $this->manicure->id, 'cliente_id' => $this->cliente->id,
-        'status' => 'concluido',
+        'status'   => 'concluido',
     ]);
     expect($this->policy->cancel($this->userCliente, $ag))->toBeFalse();
 });

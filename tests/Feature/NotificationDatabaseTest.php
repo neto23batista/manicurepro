@@ -19,22 +19,22 @@ test('canal database persiste a notificação na tabela notifications', function
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $ag = Agendamento::factory()->create([
-        'salao_id' => $salao->id,
-        'manicure_id' => $manicure->id,
-        'user_id' => $user->id,
+        'salao_id'         => $salao->id,
+        'manicure_id'      => $manicure->id,
+        'user_id'          => $user->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'valor_total' => 30,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'valor_total'      => 30,
     ]);
     $ag->servicos()->attach($servico->id, ['preco' => 30, 'duracao' => 30]);
 
     $user->notify(new AgendamentoConfirmado($ag));
 
     $this->assertDatabaseHas('notifications', [
-        'notifiable_id' => $user->id,
+        'notifiable_id'   => $user->id,
         'notifiable_type' => User::class,
-        'type' => AgendamentoConfirmado::class,
+        'type'            => AgendamentoConfirmado::class,
     ]);
 
     expect($user->notifications()->count())->toBe(1);

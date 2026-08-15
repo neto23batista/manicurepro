@@ -29,7 +29,7 @@ class SalaoController extends Controller
     public function store(StoreSalaoRequest $request)
     {
         $data = $request->validated();
-        $data['slug'] = Str::slug($data['nome']) . '-' . Str::random(4);
+        $data['slug'] = Str::slug($data['nome']).'-'.Str::random(4);
 
         $salao = Salao::create($data);
 
@@ -57,6 +57,7 @@ class SalaoController extends Controller
             ->concluidos()
             ->doMes()
             ->sum('valor_total');
+
         return view('admin.saloes.show', compact('salao', 'agendamentosHoje', 'faturamentoMes'));
     }
 
@@ -76,6 +77,7 @@ class SalaoController extends Controller
     public function destroy(Salao $salao)
     {
         $salao->update(['ativo' => false]);
+
         return redirect()->route('admin.saloes.index')
             ->with('success', 'Salão desativado com sucesso!');
     }

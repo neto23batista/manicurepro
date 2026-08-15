@@ -18,16 +18,16 @@ class StoreGuestAgendamentoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'manicure_id'      => ['required', 'integer', 'exists:manicures,id'],
-            'servico_ids'      => ['required', 'array', 'min:1'],
-            'servico_ids.*'    => ['integer', 'exists:servicos,id'],
+            'manicure_id'         => ['required', 'integer', 'exists:manicures,id'],
+            'servico_ids'         => ['required', 'array', 'min:1'],
+            'servico_ids.*'       => ['integer', 'exists:servicos,id'],
             'servico_variacoes'   => ['nullable', 'array'],
             'servico_variacoes.*' => ['nullable', 'integer', 'exists:servico_variacoes,id'],
-            'data_hora_inicio' => ['required', 'date', 'after:now'],
-            'nome'             => ['required', 'string', 'max:255'],
-            'telefone'         => ['required', 'string', 'max:20'],
-            'email'            => ['nullable', 'email', 'max:255'],
-            'observacoes'      => ['nullable', 'string', 'max:500'],
+            'data_hora_inicio'    => ['required', 'date', 'after:now'],
+            'nome'                => ['required', 'string', 'max:255'],
+            'telefone'            => ['required', 'string', 'max:20'],
+            'email'               => ['nullable', 'email', 'max:255'],
+            'observacoes'         => ['nullable', 'string', 'max:500'],
         ];
     }
 

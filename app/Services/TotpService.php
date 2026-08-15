@@ -116,7 +116,7 @@ class TotpService
                 /** @var list<string> $remaining */
                 $remaining = array_values(array_filter(
                     $hashedCodes,
-                    static fn (mixed $value): bool => is_string($value) && $value !== ''
+                    static fn (mixed $value): bool => is_string($value) && $value !== '',
                 ));
 
                 return $remaining;

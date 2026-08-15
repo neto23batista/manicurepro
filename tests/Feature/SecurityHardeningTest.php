@@ -18,13 +18,13 @@ test('cliente sem cadastro não acessa agendamento de balcão (cliente_id null)'
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $balcao = Agendamento::factory()->create([
-        'salao_id' => $salao->id,
-        'manicure_id' => $manicure->id,
-        'cliente_id' => null,
-        'user_id' => $dono->id,
+        'salao_id'         => $salao->id,
+        'manicure_id'      => $manicure->id,
+        'cliente_id'       => null,
+        'user_id'          => $dono->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     // Usuário com role cliente mas SEM registro Cliente (clienteId = null)
@@ -43,11 +43,11 @@ test('dono de outro salão não acessa agendamento (policy)', function () {
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $ag = Agendamento::factory()->create([
-        'salao_id' => $salaoA->id,
-        'manicure_id' => $manicure->id,
+        'salao_id'         => $salaoA->id,
+        'manicure_id'      => $manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $this->actingAs($donoB)
@@ -64,11 +64,11 @@ test('manicure não acessa agendamento de outra profissional (policy)', function
 
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
     $ag = Agendamento::factory()->create([
-        'salao_id' => $salao->id,
-        'manicure_id' => $manicureA->id,
+        'salao_id'         => $salao->id,
+        'manicure_id'      => $manicureA->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $this->actingAs($userB)
@@ -119,7 +119,7 @@ test('webhook rejeita quando o secret não está configurado (fail-closed)', fun
 test('webhook aceita assinatura HMAC válida', function () {
     config([
         'manicure.pagamento.mercadopago.webhook_secret' => 'segredo-teste',
-        'manicure.pagamento.mercadopago.access_token' => 'TOKEN',
+        'manicure.pagamento.mercadopago.access_token'   => 'TOKEN',
     ]);
     Http::fake(['api.mercadopago.com/*' => Http::response(['id' => 123, 'status' => 'pending'], 200)]);
 
@@ -129,9 +129,9 @@ test('webhook aceita assinatura HMAC válida', function () {
     $v1 = hash_hmac('sha256', "id:{$dataId};request-id:{$reqId};ts:{$ts};", 'segredo-teste');
 
     $this->withHeaders([
-        'x-signature' => "ts={$ts},v1={$v1}",
+        'x-signature'  => "ts={$ts},v1={$v1}",
         'x-request-id' => $reqId,
-    ])->postJson(route('webhooks.mercadopago') . '?data.id=' . $dataId, [
+    ])->postJson(route('webhooks.mercadopago').'?data.id='.$dataId, [
         'type' => 'payment',
         'data' => ['id' => $dataId],
     ])->assertOk();

@@ -68,18 +68,18 @@ class AgendamentoController extends Controller
 
         try {
             $agendamento = $this->agendaService->criarAgendamento([
-                'salao_id'         => $validated['salao_id'],
-                'manicure_id'      => $validated['manicure_id'],
-                'servico_ids'      => $validated['servico_ids'],
-                'servico_variacoes'=> $validated['servico_variacoes'] ?? [],
-                'data_hora_inicio' => $validated['data_hora_inicio'],
-                'cliente_id'       => $cliente->id,
-                'user_id'          => $user->id,
-                'nome_cliente'     => $user->name,
-                'telefone_cliente' => $user->phone,
-                'observacoes'      => $validated['observacoes'] ?? null,
-                'origem'           => 'web',
-                'status'           => AgendamentoStatus::Aguardando->value,
+                'salao_id'          => $validated['salao_id'],
+                'manicure_id'       => $validated['manicure_id'],
+                'servico_ids'       => $validated['servico_ids'],
+                'servico_variacoes' => $validated['servico_variacoes'] ?? [],
+                'data_hora_inicio'  => $validated['data_hora_inicio'],
+                'cliente_id'        => $cliente->id,
+                'user_id'           => $user->id,
+                'nome_cliente'      => $user->name,
+                'telefone_cliente'  => $user->phone,
+                'observacoes'       => $validated['observacoes'] ?? null,
+                'origem'            => 'web',
+                'status'            => AgendamentoStatus::Aguardando->value,
             ]);
             // Notificações: enviadas pelo listener NotificarAgendamentoCriado.
 

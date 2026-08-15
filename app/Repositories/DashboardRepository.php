@@ -158,16 +158,16 @@ class DashboardRepository
             ->count();
 
         return [
-            'totalMes'                    => $totalMes,
-            'totalMesAnterior'            => $totalMesAnterior,
-            'deltaAgendamentosPct'        => $this->deltaPercentual($totalMes, $totalMesAnterior),
-            'faturamentoMes'              => $faturamentoMes,
-            'faturamentoMesAnterior'      => $faturamentoMesAnterior,
-            'deltaFaturamentoPct'         => $this->deltaPercentual($faturamentoMes, $faturamentoMesAnterior),
-            'totalClientes'               => $salao->clientes()->count(),
-            'novosClientesMes'            => $novosClientesMes,
-            'novosClientesMesAnterior'    => $novosClientesMesAnterior,
-            'deltaNovosClientesPct'       => $this->deltaPercentual($novosClientesMes, $novosClientesMesAnterior),
+            'totalMes'                 => $totalMes,
+            'totalMesAnterior'         => $totalMesAnterior,
+            'deltaAgendamentosPct'     => $this->deltaPercentual($totalMes, $totalMesAnterior),
+            'faturamentoMes'           => $faturamentoMes,
+            'faturamentoMesAnterior'   => $faturamentoMesAnterior,
+            'deltaFaturamentoPct'      => $this->deltaPercentual($faturamentoMes, $faturamentoMesAnterior),
+            'totalClientes'            => $salao->clientes()->count(),
+            'novosClientesMes'         => $novosClientesMes,
+            'novosClientesMesAnterior' => $novosClientesMesAnterior,
+            'deltaNovosClientesPct'    => $this->deltaPercentual($novosClientesMes, $novosClientesMesAnterior),
         ];
     }
 
@@ -188,9 +188,9 @@ class DashboardRepository
 
         if ($qtdInativos > 0) {
             $alertas[] = [
-                'tipo'      => 'secondary',
-                'titulo'    => 'Clientes inativos',
-                'mensagem'  => $qtdInativos.' '
+                'tipo'     => 'secondary',
+                'titulo'   => 'Clientes inativos',
+                'mensagem' => $qtdInativos.' '
                     .($qtdInativos === 1 ? 'cliente sem visita recente' : 'clientes sem visita recente')
                     .'. Considere a campanha de reativação.',
                 'url'       => route('dono.clientes.index', ['segmento' => 'inativo']),
@@ -206,9 +206,9 @@ class DashboardRepository
 
         if ($qtdRisco > 0) {
             $alertas[] = [
-                'tipo'      => 'danger',
-                'titulo'    => 'Risco de churn',
-                'mensagem'  => $qtdRisco.' '
+                'tipo'     => 'danger',
+                'titulo'   => 'Risco de churn',
+                'mensagem' => $qtdRisco.' '
                     .($qtdRisco === 1 ? 'cliente esfriando' : 'clientes esfriando')
                     .' (última visita na janela de risco).',
                 'url'       => route('dono.clientes.index', ['segmento' => 'risco_churn']),
@@ -233,9 +233,9 @@ class DashboardRepository
 
         if ($cancelamentosSemana >= 3 && $cancelamentosSemana > $cancelamentosSemanaAnt) {
             $alertas[] = [
-                'tipo'      => 'warning',
-                'titulo'    => 'Cancelamentos em alta',
-                'mensagem'  => $cancelamentosSemana.' cancelamentos nesta semana'
+                'tipo'     => 'warning',
+                'titulo'   => 'Cancelamentos em alta',
+                'mensagem' => $cancelamentosSemana.' cancelamentos nesta semana'
                     .($cancelamentosSemanaAnt > 0
                         ? ' ('.$cancelamentosSemanaAnt.' na semana anterior).'
                         : '.'),

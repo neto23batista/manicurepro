@@ -12,12 +12,12 @@ beforeEach(function () {
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
     $this->user = User::factory()->create([
-        'role' => 'cliente',
+        'role'              => 'cliente',
         'email_verified_at' => now(),
     ]);
     $this->cliente = Cliente::factory()->create([
-        'salao_id' => $this->salao->id,
-        'user_id'  => $this->user->id,
+        'salao_id'         => $this->salao->id,
+        'user_id'          => $this->user->id,
         'codigo_indicacao' => 'ABC12345',
     ]);
 });

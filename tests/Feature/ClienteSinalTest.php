@@ -13,11 +13,11 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.pagamento.mercadopago.enabled' => true,
+        'manicure.pagamento.mercadopago.enabled'      => true,
         'manicure.pagamento.mercadopago.access_token' => 'TEST-TOKEN',
-        'manicure.pagamento.sinal.habilitado' => true,
-        'manicure.pagamento.sinal.tipo' => 'percentual',
-        'manicure.pagamento.sinal.valor' => 30,
+        'manicure.pagamento.sinal.habilitado'         => true,
+        'manicure.pagamento.sinal.tipo'               => 'percentual',
+        'manicure.pagamento.sinal.valor'              => 30,
     ]);
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
@@ -25,33 +25,34 @@ beforeEach(function () {
     $this->userCliente = User::factory()->create(['role' => 'cliente']);
     $this->cliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $this->userCliente->id,
+        'user_id'  => $this->userCliente->id,
     ]);
 });
 
 function agendamentoComSinal($self, string $status = 'aguardando'): Agendamento
 {
     $inicio = Carbon::now()->addDay()->setTime(10, 0);
+
     return Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'cliente_id' => $self->cliente->id,
-        'manicure_id' => $self->manicure->id,
-        'user_id' => $self->userCliente->id,
+        'salao_id'         => $self->salao->id,
+        'cliente_id'       => $self->cliente->id,
+        'manicure_id'      => $self->manicure->id,
+        'user_id'          => $self->userCliente->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
-        'valor_total' => 100,
-        'valor_desconto' => 0,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
+        'valor_total'      => 100,
+        'valor_desconto'   => 0,
     ]);
 }
 
 test('cliente abre a tela de sinal e a cobrança Pix é criada', function () {
     Http::fake([
         'api.mercadopago.com/v1/payments' => Http::response([
-            'id' => 555001,
-            'status' => 'pending',
+            'id'                   => 555001,
+            'status'               => 'pending',
             'point_of_interaction' => ['transaction_data' => [
-                'qr_code' => 'pix-copia-cola-xyz',
+                'qr_code'        => 'pix-copia-cola-xyz',
                 'qr_code_base64' => 'aGVsbG8=',
             ]],
         ], 201),

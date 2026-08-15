@@ -16,40 +16,40 @@ class DemoSalaoSeeder extends Seeder
         $salao = Salao::updateOrCreate(
             ['slug' => self::SLUG],
             [
-                'nome' => 'Fernanda Silva Nails',
+                'nome'      => 'Fernanda Silva Nails',
                 'descricao' => 'Estúdio de unhas da Fernanda Silva — cuidado, capricho e acabamento impecável. Agende seu horário online.',
-                'endereco' => 'Av. das Acácias',
-                'numero' => '450',
-                'bairro' => 'Centro',
-                'cidade' => 'São Paulo',
-                'estado' => 'SP',
-                'cep' => '01310-100',
-                'telefone' => '(11) 3333-4444',
-                'whatsapp' => '(11) 99999-1234',
-                'email' => 'contato@fernandasilvanails.com',
+                'endereco'  => 'Av. das Acácias',
+                'numero'    => '450',
+                'bairro'    => 'Centro',
+                'cidade'    => 'São Paulo',
+                'estado'    => 'SP',
+                'cep'       => '01310-100',
+                'telefone'  => '(11) 3333-4444',
+                'whatsapp'  => '(11) 99999-1234',
+                'email'     => 'contato@fernandasilvanails.com',
                 'instagram' => 'fernandasilvanails',
-                'latitude' => -23.5505,
+                'latitude'  => -23.5505,
                 'longitude' => -46.6333,
-                'ativo' => true,
-            ]
+                'ativo'     => true,
+            ],
         );
 
         ConfiguracaoSalao::updateOrCreate(
             ['salao_id' => $salao->id],
             [
-                'cor_primaria' => '#e91e8c',
+                'cor_primaria'                => '#e91e8c',
                 'permitir_agendamento_online' => true,
-                'intervalo_agendamento' => 30,
-                'antecedencia_minima' => 1,
-                'antecedencia_maxima' => 30,
-                'cancelamento_prazo' => 2,
-                'fidelidade_ativo' => true,
-                'pontos_por_real' => 1,
-                'pontos_para_desconto' => 100,
-                'valor_desconto_pontos' => 10.00,
-                'notificar_email' => true,
-                'lembrete_horas' => 24,
-            ]
+                'intervalo_agendamento'       => 30,
+                'antecedencia_minima'         => 1,
+                'antecedencia_maxima'         => 30,
+                'cancelamento_prazo'          => 2,
+                'fidelidade_ativo'            => true,
+                'pontos_por_real'             => 1,
+                'pontos_para_desconto'        => 100,
+                'valor_desconto_pontos'       => 10.00,
+                'notificar_email'             => true,
+                'lembrete_horas'              => 24,
+            ],
         );
 
         // 0=Dom … 6=Sáb
@@ -67,10 +67,10 @@ class DemoSalaoSeeder extends Seeder
             HorarioFuncionamento::updateOrCreate(
                 ['salao_id' => $salao->id, 'dia_semana' => $dia],
                 [
-                    'hora_abertura' => $config['abertura'],
+                    'hora_abertura'   => $config['abertura'],
                     'hora_fechamento' => $config['fechamento'],
-                    'ativo' => $config['ativo'],
-                ]
+                    'ativo'           => $config['ativo'],
+                ],
             );
         }
     }

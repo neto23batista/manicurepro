@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Agendamento;
+use App\Models\Cliente;
 use App\Models\ConfiguracaoSalao;
 use App\Models\Manicure;
 use App\Models\Salao;
@@ -16,7 +17,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'        => $this->salao->id,
         'notificar_email' => true,
     ]);
     $this->manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'ativo' => true]);
@@ -26,12 +27,12 @@ beforeEach(function () {
 function agendamentoConfirmavel($self, Carbon $inicio, string $status = 'aguardando'): Agendamento
 {
     return Agendamento::factory()->create([
-        'salao_id' => $self->salao->id,
-        'manicure_id' => $self->manicure->id,
-        'user_id' => $self->userCliente->id,
+        'salao_id'         => $self->salao->id,
+        'manicure_id'      => $self->manicure->id,
+        'user_id'          => $self->userCliente->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => $status,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => $status,
     ]);
 }
 
@@ -122,7 +123,7 @@ test('lembrete não envia quando notificar_email está desligado', function () {
 test('lembrete alcança guest com e-mail no Cliente', function () {
     Notification::fake();
 
-    $cliente = \App\Models\Cliente::factory()->create([
+    $cliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
         'email'    => 'guest-lembrete@example.com',
         'ativo'    => true,

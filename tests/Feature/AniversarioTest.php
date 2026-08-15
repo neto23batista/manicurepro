@@ -39,7 +39,7 @@ test('gera um cupom-presente de aniversário', function () {
     $this->artisan('manicure:enviar-aniversarios')->assertSuccessful();
 
     $cupom = Cupom::where('salao_id', $this->salao->id)
-        ->where('codigo', 'NIVER-' . $cliente->id . '-' . now()->year)
+        ->where('codigo', 'NIVER-'.$cliente->id.'-'.now()->year)
         ->first();
 
     expect($cupom)->not->toBeNull();

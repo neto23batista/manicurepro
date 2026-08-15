@@ -17,10 +17,10 @@ class ServicoVariacao extends Model
     ];
 
     protected $casts = [
-        'preco' => 'decimal:2',
+        'preco'   => 'decimal:2',
         'duracao' => 'integer',
-        'ordem' => 'integer',
-        'ativo' => 'boolean',
+        'ordem'   => 'integer',
+        'ativo'   => 'boolean',
     ];
 
     /** @return BelongsTo<Servico, $this> */

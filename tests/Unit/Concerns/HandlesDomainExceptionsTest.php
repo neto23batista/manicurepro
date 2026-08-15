@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
-    $this->handler = new class {
+    $this->handler = new class
+    {
         use HandlesDomainExceptions;
 
         public function back(Throwable $e, string $message, bool $withInput = false)
@@ -45,13 +46,13 @@ test('domainExceptionJson reporta exceção e devolve mensagem genérica', funct
 
     $response = $this->handler->json(
         new RuntimeException('detalhe interno sensível'),
-        'Não foi possível criar o agendamento.'
+        'Não foi possível criar o agendamento.',
     );
 
     expect($response->getStatusCode())->toBe(422)
         ->and($response->getData(true))->toBe([
             'message' => 'Não foi possível criar o agendamento.',
-            'code' => 'domain_error',
+            'code'    => 'domain_error',
         ]);
 
     Log::shouldHaveReceived('error')->once();

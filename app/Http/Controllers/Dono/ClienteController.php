@@ -123,7 +123,7 @@ class ClienteController extends Controller
         return back()->with(
             'success',
             'Cupom de reativação: '.$cupom->codigo
-            .' (válido até '.$cupom->validade?->format('d/m/Y').').'
+            .' (válido até '.$cupom->validade?->format('d/m/Y').').',
         );
     }
 }

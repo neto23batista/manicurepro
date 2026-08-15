@@ -21,11 +21,12 @@ class NotificacoesComposer
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             $view->with([
                 'notificacoesRecentes'    => collect(),
                 'notificacoesNaoLidasQtd' => 0,
             ]);
+
             return;
         }
 

@@ -22,13 +22,13 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Notification::fake();
     config([
-        'manicure.marketing.enabled' => true,
+        'manicure.marketing.enabled'                => true,
         'manicure.marketing.reativar.cooldown_dias' => 30,
-        'manicure.marketing.reativar.com_cupom' => true,
-        'manicure.marketing.retorno.cadencia_dias' => 28,
-        'manicure.marketing.retorno.janela_dias' => 3,
-        'manicure.marketing.retorno.cooldown_dias' => 25,
-        'manicure.crm.inativo_dias' => 60,
+        'manicure.marketing.reativar.com_cupom'     => true,
+        'manicure.marketing.retorno.cadencia_dias'  => 28,
+        'manicure.marketing.retorno.janela_dias'    => 3,
+        'manicure.marketing.retorno.cooldown_dias'  => 25,
+        'manicure.crm.inativo_dias'                 => 60,
     ]);
 
     $this->salao = Salao::factory()->create(['ativo' => true]);

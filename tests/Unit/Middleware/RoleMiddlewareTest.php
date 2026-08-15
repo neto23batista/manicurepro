@@ -14,7 +14,8 @@ function passRole(User $user, string ...$roles): bool
     $request->setUserResolver(fn () => $user);
 
     try {
-        (new RoleMiddleware())->handle($request, fn () => response('ok'), ...$roles);
+        (new RoleMiddleware)->handle($request, fn () => response('ok'), ...$roles);
+
         return true;
     } catch (HttpException $e) {
         if ($e->getStatusCode() === 403) {

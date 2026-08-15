@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Agendamento;
 use App\Models\AuditLog;
 use App\Models\Caixa;
 use App\Models\Cliente;
@@ -215,7 +216,7 @@ test('fluxoCaixa soma entradas e saídas do período', function () {
     $cliente = Cliente::factory()->create(['salao_id' => $this->salao->id]);
     $manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'comissao' => 50]);
 
-    $ag = \App\Models\Agendamento::factory()->create([
+    $ag = Agendamento::factory()->create([
         'salao_id'         => $this->salao->id,
         'manicure_id'      => $manicure->id,
         'status'           => 'concluido',

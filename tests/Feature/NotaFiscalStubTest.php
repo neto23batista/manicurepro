@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\NotaFiscalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 uses(RefreshDatabase::class);
 
@@ -18,9 +19,9 @@ beforeEach(function () {
     Notification::fake();
     $this->salao = Salao::factory()->create(['ativo' => true]);
     $this->dono = User::factory()->create([
-        'role' => 'dono',
+        'role'     => 'dono',
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
     $this->manicure = Manicure::factory()->create(['salao_id' => $this->salao->id, 'ativo' => true]);
     $this->cliente = Cliente::factory()->create(['salao_id' => $this->salao->id]);
@@ -86,7 +87,7 @@ test('list retorna rascunhos do salão', function () {
     $agOutro = agendamentoComComanda(
         $outro->id,
         Manicure::factory()->create(['salao_id' => $outro->id])->id,
-        Cliente::factory()->create(['salao_id' => $outro->id])->id
+        Cliente::factory()->create(['salao_id' => $outro->id])->id,
     );
     $this->fiscais->emitRascunho($outro->id, $agOutro);
 
@@ -118,4 +119,4 @@ test('rota fiscal aborta com módulo desligado', function () {
 
     $this->actingAs($this->dono)
         ->get(route('dono.notas-fiscais.index'));
-})->throws(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+})->throws(NotFoundHttpException::class);

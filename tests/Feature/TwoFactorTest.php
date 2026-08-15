@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('codeAt segue o vetor de teste RFC 6238 (SHA1)', function () {
-    $totp = new TotpService();
+    $totp = new TotpService;
     // Base32 de "12345678901234567890"
     $secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
     // RFC 6238: T=59s → slice 1 → 94287082 (6 dígitos = 287082)
@@ -15,7 +15,7 @@ test('codeAt segue o vetor de teste RFC 6238 (SHA1)', function () {
 });
 
 test('gera e consome códigos de recuperação com hash', function () {
-    $totp = new TotpService();
+    $totp = new TotpService;
     $plain = $totp->generateRecoveryCodes(8);
 
     expect($plain)->toHaveCount(8)
@@ -59,7 +59,7 @@ test('ativar 2FA não regenera códigos se já existirem', function () {
     $totp = app(TotpService::class);
     $existing = $totp->hashRecoveryCodes(['AAAA-BBBB', 'CCCC-DDDD']);
     $user = User::factory()->create([
-        'role' => 'cliente',
+        'role'                      => 'cliente',
         'two_factor_recovery_codes' => $existing,
     ]);
 
@@ -80,10 +80,10 @@ test('login com 2FA exige o desafio antes de autenticar', function () {
     $secret = $totp->generateSecret();
 
     $user = User::factory()->create([
-        'role' => 'cliente',
-        'password' => bcrypt('senha123'),
-        'ativo' => true,
-        'two_factor_secret' => $secret,
+        'role'                    => 'cliente',
+        'password'                => bcrypt('senha123'),
+        'ativo'                   => true,
+        'two_factor_secret'       => $secret,
         'two_factor_confirmed_at' => now(),
     ]);
 
@@ -105,11 +105,11 @@ test('código de recuperação válido conclui o desafio 2FA e é consumido', fu
     $plain = $totp->generateRecoveryCodes(2);
 
     $user = User::factory()->create([
-        'role' => 'cliente',
-        'password' => bcrypt('senha123'),
-        'ativo' => true,
-        'two_factor_secret' => $secret,
-        'two_factor_confirmed_at' => now(),
+        'role'                      => 'cliente',
+        'password'                  => bcrypt('senha123'),
+        'ativo'                     => true,
+        'two_factor_secret'         => $secret,
+        'two_factor_confirmed_at'   => now(),
         'two_factor_recovery_codes' => $totp->hashRecoveryCodes($plain),
     ]);
 
@@ -133,7 +133,7 @@ test('código 2FA inválido no desafio é rejeitado', function () {
     $totp = app(TotpService::class);
     $secret = $totp->generateSecret();
     $user = User::factory()->create([
-        'role' => 'cliente', 'password' => bcrypt('senha123'), 'ativo' => true,
+        'role'              => 'cliente', 'password' => bcrypt('senha123'), 'ativo' => true,
         'two_factor_secret' => $secret, 'two_factor_confirmed_at' => now(),
     ]);
 

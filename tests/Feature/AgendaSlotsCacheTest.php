@@ -28,41 +28,41 @@ beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
 
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 0,
-        'antecedencia_maxima' => 30,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 30,
     ]);
 
     $userManicure = User::factory()->create(['role' => 'manicure', 'salao_id' => $this->salao->id]);
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'user_id' => $userManicure->id,
-        'ativo' => true,
+        'user_id'  => $userManicure->id,
+        'ativo'    => true,
     ]);
 
     for ($dia = 1; $dia <= 5; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id' => $this->salao->id,
-            'dia_semana' => $dia,
-            'hora_abertura' => '08:00:00',
+            'salao_id'        => $this->salao->id,
+            'dia_semana'      => $dia,
+            'hora_abertura'   => '08:00:00',
             'hora_fechamento' => '18:00:00',
-            'ativo' => true,
+            'ativo'           => true,
         ]);
         DisponibilidadeManicure::create([
             'manicure_id' => $this->manicure->id,
-            'dia_semana' => $dia,
+            'dia_semana'  => $dia,
             'hora_inicio' => '08:00:00',
-            'hora_fim' => '18:00:00',
-            'ativo' => true,
+            'hora_fim'    => '18:00:00',
+            'ativo'       => true,
         ]);
     }
 
     $this->servico = Servico::factory()->create([
-        'salao_id' => $this->salao->id,
-        'preco' => 30.00,
-        'duracao' => 30,
-        'ativo' => true,
+        'salao_id'          => $this->salao->id,
+        'preco'             => 30.00,
+        'duracao'           => 30,
+        'ativo'             => true,
         'disponivel_online' => true,
     ]);
 
@@ -75,11 +75,11 @@ test('slots disponíveis respeitam conflito e permanecem corretos com cache', fu
     $ocupado = $data->copy()->setTime(10, 0);
 
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $ocupado,
-        'data_hora_fim' => $ocupado->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $ocupado->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $slots = $this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30);
@@ -121,12 +121,12 @@ test('criar agendamento invalida cache de slots', function () {
     expect($antes->pluck('hora')->all())->toContain('09:00');
 
     $this->agendaService->criarAgendamento([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $inicio->toDateTimeString(),
-        'origem' => 'web',
-        'status' => 'aguardando',
+        'origem'           => 'web',
+        'status'           => 'aguardando',
     ]);
 
     $depois = $this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30);
@@ -151,11 +151,11 @@ test('cancelamento invalida cache de slots', function () {
     $inicio = $data->copy()->setTime(14, 0);
 
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     expect($this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30)->pluck('hora')->all())
@@ -174,12 +174,12 @@ test('reagendar invalida cache das datas anterior e nova', function () {
     $novoInicio = $data->copy()->setTime(15, 0);
 
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
-        'valor_total' => 30,
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
+        'valor_total'      => 30,
     ]);
     $ag->servicos()->attach($this->servico->id, ['preco' => 30, 'duracao' => 30]);
 
@@ -201,9 +201,9 @@ test('folga da manicure invalida cache de slots', function () {
 
     FolgaManicure::create([
         'manicure_id' => $this->manicure->id,
-        'data' => $data->toDateString(),
-        'dia_todo' => true,
-        'motivo' => 'Folga teste',
+        'data'        => $data->toDateString(),
+        'dia_todo'    => true,
+        'motivo'      => 'Folga teste',
     ]);
 
     expect($this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30))->toBeEmpty();
@@ -216,9 +216,9 @@ test('folga do salão invalida cache de slots', function () {
 
     Folga::create([
         'salao_id' => $this->salao->id,
-        'data' => $data->toDateString(),
+        'data'     => $data->toDateString(),
         'dia_todo' => true,
-        'motivo' => 'Feriado',
+        'motivo'   => 'Feriado',
     ]);
 
     expect($this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30))->toBeEmpty();
@@ -229,11 +229,11 @@ test('agendamentoIgnorar usa chave de cache distinta', function () {
     $inicio = $data->copy()->setTime(10, 0);
 
     $ag = Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => $inicio,
-        'data_hora_fim' => $inicio->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => $inicio->copy()->addMinutes(30),
+        'status'           => 'confirmado',
     ]);
 
     $semIgnore = $this->agendaService->getSlotsDisponiveis($this->manicure, $data, 30);

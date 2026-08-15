@@ -51,7 +51,7 @@ test('dono cria folga dia inteiro', function () {
     expect(Folga::where('salao_id', $this->salao->id)
         ->whereDate('data', $data)
         ->where('dia_todo', true)
-        ->exists()
+        ->exists(),
     )->toBeTrue();
 });
 
@@ -69,7 +69,7 @@ test('dono cria folga parcial com hora_inicio/fim', function () {
     expect(Folga::where('salao_id', $this->salao->id)
         ->whereDate('data', $data)
         ->where('dia_todo', false)
-        ->exists()
+        ->exists(),
     )->toBeTrue();
 });
 
@@ -127,7 +127,7 @@ test('manicure cria folga', function () {
 
     expect(FolgaManicure::where('manicure_id', $this->manicure->id)
         ->whereDate('data', $data)
-        ->exists()
+        ->exists(),
     )->toBeTrue();
 });
 

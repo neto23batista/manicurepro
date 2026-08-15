@@ -7,11 +7,11 @@
 return [
 
     'agenda' => [
-        'intervalo_default'   => env('MANICURE_INTERVALO_DEFAULT', 30),    // minutos
-        'antecedencia_min'    => env('MANICURE_ANTECEDENCIA_MIN', 1),       // dias
-        'antecedencia_max'    => env('MANICURE_ANTECEDENCIA_MAX', 30),      // dias
-        'lembrete_horas'      => env('MANICURE_LEMBRETE_HORAS', 24),
-        'hold_minutos'        => env('MANICURE_HOLD_MINUTOS', 10),  // reserva temporária de slot
+        'intervalo_default' => env('MANICURE_INTERVALO_DEFAULT', 30),    // minutos
+        'antecedencia_min'  => env('MANICURE_ANTECEDENCIA_MIN', 1),       // dias
+        'antecedencia_max'  => env('MANICURE_ANTECEDENCIA_MAX', 30),      // dias
+        'lembrete_horas'    => env('MANICURE_LEMBRETE_HORAS', 24),
+        'hold_minutos'      => env('MANICURE_HOLD_MINUTOS', 10),  // reserva temporária de slot
     ],
 
     'fidelidade' => [
@@ -40,14 +40,14 @@ return [
      * Usado em ClienteSegmentacao + filtros em dono.clientes.
      */
     'crm' => [
-        'novo_dias'            => (int) env('CRM_NOVO_DIAS', 30),
+        'novo_dias'              => (int) env('CRM_NOVO_DIAS', 30),
         'recorrente_min_visitas' => (int) env('CRM_RECORRENTE_MIN_VISITAS', 3),
-        'inativo_dias'         => (int) env('CRM_INATIVO_DIAS', 60),
+        'inativo_dias'           => (int) env('CRM_INATIVO_DIAS', 60),
         // Janela de “esfriando”: última visita entre risco_churn_dias e inativo_dias.
-        'risco_churn_dias'     => (int) env('CRM_RISCO_CHURN_DIAS', 40),
-        'vip_gasto_minimo'     => (float) env('CRM_VIP_GASTO_MINIMO', 500),
-        'vip_visitas_minimas'  => (int) env('CRM_VIP_VISITAS_MINIMAS', 8),
-        'reativacao'           => [
+        'risco_churn_dias'    => (int) env('CRM_RISCO_CHURN_DIAS', 40),
+        'vip_gasto_minimo'    => (float) env('CRM_VIP_GASTO_MINIMO', 500),
+        'vip_visitas_minimas' => (int) env('CRM_VIP_VISITAS_MINIMAS', 8),
+        'reativacao'          => [
             'cupom_tipo'          => env('CRM_REATIVACAO_CUPOM_TIPO', 'percentual'), // percentual | fixo
             'cupom_valor'         => (float) env('CRM_REATIVACAO_CUPOM_VALOR', 15),
             'cupom_validade_dias' => (int) env('CRM_REATIVACAO_CUPOM_VALIDADE', 30),
@@ -80,7 +80,7 @@ return [
         'minimo_padrao'    => env('ESTOQUE_MINIMO_PADRAO', 1),
         'notificar_zerado' => env('ESTOQUE_NOTIFICAR_ZERADO', true),
         /** Dias sem movimentação para considerar produto “parado” no relatório. */
-        'dias_parado'      => env('ESTOQUE_DIAS_PARADO', 60),
+        'dias_parado' => env('ESTOQUE_DIAS_PARADO', 60),
     ],
 
     /*
@@ -89,7 +89,7 @@ return [
      * não disparam. Cooldown evita spam; cadência controla sugestão de retorno.
      */
     'marketing' => [
-        'enabled' => env('MARKETING_ENABLED', true),
+        'enabled'  => env('MARKETING_ENABLED', true),
         'reativar' => [
             'cooldown_dias' => (int) env('MARKETING_REATIVAR_COOLDOWN', 30),
             'com_cupom'     => env('MARKETING_REATIVAR_CUPOM', true),
@@ -139,9 +139,9 @@ return [
     ],
 
     'cache_ttl' => [
-        'configuracao_salao'   => env('MANICURE_CACHE_CONFIG_TTL', 3600),   // 1h
-        'notificacoes_topbar'  => env('MANICURE_CACHE_NOTIF_TTL', 60),      // 60s
-        'slots_disponiveis'    => env('MANICURE_CACHE_SLOTS_TTL', 60),      // 60s
+        'configuracao_salao'  => env('MANICURE_CACHE_CONFIG_TTL', 3600),   // 1h
+        'notificacoes_topbar' => env('MANICURE_CACHE_NOTIF_TTL', 60),      // 60s
+        'slots_disponiveis'   => env('MANICURE_CACHE_SLOTS_TTL', 60),      // 60s
     ],
 
     'ui_avatars' => [
@@ -190,7 +190,7 @@ return [
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'api_version'     => env('WHATSAPP_API_VERSION', 'v21.0'),
         'ddi_padrao'      => env('WHATSAPP_DDI_PADRAO', '55'), // Brasil
-        'templates' => [
+        'templates'       => [
             'lembrete'   => env('WHATSAPP_TEMPLATE_LEMBRETE'),
             'confirmado' => env('WHATSAPP_TEMPLATE_CONFIRMADO'),
         ],
@@ -212,13 +212,13 @@ return [
      */
     'permissions' => [
         'catalog' => [
-            'financeiro.view'       => 'Ver financeiro e comissões',
-            'financeiro.caixa'      => 'Operar caixa diário',
-            'financeiro.despesas'   => 'Gerenciar despesas',
-            'vales.manage'          => 'Gerenciar vale-presente',
-            'config.manage'         => 'Editar configurações do salão',
-            'auditoria.view'        => 'Ver logs de auditoria',
-            'notas_fiscais.manage'  => 'Notas fiscais (stub)',
+            'financeiro.view'      => 'Ver financeiro e comissões',
+            'financeiro.caixa'     => 'Operar caixa diário',
+            'financeiro.despesas'  => 'Gerenciar despesas',
+            'vales.manage'         => 'Gerenciar vale-presente',
+            'config.manage'        => 'Editar configurações do salão',
+            'auditoria.view'       => 'Ver logs de auditoria',
+            'notas_fiscais.manage' => 'Notas fiscais (stub)',
         ],
     ],
 
@@ -229,7 +229,7 @@ return [
      */
     'webpush' => [
         'subscribe_ui' => (bool) env('WEBPUSH_SUBSCRIBE_UI', false),
-        'vapid' => [
+        'vapid'        => [
             'subject'     => env('VAPID_SUBJECT', 'mailto:noreply@manicurepro.com.br'),
             'public_key'  => env('VAPID_PUBLIC_KEY'),
             'private_key' => env('VAPID_PRIVATE_KEY'),

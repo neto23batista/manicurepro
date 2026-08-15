@@ -22,7 +22,7 @@ class SalaoResource extends JsonResource
             'whatsapp'        => $this->whatsapp,
             'instagram'       => $this->instagram,
             'logo_url'        => $this->logo_url,
-            'endereco'        => $this->whenLoaded('configuracao', fn() => $this->endereco_completo, $this->endereco_completo),
+            'endereco'        => $this->whenLoaded('configuracao', fn () => $this->endereco_completo, $this->endereco_completo),
             'nota_media'      => $this->nota_media,
             'manicures_count' => $this->whenCounted('manicures'),
             'ativo'           => (bool) $this->ativo,

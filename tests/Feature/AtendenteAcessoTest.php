@@ -10,12 +10,12 @@ beforeEach(function () {
     $this->salao = Salao::factory()->create(['ativo' => true]);
     $this->dono = User::factory()->dono()->create([
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
     $this->atendente = User::factory()->create([
-        'role' => 'atendente',
+        'role'     => 'atendente',
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 });
 

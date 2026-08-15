@@ -117,7 +117,6 @@ class PermissionService
         return $out;
     }
 
-    /** @param  mixed  $keys */
     private function filterKeys(mixed $keys): array
     {
         if (! is_array($keys)) {
@@ -128,7 +127,7 @@ class PermissionService
 
         return array_values(array_unique(array_filter(
             $keys,
-            fn ($k) => is_string($k) && in_array($k, $allowed, true)
+            fn ($k) => is_string($k) && in_array($k, $allowed, true),
         )));
     }
 }

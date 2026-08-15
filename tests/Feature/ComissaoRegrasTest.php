@@ -58,7 +58,7 @@ test('serviço com comissao_percentual sobrepõe a % da manicure', function () {
     $servico = Servico::factory()->create([
         'salao_id'            => $this->salao->id,
         'comissao_percentual' => 30,
-        'comissao_fixo'      => null,
+        'comissao_fixo'       => null,
         'preco'               => 100,
     ]);
 
@@ -78,7 +78,7 @@ test('serviço com comissao_fixo prevalece sobre percentual', function () {
     $servico = Servico::factory()->create([
         'salao_id'            => $this->salao->id,
         'comissao_percentual' => 40,
-        'comissao_fixo'      => 15,
+        'comissao_fixo'       => 15,
         'preco'               => 100,
     ]);
 

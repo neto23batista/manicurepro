@@ -42,7 +42,7 @@ test('dono é proibido em rotas do cliente (hierarquia sem herança cliente)', f
 
 test('atendente acessa operação mas não caixa exclusivo do dono', function () {
     $atendente = User::factory()->create([
-        'role' => 'atendente',
+        'role'     => 'atendente',
         'salao_id' => $this->salao->id,
     ]);
 

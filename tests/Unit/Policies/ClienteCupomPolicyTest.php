@@ -18,32 +18,32 @@ beforeEach(function () {
 
     $this->clienteA = Cliente::create([
         'salao_id' => $this->salaoA->id,
-        'nome' => 'Ana',
-        'email' => 'ana@x.com',
-        'ativo' => true,
+        'nome'     => 'Ana',
+        'email'    => 'ana@x.com',
+        'ativo'    => true,
     ]);
     $this->clienteB = Cliente::create([
         'salao_id' => $this->salaoB->id,
-        'nome' => 'Bia',
-        'email' => 'bia@x.com',
-        'ativo' => true,
+        'nome'     => 'Bia',
+        'email'    => 'bia@x.com',
+        'ativo'    => true,
     ]);
 
     $this->cupomA = Cupom::create([
-        'salao_id' => $this->salaoA->id,
-        'codigo' => 'PROMOA',
-        'tipo' => 'percentual',
-        'valor' => 10,
+        'salao_id'  => $this->salaoA->id,
+        'codigo'    => 'PROMOA',
+        'tipo'      => 'percentual',
+        'valor'     => 10,
         'uso_atual' => 0,
-        'ativo' => true,
+        'ativo'     => true,
     ]);
     $this->cupomB = Cupom::create([
-        'salao_id' => $this->salaoB->id,
-        'codigo' => 'PROMOB',
-        'tipo' => 'percentual',
-        'valor' => 10,
+        'salao_id'  => $this->salaoB->id,
+        'codigo'    => 'PROMOB',
+        'tipo'      => 'percentual',
+        'valor'     => 10,
         'uso_atual' => 0,
-        'ativo' => true,
+        'ativo'     => true,
     ]);
 });
 
@@ -55,8 +55,8 @@ test('admin acessa cliente e cupom de qualquer salão via Gate', function () {
 });
 
 test('dono só vê cliente e cupom do próprio salão', function () {
-    $clientePolicy = new ClientePolicy();
-    $cupomPolicy = new CupomPolicy();
+    $clientePolicy = new ClientePolicy;
+    $cupomPolicy = new CupomPolicy;
 
     expect($clientePolicy->view($this->dono, $this->clienteA))->toBeTrue();
     expect($clientePolicy->view($this->dono, $this->clienteB))->toBeFalse();

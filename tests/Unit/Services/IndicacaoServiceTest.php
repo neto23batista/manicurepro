@@ -16,9 +16,9 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     config([
-        'manicure.indicacao.enabled' => true,
-        'manicure.indicacao.recompensa' => 'pontos',
-        'manicure.indicacao.pontos' => 50,
+        'manicure.indicacao.enabled'     => true,
+        'manicure.indicacao.recompensa'  => 'pontos',
+        'manicure.indicacao.pontos'      => 50,
         'manicure.indicacao.cupom_valor' => 20,
     ]);
 
@@ -84,7 +84,7 @@ test('primeira visita concluída credita pontos ao indicador', function () {
     expect(
         FidelidadePonto::where('cliente_id', $this->indicador->id)
             ->where('descricao', 'like', "Indicação #{$this->indicado->id}%")
-            ->exists()
+            ->exists(),
     )->toBeTrue();
 });
 
@@ -99,7 +99,7 @@ test('segunda visita do indicado não recompensa de novo', function () {
     expect(
         FidelidadePonto::where('cliente_id', $this->indicador->id)
             ->where('descricao', 'like', "Indicação #{$this->indicado->id}%")
-            ->count()
+            ->count(),
     )->toBe(1);
 });
 
@@ -138,6 +138,6 @@ test('sem indicado_por não há recompensa de indicação', function () {
     $this->service->creditarPorAtendimento($ag, 100.0);
 
     expect(
-        FidelidadePonto::where('descricao', 'like', 'Indicação #%')->count()
+        FidelidadePonto::where('descricao', 'like', 'Indicação #%')->count(),
     )->toBe(0);
 });

@@ -10,8 +10,8 @@ class PacoteFactory extends Factory
     public function definition(): array
     {
         return [
-            'salao_id'      => Salao::factory(),
-            'nome'          => fake()->randomElement([
+            'salao_id' => Salao::factory(),
+            'nome'     => fake()->randomElement([
                 'Pacote 5 Sessões',
                 'Combo Mensal',
                 'Pacote Premium 10x',

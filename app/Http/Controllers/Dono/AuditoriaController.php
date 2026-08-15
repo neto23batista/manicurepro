@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dono;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Salao;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,7 @@ class AuditoriaController extends Controller
     {
         $this->authorize('viewAny', AuditLog::class);
 
-        $salaoId = (int) (auth()->user()->salao_id ?? \App\Models\Salao::principalId());
+        $salaoId = (int) (auth()->user()->salao_id ?? Salao::principalId());
 
         $userIds = User::query()
             ->where(function ($q) use ($salaoId) {

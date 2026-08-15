@@ -19,13 +19,13 @@ class ConfirmacaoController extends Controller
         $podeConfirmar = $statusEnum && in_array(
             $statusEnum,
             [AgendamentoStatus::Aguardando, AgendamentoStatus::Confirmado],
-            true
+            true,
         );
 
-        if ($podeConfirmar && !$jaConfirmado) {
+        if ($podeConfirmar && ! $jaConfirmado) {
             $agendamento->update([
                 'confirmado_em' => now(),
-                'status' => AgendamentoStatus::Confirmado->value,
+                'status'        => AgendamentoStatus::Confirmado->value,
             ]);
         }
 

@@ -5,6 +5,7 @@ use App\Models\Cliente;
 use App\Models\Manicure;
 use App\Models\Salao;
 use App\Models\User;
+use App\Services\ICalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -42,10 +43,10 @@ test('cliente baixa o .ics do próprio agendamento', function () {
 });
 
 test('o .ics usa horários em UTC com marcador Z', function () {
-    $ical = app(\App\Services\ICalService::class)->paraAgendamento($this->agendamento);
+    $ical = app(ICalService::class)->paraAgendamento($this->agendamento);
 
     $inicioUtc = $this->agendamento->data_hora_inicio->copy()->utc()->format('Ymd\THis\Z');
-    expect($ical)->toContain('DTSTART:' . $inicioUtc);
+    expect($ical)->toContain('DTSTART:'.$inicioUtc);
     expect($ical)->toContain("\r\n"); // quebras CRLF exigidas pelo padrão
 });
 
@@ -72,7 +73,7 @@ test('cliente vê link do Google Calendar no detalhe do agendamento', function (
 });
 
 test('link Google Calendar usa template com datas em UTC', function () {
-    $url = app(\App\Services\ICalService::class)->linkGoogleCalendar($this->agendamento);
+    $url = app(ICalService::class)->linkGoogleCalendar($this->agendamento);
 
     expect($url)->toStartWith('https://calendar.google.com/calendar/render?');
     expect($url)->toContain('action=TEMPLATE');
@@ -84,8 +85,8 @@ test('link Google Calendar usa template com datas em UTC', function () {
 
 test('dono exporta agenda .ics do dia', function () {
     $dono = User::factory()->create([
-        'role' => 'dono',
-        'ativo' => true,
+        'role'     => 'dono',
+        'ativo'    => true,
         'salao_id' => $this->salao->id,
     ]);
 
@@ -102,8 +103,8 @@ test('dono exporta agenda .ics do dia', function () {
 
 test('dono exporta agenda .ics por intervalo', function () {
     $dono = User::factory()->create([
-        'role' => 'dono',
-        'ativo' => true,
+        'role'     => 'dono',
+        'ativo'    => true,
         'salao_id' => $this->salao->id,
     ]);
 
@@ -111,7 +112,7 @@ test('dono exporta agenda .ics por intervalo', function () {
     $ate = $this->agendamento->data_hora_inicio->copy()->addDay()->toDateString();
 
     $resp = $this->actingAs($dono)->get(route('dono.agendamentos.ical', [
-        'de' => $de,
+        'de'  => $de,
         'ate' => $ate,
     ]));
 
@@ -122,8 +123,8 @@ test('dono exporta agenda .ics por intervalo', function () {
 
 test('manicure exporta a própria agenda .ics do dia', function () {
     $userManicure = User::factory()->create([
-        'role' => 'manicure',
-        'ativo' => true,
+        'role'     => 'manicure',
+        'ativo'    => true,
         'salao_id' => $this->salao->id,
     ]);
     $this->manicure->update(['user_id' => $userManicure->id]);

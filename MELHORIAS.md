@@ -94,7 +94,7 @@ Ainda não há implementação utilizável (ou só estratégia em doc).
 
 ## Ordem sugerida (pós Fases 1–10)
 
-1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md).
+1. Uso real em salão + correção de bugs operacionais (smoke em PRODUCAO.md). Inventário vivo: [`docs/BUGS.md`](docs/BUGS.md).
 2. Push UI: manter escondida até validar; NF-e continuar `FISCAL_ENABLED=false` em prod.
 3. OAuth / fiscal real / multi-empresa só com escopo explícito.
 

@@ -15,7 +15,7 @@ class CategoriaController extends Controller
     {
         $categorias = CategoriaServico::with('salao')
             ->withCount('servicos')
-            ->when($request->salao_id, fn($q) => $q->where('salao_id', $request->salao_id))
+            ->when($request->salao_id, fn ($q) => $q->where('salao_id', $request->salao_id))
             ->orderBy('salao_id')
             ->orderBy('ordem')
             ->orderBy('nome')
@@ -54,6 +54,7 @@ class CategoriaController extends Controller
             return back()->withErrors(['error' => 'Existe(m) serviço(s) vinculado(s). Desative em vez de excluir.']);
         }
         $categoria->delete();
+
         return back()->with('success', 'Categoria excluída.');
     }
 }

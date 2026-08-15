@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dono;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreValePresenteRequest;
 use App\Models\Salao;
 use App\Models\ValePresente;
 use App\Services\ValePresenteService;
@@ -42,12 +43,12 @@ class ValePresenteController extends Controller
         $agregado = ValePresente::where('salao_id', $salaoId)
             ->selectRaw('COALESCE(SUM(valor), 0) as emitido')
             ->selectRaw(
-                "COALESCE(SUM(CASE WHEN status = ? AND saldo > 0 AND (validade IS NULL OR validade >= ?) THEN saldo ELSE 0 END), 0) as saldo",
-                [ValePresente::STATUS_ATIVO, $hoje]
+                'COALESCE(SUM(CASE WHEN status = ? AND saldo > 0 AND (validade IS NULL OR validade >= ?) THEN saldo ELSE 0 END), 0) as saldo',
+                [ValePresente::STATUS_ATIVO, $hoje],
             )
             ->selectRaw(
-                "COALESCE(SUM(CASE WHEN status = ? AND saldo > 0 AND (validade IS NULL OR validade >= ?) THEN 1 ELSE 0 END), 0) as ativos",
-                [ValePresente::STATUS_ATIVO, $hoje]
+                'COALESCE(SUM(CASE WHEN status = ? AND saldo > 0 AND (validade IS NULL OR validade >= ?) THEN 1 ELSE 0 END), 0) as ativos',
+                [ValePresente::STATUS_ATIVO, $hoje],
             )
             ->first();
 
@@ -60,7 +61,7 @@ class ValePresenteController extends Controller
         return view('dono.vales.index', compact('vales', 'resumo'));
     }
 
-    public function store(\App\Http\Requests\StoreValePresenteRequest $request)
+    public function store(StoreValePresenteRequest $request)
     {
         $this->authorize('create', ValePresente::class);
 

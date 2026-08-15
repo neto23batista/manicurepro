@@ -1,7 +1,11 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\SecurityHardeningServiceProvider;
+use Barryvdh\DomPDF\ServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\SecurityHardeningServiceProvider::class,
-    Barryvdh\DomPDF\ServiceProvider::class,
+    AppServiceProvider::class,
+    SecurityHardeningServiceProvider::class,
+    ServiceProvider::class,
 ];

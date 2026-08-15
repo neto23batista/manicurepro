@@ -15,10 +15,10 @@ class DashboardController extends Controller
             $this->repo->adminTotais(),
             $this->repo->adminAgendamentosResumo(),
             [
-                'saloesMaisAtivos'      => $this->repo->topSaloes(),
-                'agendamentosRecentes'  => $this->repo->agendamentosRecentes(),
-                'dadosMeses'            => $this->repo->dadosMeses(),
-            ]
+                'saloesMaisAtivos'     => $this->repo->topSaloes(),
+                'agendamentosRecentes' => $this->repo->agendamentosRecentes(),
+                'dadosMeses'           => $this->repo->dadosMeses(),
+            ],
         ));
     }
 }

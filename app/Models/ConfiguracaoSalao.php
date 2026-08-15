@@ -39,6 +39,7 @@ class ConfiguracaoSalao extends Model
         'onboarding_completed_at'     => 'datetime',
         'onboarding_dismissed_at'     => 'datetime',
     ];
+
     protected static function booted(): void
     {
         $invalidate = fn (ConfiguracaoSalao $c) => self::esquecerCache((int) $c->salao_id);

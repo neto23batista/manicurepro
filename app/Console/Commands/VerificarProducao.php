@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class VerificarProducao extends Command
 {
     protected $signature = 'manicure:verificar-producao';
+
     protected $description = 'Checklist de prontidão para produção (ambiente, e-mail, fila, cron, storage, segurança)';
 
     public function handle(ProducaoChecker $checker): int
@@ -32,10 +33,12 @@ class VerificarProducao extends Command
         // Fonte única da definição de "erro crítico": ProducaoChecker::temErroCritico.
         if ($checker->temErroCritico($checks) && app()->environment('production')) {
             $this->error('Há itens críticos pendentes para produção.');
+
             return self::FAILURE;
         }
 
         $this->info('Verificação concluída.');
+
         return self::SUCCESS;
     }
 }

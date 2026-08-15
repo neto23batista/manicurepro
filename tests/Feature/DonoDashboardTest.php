@@ -4,6 +4,7 @@ use App\Models\Agendamento;
 use App\Models\Cliente;
 use App\Models\ConfiguracaoSalao;
 use App\Models\Manicure;
+use App\Models\Produto;
 use App\Models\Salao;
 use App\Models\User;
 use Carbon\Carbon;
@@ -17,12 +18,12 @@ beforeEach(function () {
 
     $this->dono = User::factory()->dono()->create([
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 
     $this->manicure = Manicure::factory()->create([
         'salao_id' => $this->salao->id,
-        'ativo' => true,
+        'ativo'    => true,
     ]);
 });
 
@@ -43,28 +44,28 @@ test('dashboard destaca cliente com risco de no-show na agenda de hoje', functio
 
     $cliente = Cliente::factory()->create([
         'salao_id' => $this->salao->id,
-        'nome' => 'Cliente Risco Dashboard',
+        'nome'     => 'Cliente Risco Dashboard',
     ]);
 
     // Duas faltas anteriores → risco
     foreach ([3, 2] as $dias) {
         Agendamento::factory()->create([
-            'salao_id' => $this->salao->id,
-            'cliente_id' => $cliente->id,
-            'manicure_id' => $this->manicure->id,
+            'salao_id'         => $this->salao->id,
+            'cliente_id'       => $cliente->id,
+            'manicure_id'      => $this->manicure->id,
             'data_hora_inicio' => Carbon::now()->subDays($dias),
-            'data_hora_fim' => Carbon::now()->subDays($dias)->addMinutes(30),
-            'status' => 'nao_compareceu',
+            'data_hora_fim'    => Carbon::now()->subDays($dias)->addMinutes(30),
+            'status'           => 'nao_compareceu',
         ]);
     }
 
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id,
-        'cliente_id' => $cliente->id,
-        'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id,
+        'cliente_id'       => $cliente->id,
+        'manicure_id'      => $this->manicure->id,
         'data_hora_inicio' => Carbon::today()->setTime(14, 0),
-        'data_hora_fim' => Carbon::today()->setTime(14, 30),
-        'status' => 'confirmado',
+        'data_hora_fim'    => Carbon::today()->setTime(14, 30),
+        'status'           => 'confirmado',
     ]);
 
     $this->actingAs($this->dono)
@@ -85,7 +86,7 @@ test('dashboard empty state de agenda de hoje tem CTA de novo agendamento', func
 });
 
 test('dashboard alerta produtos com estoque baixo', function () {
-    \App\Models\Produto::create([
+    Produto::create([
         'salao_id'       => $this->salao->id,
         'nome'           => 'Removedor',
         'preco_venda'    => 15,

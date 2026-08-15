@@ -18,8 +18,8 @@ class NotificarListaEspera implements ShouldQueue
         $entradas = ListaEspera::with('cliente', 'user')
             ->where('salao_id', $agendamento->salao_id)
             ->where('status', 'aguardando')
-            ->where(fn($q) => $q->whereNull('manicure_id')->orWhere('manicure_id', $agendamento->manicure_id))
-            ->where(fn($q) => $q->whereNull('data_preferida')->orWhereDate('data_preferida', $data->toDateString()))
+            ->where(fn ($q) => $q->whereNull('manicure_id')->orWhere('manicure_id', $agendamento->manicure_id))
+            ->where(fn ($q) => $q->whereNull('data_preferida')->orWhereDate('data_preferida', $data->toDateString()))
             ->orderBy('created_at')
             ->limit(5)
             ->get();

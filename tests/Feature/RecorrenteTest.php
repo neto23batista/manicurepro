@@ -20,10 +20,10 @@ beforeEach(function () {
 
     $this->salao = Salao::factory()->create(['ativo' => true]);
     ConfiguracaoSalao::create([
-        'salao_id' => $this->salao->id,
+        'salao_id'              => $this->salao->id,
         'intervalo_agendamento' => 30,
-        'antecedencia_minima' => 0,
-        'antecedencia_maxima' => 120,
+        'antecedencia_minima'   => 0,
+        'antecedencia_maxima'   => 120,
     ]);
     $userManicure = User::factory()->create(['role' => 'manicure', 'salao_id' => $this->salao->id]);
     $this->manicure = Manicure::factory()->create([
@@ -31,7 +31,7 @@ beforeEach(function () {
     ]);
     for ($dia = 0; $dia <= 6; $dia++) {
         HorarioFuncionamento::create([
-            'salao_id' => $this->salao->id, 'dia_semana' => $dia,
+            'salao_id'      => $this->salao->id, 'dia_semana' => $dia,
             'hora_abertura' => '08:00:00', 'hora_fechamento' => '18:00:00', 'ativo' => true,
         ]);
         DisponibilidadeManicure::create([
@@ -41,7 +41,7 @@ beforeEach(function () {
     }
     $this->servico = Servico::factory()->create([
         'salao_id' => $this->salao->id, 'preco' => 30, 'duracao' => 30,
-        'ativo' => true, 'disponivel_online' => true,
+        'ativo'    => true, 'disponivel_online' => true,
     ]);
     $this->agendaService = app(AgendaService::class);
 });
@@ -50,12 +50,12 @@ test('cria série semanal de agendamentos', function () {
     $base = Carbon::now()->addDay()->setTime(10, 0);
 
     $res = $this->agendaService->criarRecorrente([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $base->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
     ], 'semanal', 4);
 
     expect($res['criados'])->toHaveCount(4);
@@ -73,18 +73,18 @@ test('pula ocorrência em conflito sem interromper a série', function () {
     // Ocupa a 3ª ocorrência (2 semanas à frente)
     $conflito = $base->copy()->addWeeks(2);
     Agendamento::factory()->create([
-        'salao_id' => $this->salao->id, 'manicure_id' => $this->manicure->id,
+        'salao_id'         => $this->salao->id, 'manicure_id' => $this->manicure->id,
         'data_hora_inicio' => $conflito, 'data_hora_fim' => $conflito->copy()->addMinutes(30),
-        'status' => 'confirmado',
+        'status'           => 'confirmado',
     ]);
 
     $res = $this->agendaService->criarRecorrente([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $base->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
     ], 'semanal', 4);
 
     expect($res['criados'])->toHaveCount(3);
@@ -115,21 +115,21 @@ test('série parcial reporta múltiplas datas em conflito', function () {
 
     foreach ($conflitos as $conflito) {
         Agendamento::factory()->create([
-            'salao_id' => $this->salao->id,
-            'manicure_id' => $this->manicure->id,
+            'salao_id'         => $this->salao->id,
+            'manicure_id'      => $this->manicure->id,
             'data_hora_inicio' => $conflito,
-            'data_hora_fim' => $conflito->copy()->addMinutes(30),
-            'status' => 'confirmado',
+            'data_hora_fim'    => $conflito->copy()->addMinutes(30),
+            'status'           => 'confirmado',
         ]);
     }
 
     $res = $this->agendaService->criarRecorrente([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $base->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
     ], 'semanal', 5);
 
     expect($res['criados'])->toHaveCount(3);
@@ -143,12 +143,12 @@ test('limita recorrência a no máximo 12 ocorrências', function () {
     $base = Carbon::now()->addDay()->setTime(9, 0);
 
     $res = $this->agendaService->criarRecorrente([
-        'salao_id' => $this->salao->id,
-        'manicure_id' => $this->manicure->id,
-        'servico_ids' => [$this->servico->id],
+        'salao_id'         => $this->salao->id,
+        'manicure_id'      => $this->manicure->id,
+        'servico_ids'      => [$this->servico->id],
         'data_hora_inicio' => $base->toDateTimeString(),
-        'origem' => 'balcao',
-        'status' => 'confirmado',
+        'origem'           => 'balcao',
+        'status'           => 'confirmado',
     ], 'semanal', 20);
 
     expect($res['criados'])->toHaveCount(12);
